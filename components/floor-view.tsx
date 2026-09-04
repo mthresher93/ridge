@@ -309,11 +309,10 @@ export function FloorView() {
   return (
     <div className="dialer-desk">
       <header className="dialer-chrome">
-        <div className="dialer-session" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps} · Talk ${fmt(session.talkSec)}`}>
+        <div className="dialer-session" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps} · Talk ${fmt(session.talkSec)} · Set ${setRate}%`}>
           <SessionStat label="Dials" value={`${session.attempts}`} />
           <SessionStat label="Answer" value={`${answerRate}%`} />
           <SessionStat label="Sets" value={`${session.appointments}`} />
-          <SessionStat label="Set %" value={`${setRate}%`} />
           <div className="dialer-pace">
             <div className="dialer-pace-meta">
               <span>Pace</span>
@@ -350,13 +349,13 @@ export function FloorView() {
       </header>
 
       <div className={`dialer-layout ${scriptMode}`}>
-        <aside className="dialer-rail az-panel">
+        <aside className="dialer-rail">
           <div className="dialer-rail-head">
             <div>
-              <span>{power ? "Power queue" : "Queue"}</span>
+              <span>{power ? "Power" : "Queue"}</span>
               <b className="az-num">{queue.length}</b>
             </div>
-            <button type="button" className={`az-chip ${callableOnly ? "gold" : ""}`} onClick={() => setCallableOnly((v) => !v)}>
+            <button type="button" className={`rail-filter ${callableOnly ? "on" : ""}`} onClick={() => setCallableOnly((v) => !v)}>
               {callableOnly ? "Callable" : "All"}
             </button>
           </div>
@@ -407,11 +406,22 @@ export function FloorView() {
                     {active.city ? ` · ${active.city}` : ""}
                     {power ? ` · ${remaining} remaining` : ""}
                   </div>
-                  {scriptMode !== "focus" ? (
-                    <div className="call-goal">
+                  {scriptMode !== "focus" && state === "ready" ? (
+                    <p className="call-goal">
                       <span>Next</span>
-                      <p>{active.nextAction || "Open the call and qualify bill + roof"}</p>
-                    </div>
+                      {active.nextAction || "Open the call and qualify bill + roof"}
+                    </p>
+                  ) : null}
+                  {scriptMode !== "focus" && (live || ringing) ? (
+                    <p className="call-live-line">
+                      {[
+                        active.utility || null,
+                        active.monthlyBill ? `$${active.monthlyBill}/mo` : null,
+                        design ? `${design.roofAge}y ${design.roofMaterial}` : null,
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
+                    </p>
                   ) : null}
                 </div>
 
@@ -476,8 +486,8 @@ export function FloorView() {
                 </div>
               </div>
 
-              {scriptMode !== "focus" ? (
-                <div className="call-chips">
+              {scriptMode !== "focus" && !live && !ringing ? (
+                <div className="call-meta">
                   <Fact k="Utility" v={`${active.utility || "—"} · ${active.monthlyBill ? `$${active.monthlyBill}` : "no bill"}`} />
                   <Fact k="Roof" v={design ? `${design.roofAge}y ${design.roofMaterial}` : "—"} />
                   <Fact k="Array" v={estimate ? `${estimate.systemKw} kW · ${estimate.offset}%` : "Unsized"} />
@@ -485,17 +495,17 @@ export function FloorView() {
                 </div>
               ) : null}
 
-              <div className="call-dock">
+              <div className={`call-dock ${live || ringing ? "live" : ""}`}>
                 <label className="call-notes-label">
-                  Live notes
+                  Notes
                   <textarea
-                    className={`az-area call-notes ${scriptMode === "collapsed" ? "" : "slim"}`}
+                    className={`az-area call-notes ${scriptMode === "collapsed" && !live ? "" : "slim"}`}
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
                     placeholder="Saved at wrap-up"
                   />
                 </label>
-                {scriptMode === "collapsed" && history.length ? (
+                {scriptMode === "collapsed" && !live && !ringing && history.length ? (
                   <div className="call-history">
                     <span className="call-history-label">Recent</span>
                     {history.map((row) => (
@@ -550,7 +560,7 @@ function SessionStat({ label, value }: { label: string; value: string }) {
 
 function Fact({ k, v }: { k: string; v: string }) {
   return (
-    <div className="call-chip">
+    <div className="call-meta-item">
       <span>{k}</span>
       <b>{v}</b>
     </div>

@@ -641,9 +641,16 @@ textarea {
 }
 
 .script-now {
-  padding: 14px 16px 12px;
-  border-bottom: 1px dashed rgba(246, 239, 228, 0.16);
-  background: #18221c;
+  padding: 12px 14px 10px;
+  border-bottom: 1px solid rgba(246, 239, 228, 0.1);
+  background: transparent;
+}
+
+.dialer-layout .script-card {
+  border-radius: 0;
+  border: 0;
+  border-left: 1px solid #24312a;
+  box-shadow: none;
 }
 
 .script-now-meta {
@@ -665,10 +672,10 @@ textarea {
 
 .script-now-say {
   font-family: var(--font-display), Georgia, serif;
-  font-size: 23px;
-  line-height: 1.28;
+  font-size: 16px;
+  line-height: 1.4;
   color: #f4faf4;
-  margin-top: 8px;
+  margin-top: 6px;
 }
 
 .script-now-nav {
@@ -713,7 +720,7 @@ textarea {
 }
 
 .script-beat.active {
-  background: rgba(196, 92, 38, 0.18);
+  background: rgba(212, 242, 90, 0.1);
 }
 
 .script-idx {
@@ -782,12 +789,12 @@ textarea {
   font-size: 11px;
   font-weight: 600;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 2px;
 }
 
 .script-tools button.on {
-  background: rgba(196, 92, 38, 0.22);
-  color: #f4faf4;
+  background: rgba(212, 242, 90, 0.12);
+  color: #e8f0e8;
 }
 
 .script-search {
@@ -795,7 +802,7 @@ textarea {
   width: 140px;
   min-height: 28px;
   padding: 4px 8px;
-  border-radius: 6px;
+  border-radius: 2px;
   border: 1px solid #3a4a40;
   background: #1a2420;
   color: #e8f0e8;
@@ -803,8 +810,8 @@ textarea {
 }
 
 .script-focus .script-now-say {
-  font-size: 28px;
-  line-height: 1.32;
+  font-size: clamp(15px, 1.5vw, 18px);
+  line-height: 1.42;
 }
 
 .page-desk {
@@ -835,10 +842,10 @@ textarea {
 
 .dial-phone {
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: clamp(22px, 2.4vw, 30px);
-  letter-spacing: 0.04em;
-  color: var(--volt);
-  margin-top: 6px;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  color: #c9d6c9;
+  margin-top: 4px;
 }
 
 .dial-pad-echo {
@@ -909,9 +916,12 @@ textarea {
   position: relative;
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 8px;
+  gap: 0;
   height: 100%;
   min-height: 0;
+  border: 1px solid #24312a;
+  background: #101612;
+  overflow: hidden;
 }
 
 .dialer-chrome {
@@ -919,18 +929,19 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-  min-height: 40px;
-  padding: 6px 10px;
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: var(--lift);
+  min-height: 36px;
+  padding: 5px 10px;
+  background: #141c16;
+  border: 0;
+  border-bottom: 1px solid #24312a;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dialer-session {
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 16px;
   min-width: 0;
   overflow-x: auto;
   flex: 1;
@@ -939,33 +950,61 @@ textarea {
 .dialer-tools {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   flex-shrink: 0;
+}
+
+.dialer-tools .az-btn {
+  min-height: 28px;
+  padding: 0 10px;
+  font-size: 12px;
+  box-shadow: none;
+  color: #e8f0e8;
+  border-color: #3a4a40;
+  background: transparent;
+}
+
+.dialer-tools .az-btn.pri {
+  background: var(--volt);
+  border-color: var(--volt);
+  color: #101411;
+}
+
+.dialer-tools .az-btn.ghost {
+  border-color: transparent;
+  color: #9eaea2;
+}
+
+.dialer-tools .az-btn.ghost.on,
+.dialer-tools .az-btn.on {
+  color: #e8f0e8;
+  background: rgba(212, 242, 90, 0.1);
 }
 
 .dialer-stat {
   display: grid;
-  gap: 1px;
+  gap: 0;
 }
 
 .dialer-stat span {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: #7a8a7e;
 }
 
 .dialer-stat b {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 600;
-  line-height: 1.1;
+  line-height: 1.15;
+  color: #e8f0e8;
 }
 
 .dialer-pace {
   display: grid;
-  gap: 4px;
-  min-width: 108px;
+  gap: 3px;
+  min-width: 96px;
 }
 
 .dialer-pace-meta {
@@ -974,13 +1013,13 @@ textarea {
   gap: 8px;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: #7a8a7e;
 }
 
 .dialer-pace-meta b {
-  color: var(--text);
+  color: #e8f0e8;
   font-size: 12px;
   letter-spacing: 0;
   text-transform: none;
@@ -988,56 +1027,56 @@ textarea {
 
 .dial-target-meter {
   width: 100%;
-  height: 5px;
-  border-radius: 99px;
-  background: var(--track);
+  height: 3px;
+  border-radius: 0;
+  background: rgba(246, 239, 228, 0.12);
   overflow: hidden;
 }
 
 .dial-target-meter span {
   display: block;
   height: 100%;
-  background: var(--gold);
+  background: var(--volt);
 }
 
 .script-mode {
   display: flex;
-  border: 1px solid var(--line);
-  border-radius: 8px;
+  border: 1px solid #3a4a40;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .script-mode button {
   border: 0;
   background: transparent;
-  padding: 6px 11px;
-  font-size: 12px;
+  padding: 5px 9px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--muted);
+  color: #9eaea2;
 }
 
 .script-mode button.on {
-  background: var(--gold-dim);
-  color: var(--text);
+  background: rgba(212, 242, 90, 0.14);
+  color: #e8f0e8;
 }
 
 .dialer-layout {
   display: grid;
-  gap: 8px;
+  gap: 0;
   min-height: 0;
   height: 100%;
 }
 
 .dialer-layout.collapsed {
-  grid-template-columns: 220px minmax(0, 1fr);
+  grid-template-columns: 200px minmax(0, 1fr);
 }
 
 .dialer-layout.split {
-  grid-template-columns: 168px minmax(280px, 0.95fr) minmax(280px, 1.05fr);
+  grid-template-columns: 156px minmax(260px, 0.9fr) minmax(300px, 1.1fr);
 }
 
 .dialer-layout.focus {
-  grid-template-columns: 56px 240px minmax(0, 1fr);
+  grid-template-columns: 48px 210px minmax(0, 1fr);
 }
 
 .dialer-rail {
@@ -1045,6 +1084,10 @@ textarea {
   flex-direction: column;
   overflow: hidden;
   min-height: 0;
+  background: #121914;
+  border-right: 1px solid #24312a;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dialer-rail-head {
@@ -1052,25 +1095,41 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  padding: 9px 10px;
-  border-bottom: 1px solid var(--line);
+  padding: 7px 9px;
+  border-bottom: 1px solid #24312a;
 }
 
 .dialer-rail-head > div {
   display: flex;
   align-items: baseline;
-  gap: 8px;
+  gap: 7px;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.14em;
+  font-size: 9px;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: #7a8a7e;
 }
 
 .dialer-rail-head b {
-  color: var(--text);
+  color: #e8f0e8;
   letter-spacing: 0;
-  font-size: 13px;
+  font-size: 12px;
+}
+
+.rail-filter {
+  border: 0;
+  background: transparent;
+  color: #9eaea2;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  padding: 2px 0;
+  cursor: pointer;
+}
+
+.rail-filter.on {
+  color: var(--volt);
 }
 
 .dialer-q-row {
@@ -1079,33 +1138,34 @@ textarea {
   align-items: center;
   gap: 8px;
   text-align: left;
-  padding: 9px 10px;
+  padding: 6px 9px;
   border: 0;
-  border-bottom: 1px solid var(--line);
+  border-bottom: 1px solid rgba(246, 239, 228, 0.06);
   background: transparent;
   font-size: 12px;
+  color: #e8f0e8;
 }
 
 .dialer-q-dot {
-  width: 7px;
-  height: 7px;
+  width: 6px;
+  height: 6px;
   border-radius: 99px;
   flex-shrink: 0;
   background: #8a9a8c;
 }
 
-.dialer-q-dot.ok { background: var(--up); }
-.dialer-q-dot.warn { background: var(--warn); }
-.dialer-q-dot.bad { background: var(--down); }
+.dialer-q-dot.ok { background: #7dba86; }
+.dialer-q-dot.warn { background: #d4b46a; }
+.dialer-q-dot.bad { background: #e07068; }
 
 .dialer-q-copy {
   min-width: 0;
   display: grid;
-  gap: 1px;
+  gap: 0;
 }
 
 .dialer-q-copy b {
-  font-size: 12.5px;
+  font-size: 12px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -1115,98 +1175,101 @@ textarea {
 .dialer-q-copy i {
   font-style: normal;
   font-size: 10px;
-  color: var(--muted);
+  color: #7a8a7e;
 }
 
 .dialer-q-row.on {
-  background: var(--gold-dim);
+  background: rgba(212, 242, 90, 0.1);
 }
 
 .dialer-layout.focus .dialer-q-row {
   justify-content: center;
-  padding: 11px 4px;
+  padding: 9px 4px;
 }
 
 .dialer-q-initials {
-  font-size: 11px;
+  font-size: 10px;
   letter-spacing: 0.04em;
+  color: #c9d6c9;
 }
 
 .dialer-empty {
-  padding: 14px 12px;
+  padding: 12px 10px;
   font-size: 12px;
-  color: var(--muted);
+  color: #7a8a7e;
 }
 
 .dialer-empty.stage {
   color: #9eaea2;
-  padding: 28px;
+  padding: 24px;
 }
 
 .dialer-well {
   position: relative;
-  display: grid;
-  grid-template-rows: minmax(0, 1fr) auto auto;
+  display: flex;
+  flex-direction: column;
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background:
-    radial-gradient(720px 280px at 18% -10%, rgba(212, 242, 90, 0.08), transparent 55%),
-    linear-gradient(180deg, #151c17 0%, #101612 48%, #0d120f 100%);
+  background: #0e1410;
   color: #e8f0e8;
-  border: 1px solid #24312a;
-  border-radius: 4px;
-  box-shadow: var(--lift-2);
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
 }
 
 .dialer-well.tone-progress {
-  box-shadow: inset 0 0 0 1px rgba(212, 242, 90, 0.28), var(--lift-2);
+  box-shadow: inset 3px 0 0 var(--volt);
 }
 .dialer-well.tone-live {
-  box-shadow: inset 0 0 0 1px rgba(125, 186, 134, 0.35), var(--lift-2);
+  box-shadow: inset 3px 0 0 #7dba86;
 }
 .dialer-well.tone-hold {
-  box-shadow: inset 0 0 0 1px rgba(212, 180, 106, 0.35), var(--lift-2);
+  box-shadow: inset 3px 0 0 #d4b46a;
 }
 .dialer-well.tone-wrap {
-  box-shadow: inset 0 0 0 1px rgba(212, 180, 106, 0.28), var(--lift-2);
+  box-shadow: inset 3px 0 0 #d4b46a;
 }
 .dialer-well.tone-down {
-  box-shadow: inset 0 0 0 1px rgba(224, 112, 104, 0.35), var(--lift-2);
+  box-shadow: inset 3px 0 0 #e07068;
 }
 
 .dialer-well.compact {
-  grid-template-rows: auto;
+  border-right: 1px solid #24312a;
 }
 
 .call-stage {
-  display: grid;
-  grid-template-columns: minmax(0, 1.15fr) minmax(250px, 0.85fr);
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
   gap: 20px;
-  align-items: center;
-  padding: 22px 22px 10px;
+  padding: 12px 14px 4px;
   min-height: 0;
+  flex: 0 0 auto;
 }
 
 .dialer-well.compact .call-stage {
-  grid-template-columns: 1fr;
-  padding: 12px 14px;
-  gap: 10px;
+  flex-direction: column;
+  padding: 8px 10px 2px;
+  gap: 6px;
 }
 
 .call-identity {
   min-width: 0;
+  flex: 1 1 auto;
+  max-width: 420px;
 }
 
 .call-state {
   display: inline-flex;
   align-items: center;
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.16em;
+  font-size: 9px;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  padding: 4px 9px;
-  border: 1px solid currentColor;
+  padding: 2px 0;
+  border: 0;
+  border-bottom: 1px solid currentColor;
 }
 
 .call-state.ready { color: #9eaea2; }
@@ -1226,92 +1289,109 @@ textarea {
 .call-name {
   font-family: var(--font-display), Georgia, serif;
   font-style: italic;
-  font-size: clamp(30px, 3.4vw, 42px);
-  line-height: 1;
-  margin-top: 10px;
+  font-size: clamp(22px, 2.1vw, 28px);
+  line-height: 1.05;
+  margin-top: 6px;
   letter-spacing: -0.02em;
 }
 
+.dialer-well.compact .call-name {
+  font-size: 20px;
+  margin-top: 4px;
+}
+
 .call-sub {
-  font-size: 12px;
+  font-size: 11px;
   color: #9eaea2;
-  margin-top: 7px;
+  margin-top: 4px;
+}
+
+.call-live-line {
+  margin: 6px 0 0;
+  font-size: 12px;
+  color: #c9d6c9;
+  line-height: 1.3;
 }
 
 .call-goal {
-  margin-top: 14px;
-  padding: 10px 12px;
-  border-left: 3px solid var(--volt);
-  background: rgba(212, 242, 90, 0.07);
+  display: flex;
+  gap: 8px;
+  align-items: baseline;
+  margin: 8px 0 0;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  font-size: 12px;
+  line-height: 1.35;
+  color: #d6e2d6;
 }
 
 .call-goal span {
-  display: block;
+  flex-shrink: 0;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #b7c8b4;
-  margin-bottom: 4px;
-}
-
-.call-goal p {
-  margin: 0;
-  font-size: 14px;
-  line-height: 1.35;
-  color: #f3f8ef;
+  color: var(--volt);
 }
 
 .call-action {
   display: grid;
-  justify-items: center;
-  gap: 12px;
+  justify-items: stretch;
+  align-content: start;
+  gap: 6px;
   padding-top: 4px;
+  flex: 0 0 auto;
+  width: 168px;
 }
 
 .dialer-well.compact .call-action {
-  justify-items: stretch;
+  width: 100%;
+  padding-top: 0;
 }
 
 .call-timer {
-  width: 96px;
-  height: 96px;
-  border-radius: 50%;
-  border: 1px solid rgba(212, 242, 90, 0.28);
-  display: grid;
-  place-content: center;
-  text-align: center;
-  background: rgba(8, 12, 10, 0.35);
+  width: auto;
+  height: auto;
+  min-width: 0;
+  border-radius: 0;
+  border: 0;
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  background: transparent;
+  padding: 0;
 }
 
 .call-timer .az-num {
   font-size: 22px;
   line-height: 1;
+  font-variant-numeric: tabular-nums;
 }
 
 .call-timer div:last-child {
-  margin-top: 4px;
+  margin-top: 0;
   font-size: 9px;
-  letter-spacing: 0.14em;
+  letter-spacing: 0.12em;
   text-transform: uppercase;
   color: #9eaea2;
 }
 
-.call-timer.live {
-  border-color: #7dba86;
-  box-shadow: 0 0 0 7px rgba(125, 186, 134, 0.12);
+.call-timer.live .az-num {
+  color: #7dba86;
 }
 
 .call-controls {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
-  gap: 8px;
+  justify-content: flex-start;
+  gap: 5px;
   width: 100%;
 }
 
-.dialer-well.compact .call-controls {
-  justify-content: flex-start;
+.call-controls .dial-primary,
+.call-controls .dial-primary.end {
+  flex: 1 1 100%;
 }
 
 .dial-primary,
@@ -1321,65 +1401,63 @@ textarea {
   font-weight: 700;
   letter-spacing: 0.02em;
   cursor: pointer;
+  border-radius: 2px;
 }
 
 .dial-primary {
-  min-width: 148px;
-  min-height: 48px;
-  padding: 0 22px;
-  border-radius: 999px;
+  min-width: 0;
+  min-height: 36px;
+  padding: 0 14px;
   background: var(--volt);
   color: #101411;
-  font-size: 15px;
-  box-shadow: 0 10px 24px rgba(212, 242, 90, 0.22);
-}
-
-.dial-primary:hover:not(:disabled) {
-  filter: brightness(1.04);
-}
-
-.dial-primary:disabled {
-  opacity: 0.45;
-  cursor: not-allowed;
+  font-size: 13px;
   box-shadow: none;
 }
 
+.dial-primary:hover:not(:disabled) {
+  filter: brightness(1.03);
+}
+
+.dial-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .dial-primary.end {
-  background: #e07068;
+  background: #c44b44;
   color: #fff;
-  box-shadow: 0 10px 24px rgba(224, 112, 104, 0.24);
+  box-shadow: none;
 }
 
 .dial-secondary {
-  min-height: 40px;
-  padding: 0 14px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 10px;
   border-color: #3a4a40;
-  background: #1a2420;
+  background: transparent;
   color: #e8f0e8;
-  font-size: 13px;
+  font-size: 11px;
+  flex: 1 1 auto;
 }
 
 .dial-secondary.on {
   border-color: var(--volt);
   color: var(--volt);
-  background: rgba(212, 242, 90, 0.08);
+  background: rgba(212, 242, 90, 0.06);
 }
 
 .dial-ghost {
-  min-height: 40px;
-  padding: 0 12px;
-  border-radius: 999px;
+  min-height: 28px;
+  padding: 0 8px;
   border-color: transparent;
   background: transparent;
   color: #9eaea2;
-  font-size: 12px;
+  font-size: 11px;
 }
 
 .dial-ghost.on,
 .dial-ghost:hover {
   color: #e8f0e8;
-  background: rgba(246, 239, 228, 0.06);
+  background: rgba(246, 239, 228, 0.05);
 }
 
 .call-block {
@@ -1392,16 +1470,16 @@ textarea {
 .keypad {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 6px;
-  width: min(220px, 100%);
+  gap: 4px;
+  width: min(200px, 100%);
 }
 
 .keypad button {
-  min-height: 36px;
+  min-height: 32px;
   border: 1px solid #3a4a40;
   background: #1a2420;
   color: #e8f0e8;
-  border-radius: 8px;
+  border-radius: 2px;
 }
 
 .keypad p {
@@ -1411,37 +1489,38 @@ textarea {
   margin: 0;
 }
 
-.call-chips {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
-  padding: 4px 20px 12px;
+.call-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px 18px;
+  padding: 4px 14px 6px;
+  border-top: 1px solid rgba(246, 239, 228, 0.08);
+  flex: 0 0 auto;
 }
 
-.call-chip {
+.call-meta-item {
   min-width: 0;
-  padding: 8px 10px;
-  border: 1px solid rgba(246, 239, 228, 0.1);
-  background: rgba(8, 12, 10, 0.28);
 }
 
-.call-chip span {
+.call-meta-item span {
   display: block;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9eaea2;
-  margin-bottom: 3px;
+  color: #7a8a7e;
+  margin-bottom: 1px;
 }
 
-.call-chip b {
+.call-meta-item b {
   display: block;
   font-size: 12px;
-  font-weight: 600;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: 500;
+  color: #d6e2d6;
+}
+
+.call-chips {
+  display: none;
 }
 
 .call-dock {
@@ -1449,47 +1528,60 @@ textarea {
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
   align-items: stretch;
-  padding: 0 20px 14px;
+  padding: 6px 14px 10px;
   border-top: 1px solid rgba(246, 239, 228, 0.08);
-  padding-top: 10px;
+  margin-top: 0;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.call-dock.live {
+  grid-template-columns: 1fr;
 }
 
 .dialer-well.compact .call-dock {
   grid-template-columns: 1fr;
-  padding: 0 14px 12px;
+  padding: 0 10px 8px;
+  border-top: 0;
 }
 
 .call-notes-label {
   display: grid;
-  gap: 6px;
+  grid-template-rows: auto minmax(0, 1fr);
+  gap: 4px;
   min-height: 0;
+  height: 100%;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #9eaea2;
+  color: #7a8a7e;
 }
 
 .call-notes {
   margin: 0;
-  background: #0d120f;
+  background: #0a0f0c;
   border-color: #24312a;
   color: #e8f0e8;
   min-height: 72px;
-  height: 80px;
-  max-height: 80px;
+  height: 100%;
+  max-height: none;
   resize: none;
+  border-radius: 2px;
 }
 
 .call-notes.slim {
   min-height: 56px;
-  height: 56px;
-  max-height: 56px;
+}
+
+.call-dock.live .call-notes,
+.call-dock.live .call-notes.slim {
+  min-height: 88px;
 }
 
 .call-history {
-  width: 168px;
-  padding-top: 16px;
+  width: 150px;
+  padding-top: 14px;
   font-size: 11px;
   color: #9eaea2;
 }
@@ -1498,22 +1590,23 @@ textarea {
   display: block;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  letter-spacing: 0.12em;
+  letter-spacing: 0.1em;
   text-transform: uppercase;
-  margin-bottom: 6px;
+  margin-bottom: 4px;
+  color: #7a8a7e;
 }
 
 .call-history div {
   display: flex;
   justify-content: space-between;
   gap: 8px;
-  padding: 3px 0;
-  border-bottom: 1px solid rgba(246, 239, 228, 0.08);
+  padding: 2px 0;
+  border-bottom: 1px solid rgba(246, 239, 228, 0.06);
 }
 
 .call-history b {
-  font-weight: 600;
-  color: #d6e2d6;
+  font-weight: 500;
+  color: #c9d6c9;
   text-transform: capitalize;
 }
 
@@ -1535,23 +1628,23 @@ textarea {
 .wrap-sheet {
   position: absolute;
   left: 50%;
-  bottom: 12px;
+  bottom: 8px;
   transform: translateX(-50%);
-  width: min(760px, calc(100% - 24px));
+  width: min(640px, calc(100% - 16px));
   z-index: 8;
-  background: var(--panel);
+  background: #f4f7f2;
   color: var(--text);
-  border: 1px solid var(--line);
-  border-radius: 4px;
-  box-shadow: var(--lift-2);
-  padding: 12px;
+  border: 1px solid #c3cec2;
+  border-radius: 2px;
+  box-shadow: 0 14px 32px rgba(16, 22, 18, 0.32);
+  padding: 9px;
   display: grid;
-  gap: 8px;
-  animation: wraprise 160ms ease-out;
+  gap: 6px;
+  animation: wraprise 140ms ease-out;
 }
 
 @keyframes wraprise {
-  from { opacity: 0; transform: translate(-50%, 10px); }
+  from { opacity: 0; transform: translate(-50%, 8px); }
   to { opacity: 1; transform: translate(-50%, 0); }
 }
 
@@ -1564,33 +1657,33 @@ textarea {
 .wrap-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
-  gap: 6px;
+  gap: 5px;
 }
 
 .wrap-pick {
   position: relative;
-  min-height: 36px;
-  border: 1px solid var(--line);
-  background: var(--panel-2);
-  border-radius: 8px;
-  font-size: 12px;
+  min-height: 32px;
+  border: 1px solid #c3cec2;
+  background: #e6ece4;
+  border-radius: 2px;
+  font-size: 11px;
   font-weight: 600;
-  padding-left: 1.55rem;
+  padding-left: 1.4rem;
 }
 
 .wrap-hotkey {
   position: absolute;
-  left: 0.45rem;
+  left: 0.4rem;
   top: 50%;
   transform: translateY(-50%);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
+  font-size: 9px;
   color: var(--faint);
 }
 
 .wrap-pick.on {
-  border-color: var(--gold);
-  background: var(--gold-dim);
+  border-color: #1f7a4c;
+  background: rgba(31, 122, 76, 0.14);
 }
 
 .cad-desk {
@@ -2060,10 +2153,14 @@ textarea {
     display: none;
   }
   .call-stage {
-    grid-template-columns: 1fr;
+    flex-direction: column;
+    gap: 10px;
   }
-  .call-chips {
-    grid-template-columns: 1fr 1fr;
+  .call-action {
+    width: 100%;
+  }
+  .call-meta {
+    gap: 10px 16px;
   }
   .call-dock {
     grid-template-columns: 1fr;
