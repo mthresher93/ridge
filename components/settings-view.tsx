@@ -56,7 +56,7 @@ export function SettingsView() {
               Daily dial target
               <input name="dialTarget" type="number" className="az-input mt-1" defaultValue={workspace.settings.dialTarget} />
             </label>
-            <p className="text-[12px] text-[var(--muted)]">Used on Reports. Audio devices are set on the Dialer Audio menu.</p>
+            <p className="text-[12px] text-[var(--muted)]">Shown on Dialer and Reports as the daily pace target. Audio devices are set on the Dialer Audio menu.</p>
           </section>
           <section className="az-panel p-4 space-y-3 overflow-auto">
             <h2 className="text-[13px] font-semibold">Display</h2>

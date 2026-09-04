@@ -5,6 +5,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { leadEligibility, nowIso, phonePretty, uid } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
 import { CALL_STATES, DISPOSITIONS, type DialState, type DispositionId } from "@/lib/dispositions";
+import { completeOpenCallbacks, syncOpportunityFromWrap } from "@/lib/crm";
 import { ScriptPanel } from "./script-panel";
 import { AudioPopover } from "./audio-popover";
 import { WrapSheet } from "./wrap-sheet";
@@ -31,6 +32,8 @@ const EMPTY_SESSION: Session = {
   followUps: 0,
 };
 
+const PRIORITY_RANK: Record<string, number> = { Critical: 0, High: 1, Medium: 2, Low: 3 };
+
 export function FloorView() {
   const { workspace, setWorkspace, log, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
   const [state, setState] = useState<DialState>("ready");
@@ -44,17 +47,32 @@ export function FloorView() {
   const [showPad, setShowPad] = useState(false);
   const [session, setSession] = useState<Session>(EMPTY_SESSION);
   const [autoDial, setAutoDial] = useState(false);
+  const [callableOnly, setCallableOnly] = useState(true);
+  const [wrapDefault, setWrapDefault] = useState<DispositionId>("no_answer");
   const powerRef = useRef(false);
   const connectedRef = useRef(false);
+  const stateRef = useRef(state);
+  const activeRef = useRef<Lead | null>(null);
   powerRef.current = power;
+  stateRef.current = state;
 
   const queue = useMemo(() => {
+    const due = new Map(workspace.callbacks.filter((item) => item.status === "open").map((item) => [item.leadId, item.dueAt]));
     return workspace.leads
       .filter((lead) => !lead.dnc)
-      .sort((a, b) => Number(b.priority === "Critical") - Number(a.priority === "Critical"));
-  }, [workspace.leads]);
+      .filter((lead) => (callableOnly ? leadEligibility(lead).tone === "ok" : true))
+      .sort((a, b) => {
+        const dueA = due.get(a.id);
+        const dueB = due.get(b.id);
+        if (dueA && dueB) return Date.parse(dueA) - Date.parse(dueB);
+        if (dueA) return -1;
+        if (dueB) return 1;
+        return (PRIORITY_RANK[a.priority] ?? 9) - (PRIORITY_RANK[b.priority] ?? 9) || b.attempts - a.attempts;
+      });
+  }, [workspace.leads, workspace.callbacks, callableOnly]);
 
   const active = workspace.leads.find((lead) => lead.id === selectedLeadId) || queue[0] || null;
+  activeRef.current = active;
   const design = active ? workspace.designs?.[active.id] : null;
   const estimate = active && design ? estimateFor(active, design) : null;
   const eligibility = active ? leadEligibility(active) : null;
@@ -64,6 +82,8 @@ export function FloorView() {
   const visual: DialState = live && muted ? "muted" : state;
   const stamp = CALL_STATES[visual];
   const history = (workspace.callLogs || []).filter((row) => row.leadId === active?.id).slice(0, 5);
+  const dialTarget = workspace.settings.dialTarget || 80;
+  const targetPct = Math.min(100, Math.round((session.attempts / dialTarget) * 100));
 
   useEffect(() => {
     if (active) setNotes(active.notes);
@@ -83,12 +103,25 @@ export function FloorView() {
 
   useEffect(() => {
     if (state !== "ringing") return;
+    const roll = Math.random();
     const id = window.setTimeout(() => {
-      connectedRef.current = true;
-      setState("connected");
-      setBeat(1);
-      setSession((prev) => ({ ...prev, answered: prev.answered + 1 }));
-    }, 1600);
+      if (roll < 0.62) {
+        connectedRef.current = true;
+        setState("connected");
+        setBeat(1);
+        setSession((prev) => ({ ...prev, answered: prev.answered + 1 }));
+      } else if (roll < 0.82) {
+        connectedRef.current = false;
+        setWrapDefault("no_answer");
+        setState("wrap");
+        setSession((prev) => ({ ...prev, noAnswer: prev.noAnswer + 1 }));
+      } else {
+        connectedRef.current = false;
+        setWrapDefault("voicemail");
+        setState("wrap");
+        setSession((prev) => ({ ...prev, voicemail: prev.voicemail + 1 }));
+      }
+    }, 1400 + Math.floor(Math.random() * 900));
     return () => window.clearTimeout(id);
   }, [state]);
 
@@ -120,8 +153,15 @@ export function FloorView() {
 
   function hangup() {
     if (live) setSession((prev) => ({ ...prev, talkSec: prev.talkSec + seconds }));
+    setWrapDefault("qualified_lead");
     setState("wrap");
     setMuted(false);
+  }
+
+  function cancelRing() {
+    connectedRef.current = false;
+    setWrapDefault("no_answer");
+    setState("wrap");
   }
 
   function nextCallable(fromId: string) {
@@ -144,7 +184,7 @@ export function FloorView() {
       at: nowIso(),
     };
     setWorkspace((prev) => {
-      const next = {
+      const withLead = {
         ...prev,
         leads: prev.leads.map((lead) =>
           lead.id === active.id
@@ -178,9 +218,9 @@ export function FloorView() {
                   status: "open" as const,
                   createdAt: nowIso(),
                 },
-                ...prev.callbacks,
+                ...completeOpenCallbacks(prev.callbacks, active.id, id),
               ]
-            : prev.callbacks,
+            : completeOpenCallbacks(prev.callbacks, active.id, id),
         appointments:
           id === "appointment_set"
             ? [
@@ -202,7 +242,10 @@ export function FloorView() {
             : prev.appointments,
         updatedAt: nowIso(),
       };
-      return next;
+      return {
+        ...withLead,
+        opportunities: syncOpportunityFromWrap(withLead, active.id, id),
+      };
     });
     log("lead", active.id, id, row.label);
     setSession((prev) => ({
@@ -231,6 +274,30 @@ export function FloorView() {
     return () => window.clearTimeout(id);
   }, [autoDial, selectedLeadId]);
 
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
+      const current = stateRef.current;
+      if (event.code === "Space" && (current === "ready" || current === "failed")) {
+        event.preventDefault();
+        if (activeRef.current && leadEligibility(activeRef.current).tone === "ok") startCall();
+      }
+      if (event.key === "Escape") {
+        if (current === "connected" || current === "hold" || current === "muted") hangup();
+        else if (current === "dialing" || current === "ringing") cancelRing();
+      }
+      if ((event.key === "m" || event.key === "M") && (current === "connected" || current === "hold" || current === "muted")) {
+        setMuted((v) => !v);
+      }
+      if (event.key === "ArrowRight") setBeat((n) => n + 1);
+      if (event.key === "ArrowLeft") setBeat((n) => Math.max(0, n - 1));
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, []);
+
   if (loading) return <div className="text-[var(--muted)]">Opening the dialer…</div>;
 
   const answerRate = session.attempts ? Math.round((session.answered / session.attempts) * 100) : 0;
@@ -241,15 +308,18 @@ export function FloorView() {
       <header className="dialer-bar">
         <div className="dialer-stats">
           <Stat k="Attempted" v={`${session.attempts}`} />
+          <Stat k="Target" v={`${session.attempts}/${dialTarget}`} />
           <Stat k="Answered" v={`${session.answered}`} />
           <Stat k="Answer" v={`${answerRate}%`} />
           <Stat k="Talk" v={fmt(session.talkSec)} />
           <Stat k="Sets" v={`${session.appointments}`} />
           <Stat k="Set rate" v={`${setRate}%`} />
-          <Stat k="No answer" v={`${session.noAnswer}`} />
           <Stat k="Queue" v={`${remaining}`} />
         </div>
         <div className="dialer-bar-actions">
+          <div className="dial-target-meter" title={`${targetPct}% of daily dial target`}>
+            <span style={{ width: `${targetPct}%` }} />
+          </div>
           <button type="button" className={`az-btn ${power ? "pri" : ""}`} onClick={() => setPower((v) => !v)}>
             {power ? "Power · on" : "Power dial"}
           </button>
@@ -268,7 +338,9 @@ export function FloorView() {
         <section className="dialer-queue az-panel">
           <div className="dialer-queue-head">
             <span>{power ? "Power" : "Queue"}</span>
-            <span className="az-num">{queue.length}</span>
+            <button type="button" className={`az-chip ${callableOnly ? "gold" : ""}`} onClick={() => setCallableOnly((v) => !v)}>
+              {callableOnly ? "Callable" : "All"} · {queue.length}
+            </button>
           </div>
           <div className="scroll-y flex-1">
             {queue.map((lead) => (
@@ -294,6 +366,7 @@ export function FloorView() {
                 )}
               </button>
             ))}
+            {!queue.length ? <div className="p-3 text-[12px] text-[var(--muted)]">No callable leads in queue.</div> : null}
           </div>
         </section>
 
@@ -341,7 +414,7 @@ export function FloorView() {
                     </button>
                   ) : null}
                   {state === "dialing" || state === "ringing" ? (
-                    <button type="button" className="az-btn" onClick={() => setState("failed")}>
+                    <button type="button" className="az-btn" onClick={cancelRing}>
                       Cancel
                     </button>
                   ) : null}
@@ -373,7 +446,7 @@ export function FloorView() {
                         {key}
                       </button>
                     ))}
-                    <p>Local keypad only — no carrier DTMF.</p>
+                    <p>Local keypad only — no carrier DTMF. Space dials · Esc ends.</p>
                   </div>
                 ) : null}
                 {!canDial ? <BlockNote lead={active} /> : null}
@@ -405,6 +478,7 @@ export function FloorView() {
           seconds={seconds}
           notes={notes}
           onNotes={setNotes}
+          defaultDisposition={wrapDefault}
           onSave={applyWrap}
           onSkip={() => {
             setState("ready");

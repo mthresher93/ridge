@@ -77,6 +77,40 @@ export function DealDrawer({ opportunity, onClose }: { opportunity: Opportunity;
           <Field label="Next action" name="nextAction" defaultValue={opportunity.nextAction} />
           <Field label="Expected close" name="expectedClose" type="date" defaultValue={opportunity.expectedClose} />
           <label className="block text-[12px] text-[var(--muted)]">
+            Link lead
+            <select
+              className="az-select mt-1"
+              defaultValue={opportunity.leadId || ""}
+              onChange={(event) => {
+                const leadId = event.target.value || null;
+                const person = workspace.leads.find((item) => item.id === leadId);
+                setWorkspace((prev) => ({
+                  ...prev,
+                  opportunities: prev.opportunities.map((item) =>
+                    item.id === opportunity.id
+                      ? {
+                          ...item,
+                          leadId,
+                          name: person?.name || item.name,
+                          property: person?.property || item.property,
+                          updatedAt: nowIso(),
+                        }
+                      : item,
+                  ),
+                  updatedAt: nowIso(),
+                }));
+                if (leadId) log("opportunity", opportunity.id, "linked", `Linked to ${person?.name || leadId}`);
+              }}
+            >
+              <option value="">Unlinked</option>
+              {workspace.leads.map((item) => (
+                <option key={item.id} value={item.id}>
+                  {item.name} · {item.city || "no city"}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="block text-[12px] text-[var(--muted)]">
             Notes
             <textarea name="notes" className="az-area mt-1" defaultValue={opportunity.notes} />
           </label>

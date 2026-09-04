@@ -1,16 +1,16 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { coordsFor } from "@/lib/geo";
-import { leadEligibility, money, phonePretty } from "@/lib/format";
+import { coordsFor, projectToScreen, screenToLngLat } from "@/lib/geo";
+import { leadEligibility, money, nowIso, phonePretty } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
 import { TileMap, type MapKind } from "./tile-map";
-import { projectToScreen } from "@/lib/geo";
 import type { Lead } from "@/lib/types";
 
 type Filter = "all" | "callable" | "appointments" | "proposals" | "dnc";
+type MapViewBox = { lng: number; lat: number; zoom: number; width: number; height: number };
 
 function pinTone(lead: Lead) {
   if (lead.dnc) return "dnc";
@@ -29,12 +29,15 @@ function loc(lead: Lead, designs: Record<string, { lat?: number; lng?: number }>
 
 export function MapView() {
   const router = useRouter();
-  const { workspace, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
+  const { workspace, setWorkspace, log, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [kind, setKind] = useState<MapKind>("streets");
   const [zoom, setZoom] = useState(7.2);
   const [center, setCenter] = useState({ lat: 35.5, lng: -118.4 });
+  const [draggingId, setDraggingId] = useState<string | null>(null);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+  const viewRef = useRef<MapViewBox | null>(null);
 
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
@@ -50,6 +53,7 @@ export function MapView() {
 
   const selected = workspace.leads.find((lead) => lead.id === selectedLeadId) || null;
   const selectedLoc = selected ? loc(selected, workspace.designs) : null;
+  const pinned = selected ? workspace.designs[selected.id]?.lat != null && workspace.designs[selected.id]?.lng != null : false;
 
   function fit() {
     if (!rows.length) return;
@@ -63,6 +67,43 @@ export function MapView() {
     setCenter({ lat, lng });
     setZoom(span < 0.08 ? 12 : span < 0.4 ? 10 : span < 1.2 ? 8 : 6.5);
   }
+
+  function setPin(leadId: string, lat: number, lng: number) {
+    setWorkspace((prev) => {
+      const design = prev.designs[leadId];
+      if (!design) return prev;
+      return {
+        ...prev,
+        designs: {
+          ...prev.designs,
+          [leadId]: { ...design, lat, lng, updatedAt: nowIso() },
+        },
+        updatedAt: nowIso(),
+      };
+    });
+  }
+
+  useEffect(() => {
+    if (!draggingId) return;
+    const onMove = (event: PointerEvent) => {
+      const el = svgRef.current;
+      const view = viewRef.current;
+      if (!el || !view) return;
+      const rect = el.getBoundingClientRect();
+      const next = screenToLngLat(event.clientX - rect.left, event.clientY - rect.top, view);
+      setPin(draggingId, next.lat, next.lng);
+    };
+    const onUp = () => {
+      log("lead", draggingId, "pin_set", "Pin relocated on map");
+      setDraggingId(null);
+    };
+    window.addEventListener("pointermove", onMove);
+    window.addEventListener("pointerup", onUp);
+    return () => {
+      window.removeEventListener("pointermove", onMove);
+      window.removeEventListener("pointerup", onUp);
+    };
+  }, [draggingId]);
 
   if (loading) return <div className="text-[var(--muted)]">Loading map…</div>;
 
@@ -83,7 +124,7 @@ export function MapView() {
             </button>
           ))}
         </div>
-        <button type="button" className="az-btn" onClick={fit}>
+        <button type="button" className="az-btn" onClick={fit} disabled={!rows.length}>
           Fit results
         </button>
         <button type="button" className="az-btn" onClick={() => setKind((k) => (k === "streets" ? "satellite" : "streets"))}>
@@ -107,7 +148,13 @@ export function MapView() {
               groups.set(key, cur);
             }
             return (
-              <svg className="map-pins">
+              <svg
+                className="map-pins"
+                ref={(el) => {
+                  svgRef.current = el;
+                  viewRef.current = view;
+                }}
+              >
                 {Array.from(groups.values()).map((group) => {
                   const s = projectToScreen(group.lng, group.lat, view);
                   if (group.leads.length > 1 && cell) {
@@ -134,11 +181,12 @@ export function MapView() {
                   return (
                     <g
                       key={lead.id}
-                      className={`map-pin ${pinTone(lead)} ${on ? "on" : ""}`}
+                      className={`map-pin ${pinTone(lead)} ${on ? "on" : ""} ${draggingId === lead.id ? "dragging" : ""}`}
                       transform={`translate(${s.x} ${s.y})`}
                       onPointerDown={(event) => {
                         event.stopPropagation();
                         setSelectedLeadId(lead.id);
+                        if (event.shiftKey || zoom >= 12) setDraggingId(lead.id);
                       }}
                     >
                       <circle r={on ? 8 : 6} />
@@ -160,9 +208,23 @@ export function MapView() {
                 {selected.city} · {selected.utility} · {selected.monthlyBill ? money(selected.monthlyBill) + "/mo" : "no bill"}
               </p>
               <p className="az-num text-[13px] mt-2">{phonePretty(selected.phone)}</p>
+              <p className="cad-note mt-2">
+                {pinned ? "Pinned location" : "City estimate"} · {selectedLoc.lat.toFixed(4)}, {selectedLoc.lng.toFixed(4)}
+              </p>
+              <p className="text-[11px] text-[var(--muted)] mt-1">Shift-drag a pin (or drag at zoom 12+) to set the surveyed site.</p>
               <div className="flex flex-wrap gap-2 mt-3">
                 <button type="button" className="az-btn pri" onClick={() => router.push("/floor")}>
                   Dialer
+                </button>
+                <button
+                  type="button"
+                  className="az-btn"
+                  onClick={() => {
+                    setPin(selected.id, center.lat, center.lng);
+                    log("lead", selected.id, "pin_set", `Pin set to map center ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+                  }}
+                >
+                  Use map center
                 </button>
                 <button type="button" className="az-btn" onClick={() => router.push("/design")}>
                   Design
@@ -180,10 +242,13 @@ export function MapView() {
           ) : (
             <div className="map-card">
               <div className="az-kicker">Map</div>
-              <p className="text-[13px] text-[var(--muted)]">Select a pin. Pins are lead locations from city coordinates — not surveyed rooftops.</p>
+              <p className="text-[13px] text-[var(--muted)]">Select a pin. Drag to set a real site location for Design.</p>
             </div>
           )}
           <div className="map-list">
+            {rows.length === 0 ? (
+              <div className="px-3 py-6 text-[12px] text-[var(--muted)] text-center">No leads match these filters.</div>
+            ) : null}
             {rows.map((lead) => (
               <button
                 key={lead.id}

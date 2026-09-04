@@ -31,11 +31,16 @@ export function NumbersView() {
           <span className="text-[11px] text-[var(--muted)]">Recorded events only</span>
         </div>
 
-        <div className="grid grid-cols-4 gap-2">
-          <Kpi label="Dials" value={`${metrics.attempts}`} detail="sessions" />
+        <div className="grid grid-cols-5 gap-2">
+          <Kpi label="Dials" value={`${metrics.attempts}`} detail={`target ${workspace.settings.dialTarget}`} />
           <Kpi label="Connect" value={`${metrics.connectRate}%`} detail={`${metrics.connected} live`} />
           <Kpi label="Set" value={`${metrics.setRate}%`} detail={`${metrics.sets} sits`} />
           <Kpi label="Open" value={moneyShort(metrics.openValue)} detail={`${moneyShort(metrics.weighted)} wtd`} />
+          <Kpi
+            label="Pace"
+            value={`${Math.min(100, Math.round((metrics.attempts / Math.max(1, workspace.settings.dialTarget)) * 100))}%`}
+            detail="of dial target"
+          />
         </div>
 
         <div className="grid grid-cols-2 gap-2 min-h-0">

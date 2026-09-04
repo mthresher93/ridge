@@ -5,6 +5,7 @@ import { useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { STAGES } from "@/lib/stages";
 import { leadEligibility, leadScore, money, nowIso, phonePretty, uid } from "@/lib/format";
+import { createLinkedOpportunity } from "@/lib/crm";
 import { LeadDrawer } from "./lead-drawer";
 import { PageDesk } from "./page-desk";
 import type { Lead } from "@/lib/types";
@@ -58,8 +59,12 @@ export function PeopleView() {
       createdAt: nowIso(),
       updatedAt: nowIso(),
     };
-    setWorkspace((prev) => ({ ...prev, leads: [lead, ...prev.leads], updatedAt: nowIso() }));
-    log("lead", id, "created", "Lead created");
+    setWorkspace((prev) => {
+      const withLead = { ...prev, leads: [lead, ...prev.leads], updatedAt: nowIso() };
+      const opp = createLinkedOpportunity(withLead, id, lead.name, lead.property);
+      return { ...withLead, opportunities: [opp, ...withLead.opportunities] };
+    });
+    log("lead", id, "created", "Lead + board deal created");
     setSelectedId(id);
     setSelectedLeadId(id);
   }
@@ -107,6 +112,16 @@ export function PeopleView() {
             </tr>
           </thead>
           <tbody>
+            {leads.length === 0 ? (
+              <tr className="cursor-default">
+                <td colSpan={8} className="py-10 text-center text-[var(--muted)]">
+                  No people match.{" "}
+                  <button type="button" className="text-[var(--gold-2)] underline" onClick={addLead}>
+                    Add a lead
+                  </button>
+                </td>
+              </tr>
+            ) : null}
             {leads.map((lead) => {
               const eligibility = leadEligibility(lead);
               return (

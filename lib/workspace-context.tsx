@@ -5,9 +5,12 @@ import type { Activity, Workspace } from "./types";
 import { createSeed, emptyWorkspace, normalizeWorkspace } from "./seed";
 import { nowIso, uid } from "./format";
 
+export type SaveStatus = "idle" | "saving" | "saved" | "error";
+
 type WorkspaceContextValue = {
   workspace: Workspace;
   loading: boolean;
+  saveStatus: SaveStatus;
   selectedLeadId: string | null;
   setSelectedLeadId: (id: string | null) => void;
   setWorkspace: (next: Workspace | ((prev: Workspace) => Workspace)) => void;
@@ -20,17 +23,27 @@ const WorkspaceContext = createContext<WorkspaceContextValue | null>(null);
 export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const [workspace, setWorkspaceState] = useState<Workspace>(emptyWorkspace);
   const [loading, setLoading] = useState(true);
+  const [saveStatus, setSaveStatus] = useState<SaveStatus>("idle");
   const [selectedLeadId, setSelectedLeadId] = useState<string | null>(null);
   const timer = useRef<number>(0);
+  const savedTimer = useRef<number>(0);
 
   const persist = useCallback((next: Workspace) => {
     window.clearTimeout(timer.current);
+    setSaveStatus("saving");
     timer.current = window.setTimeout(() => {
       fetch("/api/workspace", {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ workspace: next }),
-      }).catch(() => {});
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("save failed");
+          setSaveStatus("saved");
+          window.clearTimeout(savedTimer.current);
+          savedTimer.current = window.setTimeout(() => setSaveStatus("idle"), 1600);
+        })
+        .catch(() => setSaveStatus("error"));
     }, 200);
   }, []);
 
@@ -89,8 +102,8 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   }, [setWorkspace]);
 
   const value = useMemo(
-    () => ({ workspace, loading, selectedLeadId, setSelectedLeadId, setWorkspace, log, reset }),
-    [workspace, loading, selectedLeadId, setWorkspace, log, reset],
+    () => ({ workspace, loading, saveStatus, selectedLeadId, setSelectedLeadId, setWorkspace, log, reset }),
+    [workspace, loading, saveStatus, selectedLeadId, setWorkspace, log, reset],
   );
 
   return <WorkspaceContext.Provider value={value}>{children}</WorkspaceContext.Provider>;
