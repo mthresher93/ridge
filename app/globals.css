@@ -1892,6 +1892,264 @@ textarea {
   line-height: 1.4;
 }
 
+.prop-insp {
+  padding-top: 4px;
+}
+
+.prop-flow {
+  display: grid;
+  gap: 10px;
+}
+
+.prop-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 2px;
+  border: 1px solid var(--line);
+  background: var(--panel-2);
+}
+
+.prop-steps button {
+  border: 0;
+  background: transparent;
+  padding: 6px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.prop-steps button.on {
+  background: var(--gold-dim);
+  color: var(--text);
+}
+
+.prop-pane {
+  display: grid;
+  gap: 8px;
+}
+
+.prop-kicker {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.prop-title {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 20px;
+  font-style: italic;
+  line-height: 1.15;
+}
+
+.prop-sub {
+  margin: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.prop-dl {
+  display: grid;
+  gap: 8px;
+  margin: 0;
+}
+
+.prop-dl.compact {
+  gap: 6px;
+}
+
+.prop-dl > div {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+
+.prop-dl dt {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+
+.prop-dl dd {
+  margin: 0;
+  font-size: 13px;
+  line-height: 1.35;
+}
+
+.prop-em {
+  font-size: 16px !important;
+  font-weight: 700;
+}
+
+.prop-caveat {
+  display: block;
+  margin-top: 3px;
+  font-size: 10px;
+  color: var(--faint);
+  line-height: 1.35;
+}
+
+.prop-stamp,
+.prop-notes {
+  margin: 0;
+  font-size: 11px;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.prop-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.prop-present {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(10, 14, 12, 0.72);
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.prop-present-close {
+  position: absolute;
+  top: 18px;
+  right: 18px;
+  border: 1px solid #3a4a40;
+  background: #121914;
+  color: #e8f0e8;
+  padding: 6px 12px;
+  font-size: 12px;
+}
+
+.prop-sheet {
+  width: min(720px, 100%);
+  max-height: calc(100vh - 48px);
+  overflow: auto;
+  background: #f7f4ec;
+  color: #15120e;
+  padding: 36px 40px 28px;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+}
+
+.prop-sheet-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  margin-bottom: 18px;
+  border-bottom: 1px solid #d7d0c2;
+  padding-bottom: 10px;
+}
+
+.prop-sheet-brand {
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 22px;
+  font-style: italic;
+}
+
+.prop-sheet-meta {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: #6a6358;
+}
+
+.prop-sheet-name {
+  margin: 0;
+  font-family: var(--font-display), Georgia, serif;
+  font-size: 34px;
+  font-style: italic;
+  line-height: 1.05;
+}
+
+.prop-sheet-property {
+  margin: 6px 0 0;
+  font-size: 14px;
+  color: #5c564d;
+}
+
+.prop-sheet-hero {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 16px;
+  margin: 28px 0;
+  padding: 16px 0;
+  border-top: 1px solid #d7d0c2;
+  border-bottom: 1px solid #d7d0c2;
+}
+
+.prop-sheet-hero span {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #6a6358;
+  margin-bottom: 4px;
+}
+
+.prop-sheet-hero b {
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.prop-sheet-body {
+  display: grid;
+  gap: 18px;
+}
+
+.prop-sheet-body h2 {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: #6a6358;
+}
+
+.prop-sheet-body p {
+  margin: 0;
+  font-size: 15px;
+  line-height: 1.45;
+}
+
+.prop-sheet-fine {
+  margin-top: 4px !important;
+  font-size: 12px !important;
+  color: #6a6358;
+}
+
+.prop-sheet-foot {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 28px;
+  padding-top: 16px;
+  border-top: 1px solid #d7d0c2;
+}
+
+.prop-sheet-foot .az-btn {
+  color: #15120e;
+  border-color: #c9bba8;
+  background: #efe9dc;
+}
+
+.prop-sheet-foot .az-btn.pri {
+  background: #1f7a4c;
+  border-color: #145c38;
+  color: #fff;
+}
+
 .tile-map {
   position: relative;
   width: 100%;

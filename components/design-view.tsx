@@ -17,7 +17,8 @@ import {
 import { coordsFor, siteToLngLat } from "@/lib/geo";
 import { TileMap, type MapKind } from "./tile-map";
 import { SiteCanvas, rotateSelectedFace, type CadSel, type CadTool } from "./site-canvas";
-import type { Obstruction, Point, RoofDesign, RoofFace } from "@/lib/types";
+import type { Obstruction, Point, Proposal, RoofDesign, RoofFace } from "@/lib/types";
+import { ProposalFlow } from "./proposal-flow";
 
 const TOOLS: { id: CadTool; label: string }[] = [
   { id: "pan", label: "Pan" },
@@ -69,23 +70,49 @@ export function DesignView() {
   }
 
   function saveProposal() {
-    if (!lead || !estimate || !live) return;
-    const notes = live.panelCount
-      ? `${live.systemKw} kW · ${live.panelCount} modules · ${live.roofSqFt} ft² roof · ${estimate.offset}% offset · cash ${money(estimate.netPrice)}`
-      : `${estimate.systemKw} kW estimated from bill · no modules placed · cash ${money(estimate.netPrice)}`;
+    if (!lead || !estimate || !live || !design) return;
+    const fromModules = live.panelCount > 0;
+    const systemKw = fromModules ? live.systemKw : estimate.systemKw;
+    const panelCount = fromModules ? live.panelCount : estimate.panelCount;
+    const notes = fromModules
+      ? `${systemKw} kW · ${panelCount} modules · ${live.roofSqFt} ft² roof · ${estimate.offset}% offset · cash ${money(estimate.netPrice)}`
+      : `${systemKw} kW estimated from bill · no modules placed · cash ${money(estimate.netPrice)}`;
+    const snapshot: Proposal = {
+      leadId: lead.id,
+      status: "Internal review",
+      version: (workspace.proposals?.[lead.id]?.version || 0) + 1,
+      notes,
+      updatedAt: nowIso(),
+      customerName: lead.name,
+      property: lead.property,
+      utility: lead.utility,
+      monthlyBill: lead.monthlyBill,
+      panelWatts: design.panelWatts,
+      panelCount,
+      systemKw,
+      roofSqFt: live.roofSqFt,
+      coverage: live.coverage,
+      offset: estimate.offset,
+      annualProduction: estimate.annualProduction,
+      annualUse: estimate.annualUse,
+      grossPrice: estimate.grossPrice,
+      incentive: estimate.incentive,
+      netPrice: estimate.netPrice,
+      monthlyPayment: estimate.monthlyPayment,
+      annualSavings: estimate.annualSavings,
+      azimuthDeg: design.azimuthDeg,
+      tiltDeg: design.tiltDeg,
+      roofMaterial: design.roofMaterial,
+      shadeLoss: design.shadeLoss,
+      source: fromModules ? "modules" : "bill-plan",
+    };
     setWorkspace((prev) => {
-      const stamped = nowIso();
-      const next = {
+      const stamped = snapshot.updatedAt;
+      return {
         ...prev,
         proposals: {
           ...prev.proposals,
-          [lead.id]: {
-            leadId: lead.id,
-            status: "Internal review",
-            version: (prev.proposals?.[lead.id]?.version || 0) + 1,
-            notes,
-            updatedAt: stamped,
-          },
+          [lead.id]: snapshot,
         },
         leads: prev.leads.map((item) =>
           item.id === lead.id && !/Proposal|Contract|PTO|Won/.test(item.status)
@@ -106,9 +133,24 @@ export function DesignView() {
         }),
         updatedAt: stamped,
       };
-      return next;
     });
     log("lead", lead.id, "proposal", notes);
+  }
+
+  function markPresented() {
+    if (!lead) return;
+    const current = workspace.proposals?.[lead.id];
+    if (!current) return;
+    const stamped = nowIso();
+    setWorkspace((prev) => ({
+      ...prev,
+      proposals: {
+        ...prev.proposals,
+        [lead.id]: { ...current, status: "Presented", updatedAt: stamped },
+      },
+      updatedAt: stamped,
+    }));
+    log("lead", lead.id, "proposal_presented", "Proposal marked presented");
   }
 
   function fitSite() {
@@ -353,46 +395,16 @@ export function DesignView() {
             </div>
           ) : null}
 
-          <div className="cad-insp-block">
-            <div className="az-kicker">Proposal</div>
-            <div className="cad-metrics">
-              <div>
-                <span>Cash after ITC</span>
-                <b className="az-num">{money(estimate.netPrice)}</b>
-              </div>
-              <div>
-                <span>Loan</span>
-                <b className="az-num">{money(estimate.monthlyPayment)}/mo</b>
-              </div>
-              <div>
-                <span>Offset</span>
-                <b className="az-num">{estimate.offset}%</b>
-              </div>
-              <div>
-                <span>Version</span>
-                <b className="az-num">v{workspace.proposals?.[lead.id]?.version || 0}</b>
-              </div>
-            </div>
-            <p className="cad-note">{workspace.proposals?.[lead.id]?.notes || "No proposal saved yet. Save bumps version and moves the deal to Proposal."}</p>
-            <button
-              type="button"
-              className="az-btn mt-2"
-              onClick={() => {
-                const text = [
-                  `Ridge proposal · ${lead.name}`,
-                  lead.property,
-                  live.panelCount ? `${live.systemKw} kW · ${live.panelCount} modules` : `${estimate.systemKw} kW planning size`,
-                  `Offset ${estimate.offset}% · Year-1 ${estimate.annualProduction.toLocaleString()} kWh`,
-                  `Cash ${money(estimate.netPrice)} after ITC · Loan ${money(estimate.monthlyPayment)}/mo`,
-                  workspace.proposals?.[lead.id]?.notes || "",
-                ]
-                  .filter(Boolean)
-                  .join("\n");
-                void navigator.clipboard?.writeText(text);
-              }}
-            >
-              Copy summary
-            </button>
+          <div className="cad-insp-block prop-insp">
+            <ProposalFlow
+              lead={lead}
+              design={design}
+              estimate={estimate}
+              live={live}
+              saved={workspace.proposals?.[lead.id]}
+              onSave={saveProposal}
+              onMarkPresented={markPresented}
+            />
           </div>
         </aside>
       </div>

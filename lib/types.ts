@@ -88,12 +88,37 @@ export type RoofDesign = {
   modules?: PlacedModule[];
 };
 
+export type ProposalSource = "modules" | "bill-plan";
+
 export type Proposal = {
   leadId: string;
   status: string;
   version: number;
   notes: string;
   updatedAt: string;
+  /** Snapshot at save — frozen from live design/estimate; optional for older records. */
+  customerName?: string;
+  property?: string;
+  utility?: string;
+  monthlyBill?: number | null;
+  panelWatts?: number;
+  panelCount?: number;
+  systemKw?: number;
+  roofSqFt?: number;
+  coverage?: number;
+  offset?: number;
+  annualProduction?: number;
+  annualUse?: number;
+  grossPrice?: number;
+  incentive?: number;
+  netPrice?: number;
+  monthlyPayment?: number;
+  annualSavings?: number;
+  azimuthDeg?: number;
+  tiltDeg?: number;
+  roofMaterial?: string;
+  shadeLoss?: number;
+  source?: ProposalSource;
 };
 
 export type CallLog = {
