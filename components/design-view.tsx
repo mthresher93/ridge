@@ -379,7 +379,7 @@ export function DesignView() {
               className="az-btn mt-2"
               onClick={() => {
                 const text = [
-                  `Azimuth proposal · ${lead.name}`,
+                  `Ridge proposal · ${lead.name}`,
                   lead.property,
                   live.panelCount ? `${live.systemKw} kW · ${live.panelCount} modules` : `${estimate.systemKw} kW planning size`,
                   `Offset ${estimate.offset}% · Year-1 ${estimate.annualProduction.toLocaleString()} kWh`,
