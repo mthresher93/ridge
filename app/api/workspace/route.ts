@@ -1,79 +1,29 @@
 import { NextResponse } from "next/server";
-import { prisma } from "@/lib/prisma";
-import { createSeed, isWorkspace, normalizeWorkspace } from "@/lib/seed";
-import { hydrateSolar, persistSolar } from "@/lib/persist";
-
-const STORE_ID = "azimuth";
+import { applyConduitStore, buildConduitStore, loadAzimuth, saveAzimuth } from "@/lib/workspace-io";
+import { isWorkspace, normalizeWorkspace } from "@/lib/seed";
 
 export async function GET() {
-  const row = await prisma.workspaceStore.findUnique({ where: { id: STORE_ID } });
-  if (!row) {
-    const workspace = normalizeWorkspace(createSeed());
-    const created = await prisma.workspaceStore.create({
-      data: { id: STORE_ID, payload: JSON.stringify(workspace) },
-    });
-    await persistSolar(workspace).catch(() => {});
-    return NextResponse.json({ workspace, updatedAt: created.updatedAt.toISOString() });
-  }
-
-  try {
-    const parsed = JSON.parse(row.payload) as unknown;
-    if (!isWorkspace(parsed)) {
-      const workspace = normalizeWorkspace(createSeed());
-      const updated = await prisma.workspaceStore.update({
-        where: { id: STORE_ID },
-        data: { payload: JSON.stringify(workspace) },
-      });
-      await persistSolar(workspace).catch(() => {});
-      return NextResponse.json({ workspace, updatedAt: updated.updatedAt.toISOString() });
-    }
-    const workspace = await hydrateSolar(normalizeWorkspace(parsed));
-    try {
-      await persistSolar(workspace);
-    } catch (error) {
-      console.error("persistSolar failed", error);
-    }
-    return NextResponse.json({ workspace, updatedAt: row.updatedAt.toISOString() });
-  } catch {
-    const workspace = normalizeWorkspace(createSeed());
-    const updated = await prisma.workspaceStore.update({
-      where: { id: STORE_ID },
-      data: { payload: JSON.stringify(workspace) },
-    });
-    await persistSolar(workspace).catch(() => {});
-    return NextResponse.json({ workspace, updatedAt: updated.updatedAt.toISOString() });
-  }
+  const { workspace, updatedAt } = await loadAzimuth();
+  const store = await buildConduitStore(workspace);
+  return NextResponse.json({ workspace, store, updatedAt });
 }
 
 export async function PUT(request: Request) {
-  const body = (await request.json()) as { workspace?: unknown };
+  const body = (await request.json()) as { workspace?: unknown; store?: Record<string, string> };
+
+  if (body.store && typeof body.store === "object") {
+    const saved = await applyConduitStore(body.store);
+    return NextResponse.json({ ok: true, ignored: saved.ignored, updatedAt: saved.updatedAt });
+  }
+
   if (!isWorkspace(body.workspace)) {
     return NextResponse.json({ error: "azimuth workspace required" }, { status: 400 });
   }
 
-  const incoming = normalizeWorkspace({ ...body.workspace, updatedAt: body.workspace.updatedAt || new Date().toISOString() });
-  const existing = await prisma.workspaceStore.findUnique({ where: { id: STORE_ID } });
-  if (existing) {
-    try {
-      const parsed = JSON.parse(existing.payload) as { updatedAt?: string };
-      if (parsed.updatedAt && Date.parse(incoming.updatedAt) + 1500 < Date.parse(parsed.updatedAt)) {
-        return NextResponse.json({ ok: true, ignored: true, updatedAt: existing.updatedAt.toISOString() });
-      }
-    } catch {
-      /* write anyway */
-    }
-  }
-
-  const row = await prisma.workspaceStore.upsert({
-    where: { id: STORE_ID },
-    update: { payload: JSON.stringify(incoming) },
-    create: { id: STORE_ID, payload: JSON.stringify(incoming) },
+  const incoming = normalizeWorkspace({
+    ...body.workspace,
+    updatedAt: body.workspace.updatedAt || new Date().toISOString(),
   });
-  try {
-    await persistSolar(incoming);
-  } catch (error) {
-    console.error("persistSolar failed", error);
-  }
-
-  return NextResponse.json({ ok: true, updatedAt: row.updatedAt.toISOString() });
+  const saved = await saveAzimuth(incoming);
+  return NextResponse.json({ ok: true, ignored: saved.ignored, updatedAt: saved.updatedAt });
 }
