@@ -12,6 +12,8 @@ type LiveMetrics = {
   panelCount: number;
   systemKw: number;
   coverage: number;
+  panelSqFt?: number;
+  usableSqFt?: number;
 };
 
 const STEPS: { id: Step; label: string }[] = [
@@ -104,6 +106,13 @@ export function ProposalFlow({
     };
   }, [frozen, saved, lead, design, estimate, live, panelCount, systemKw, fromModules]);
 
+  const stale =
+    frozen &&
+    saved &&
+    ((fromModules && (saved.panelCount !== live.panelCount || saved.systemKw !== live.systemKw)) ||
+      (!fromModules && saved.source === "modules") ||
+      (fromModules && saved.source === "bill-plan"));
+
   function copySummary() {
     const text = [
       `Ridge proposal · ${view.customerName}`,
@@ -135,6 +144,10 @@ export function ProposalFlow({
           </button>
         ))}
       </div>
+
+      {stale ? (
+        <p className="prop-caveat">Design changed since v{saved?.version}. Review live metrics above, then save a new proposal version.</p>
+      ) : null}
 
       {step === "review" ? (
         <div className="prop-pane">

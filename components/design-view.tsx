@@ -303,20 +303,28 @@ export function DesignView() {
                 <b className="az-num">{live.roofSqFt} ft²</b>
               </div>
               <div>
+                <span>Usable</span>
+                <b className="az-num">{live.usableSqFt} ft²</b>
+              </div>
+              <div>
+                <span>Panel area</span>
+                <b className="az-num">{live.panelCount ? `${live.panelSqFt} ft²` : "—"}</b>
+              </div>
+              <div>
                 <span>Coverage</span>
                 <b className="az-num">{live.panelCount ? `${live.coverage}%` : "—"}</b>
               </div>
             </div>
             {!live.panelCount ? (
-              <p className="cad-note">No modules placed. Size below is a bill-based planning estimate, not a surveyed array.</p>
+              <p className="cad-note">No modules placed. Plan size below is bill-based planning, not a surveyed array.</p>
             ) : null}
             <div className="cad-metrics faint">
               <div>
-                <span>Plan size</span>
-                <b>{estimate.systemKw} kW</b>
+                <span>{live.panelCount ? "Array model" : "Plan size"}</span>
+                <b>{estimate.systemKw} kW · {estimate.panelCount} mod</b>
               </div>
               <div>
-                <span>Year-1 est.</span>
+                <span>Year-1 model</span>
                 <b>{estimate.annualProduction.toLocaleString()} kWh</b>
               </div>
             </div>
@@ -343,15 +351,12 @@ export function DesignView() {
           ) : null}
 
           {sel?.kind === "module" ? (
-            <div className="cad-insp-block">
-              <div className="az-kicker">Module</div>
-              <p className="cad-note">
-                {(design.panelWidthIn ?? 41)}&quot; × {(design.panelHeightIn ?? 74)}&quot; · {design.panelWatts}W
-              </p>
-              <button type="button" className="az-btn" onClick={() => patch({ modules: (design.modules || []).filter((item) => item.id !== sel.id) })}>
-                Delete module
-              </button>
-            </div>
+            <ModuleInspector
+              design={design}
+              mod={(design.modules || []).find((row) => row.id === sel.id)}
+              onChange={(next) => patch({ modules: (design.modules || []).map((row) => (row.id === next.id ? next : row)) })}
+              onDelete={() => patch({ modules: (design.modules || []).filter((row) => row.id !== sel.id) })}
+            />
           ) : null}
 
           {sel?.kind === "obstruction" ? (
@@ -366,9 +371,10 @@ export function DesignView() {
             <div className="cad-insp-block">
               <div className="az-kicker">Site</div>
               <label>
-                Setback
+                Setback (ft)
                 <input
                   className="az-input"
+                  type="number"
                   value={design.setbackFt ?? 3}
                   onChange={(event) => patch({ setbackFt: Number(event.target.value) || 0 })}
                 />
@@ -382,16 +388,45 @@ export function DesignView() {
                   onChange={(event) => patch({ shadeLoss: Number(event.target.value) })}
                 />
               </label>
-              <label>
-                Module watts
-                <input
-                  className="az-input"
-                  type="number"
-                  value={design.panelWatts}
-                  onChange={(event) => patch({ panelWatts: Number(event.target.value) })}
-                />
-              </label>
-              <p className="cad-note">Fire pathways and AHJ setbacks are a configurable offset, not a code check.</p>
+              <div className="grid grid-cols-2 gap-2">
+                <label>
+                  Module W
+                  <input
+                    className="az-input"
+                    type="number"
+                    value={design.panelWatts}
+                    onChange={(event) => patch({ panelWatts: Number(event.target.value) })}
+                  />
+                </label>
+                <label>
+                  Spacing in
+                  <input
+                    className="az-input"
+                    type="number"
+                    value={design.spacingIn ?? 0.5}
+                    onChange={(event) => patch({ spacingIn: Number(event.target.value) })}
+                  />
+                </label>
+                <label>
+                  Width in
+                  <input
+                    className="az-input"
+                    type="number"
+                    value={design.panelWidthIn ?? 41}
+                    onChange={(event) => patch({ panelWidthIn: Number(event.target.value) })}
+                  />
+                </label>
+                <label>
+                  Height in
+                  <input
+                    className="az-input"
+                    type="number"
+                    value={design.panelHeightIn ?? 74}
+                    onChange={(event) => patch({ panelHeightIn: Number(event.target.value) })}
+                  />
+                </label>
+              </div>
+              <p className="cad-note">Setback inset is a design offset for fill/eligibility — not an AHJ code check. Shade % is assumed.</p>
             </div>
           ) : null}
 
@@ -410,11 +445,16 @@ export function DesignView() {
       </div>
 
       <footer className="cad-status">
-        <span>{compassLabel(design.azimuthDeg)} {design.azimuthDeg}°</span>
-        <span>Pitch {design.tiltDeg}°</span>
-        <span>Setback {design.setbackFt ?? 3} ft</span>
-        <span>{kind === "satellite" ? "Esri imagery" : "OSM streets"}</span>
-        <span>z{zoom.toFixed(1)}</span>
+        <span>
+          {compassLabel(design.azimuthDeg)} {design.azimuthDeg}° · pitch {design.tiltDeg}°
+        </span>
+        <span>
+          {live.panelCount ? `${live.panelCount} mod · ${live.systemKw} kW · ${live.panelSqFt} ft² panels` : "No modules"}
+        </span>
+        <span>
+          Roof {live.roofSqFt} ft² · usable ~{live.usableSqFt} ft² · setback {design.setbackFt ?? 3} ft
+        </span>
+        <span>{kind === "satellite" ? "Esri imagery" : "OSM streets"} · z{zoom.toFixed(1)}</span>
       </footer>
     </div>
   );
@@ -467,27 +507,38 @@ function FaceInspector({
         Material
         <input className="az-input" value={face.material} onChange={(event) => onFace({ ...face, material: event.target.value })} />
       </label>
+      <label className="cad-check">
+        <input
+          type="checkbox"
+          checked={face.eligible !== false}
+          onChange={(event) => onFace({ ...face, eligible: event.target.checked })}
+        />
+        Panel-eligible face
+      </label>
       {edgeLen != null ? (
         <label>
           Edge length
           <input
             className="az-input"
             defaultValue={formatFeet(edgeLen)}
+            key={`${face.id}-${sel?.kind === "edge" ? sel.index : "x"}-${edgeLen.toFixed(2)}`}
             onBlur={(event) => {
               const next = parseFeetInches(event.target.value);
-              if (next == null) return;
-              const a = face.points[sel!.kind === "edge" ? sel!.index : 0];
-              const b = face.points[((sel!.kind === "edge" ? sel!.index : 0) + 1) % face.points.length];
+              if (next == null || sel?.kind !== "edge") return;
+              const a = face.points[sel.index];
+              const b = face.points[(sel.index + 1) % face.points.length];
               const cur = Math.hypot(b.x - a.x, b.y - a.y) || 1;
               const scale = next / cur;
-              const points = face.points.map((pt, i) => (i === ((sel as { index: number }).index + 1) % face.points.length ? { x: a.x + (b.x - a.x) * scale, y: a.y + (b.y - a.y) * scale } : pt));
+              const points = face.points.map((pt, i) =>
+                i === (sel.index + 1) % face.points.length ? { x: a.x + (b.x - a.x) * scale, y: a.y + (b.y - a.y) * scale } : pt,
+              );
               onFace({ ...face, points });
             }}
           />
         </label>
       ) : null}
       <div className="flex flex-wrap gap-2 mt-2">
-        <button type="button" className="az-btn pri" onClick={onFill}>
+        <button type="button" className="az-btn pri" onClick={onFill} disabled={face.eligible === false}>
           Auto-fill
         </button>
         <button type="button" className="az-btn" onClick={onRotate}>
@@ -497,6 +548,60 @@ function FaceInspector({
           Copy
         </button>
       </div>
+      <p className="cad-note">Drag vertices. Select an edge to type an exact length. Auto-fill respects setback + obstructions.</p>
+    </div>
+  );
+}
+
+function ModuleInspector({
+  design,
+  mod,
+  onChange,
+  onDelete,
+}: {
+  design: RoofDesign;
+  mod?: import("@/lib/types").PlacedModule;
+  onChange: (mod: import("@/lib/types").PlacedModule) => void;
+  onDelete: () => void;
+}) {
+  if (!mod) return null;
+  const portrait = mod.portrait !== false;
+  const w = portrait ? design.panelWidthIn ?? 41 : design.panelHeightIn ?? 74;
+  const h = portrait ? design.panelHeightIn ?? 74 : design.panelWidthIn ?? 41;
+  return (
+    <div className="cad-insp-block">
+      <div className="az-kicker">Module</div>
+      <p className="cad-note">
+        {w}&quot; × {h}&quot; · {design.panelWatts}W · {portrait ? "portrait" : "landscape"}
+      </p>
+      <label>
+        Rotation °
+        <input
+          className="az-input"
+          type="number"
+          value={mod.rotationDeg}
+          onChange={(event) => onChange({ ...mod, rotationDeg: Number(event.target.value) })}
+        />
+      </label>
+      <div className="flex flex-wrap gap-2 mt-1">
+        <button type="button" className={`az-btn ${portrait ? "pri" : ""}`} onClick={() => onChange({ ...mod, portrait: true })}>
+          Portrait
+        </button>
+        <button type="button" className={`az-btn ${!portrait ? "pri" : ""}`} onClick={() => onChange({ ...mod, portrait: false })}>
+          Landscape
+        </button>
+        <button
+          type="button"
+          className="az-btn"
+          onClick={() => onChange({ ...mod, rotationDeg: (mod.rotationDeg + 90) % 360 })}
+        >
+          Rotate 90°
+        </button>
+        <button type="button" className="az-btn" onClick={onDelete}>
+          Delete
+        </button>
+      </div>
+      <p className="cad-note">Drag on canvas to move. Dimensions are real module inches converted to site feet.</p>
     </div>
   );
 }

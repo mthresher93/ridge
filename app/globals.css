@@ -1985,13 +1985,13 @@ textarea {
 
 .cad-desk {
   display: grid;
-  grid-template-rows: 46px minmax(0, 1fr) 28px;
+  grid-template-rows: 42px minmax(0, 1fr) 26px;
   height: 100%;
   min-height: 0;
-  background: #1b1713;
+  background: #141c16;
   color: #e8f0e8;
   border: 1px solid #24312a;
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
 }
 
@@ -2047,7 +2047,7 @@ textarea {
 
 .cad-body {
   display: grid;
-  grid-template-columns: 52px minmax(0, 1fr) 268px;
+  grid-template-columns: 48px minmax(0, 1fr) 250px;
   min-height: 0;
 }
 
@@ -2465,6 +2465,26 @@ textarea {
   stroke: #f4faf4;
 }
 
+.roof-face.blocked {
+  fill: rgba(90, 70, 60, 0.35);
+  stroke: #b42318;
+  stroke-dasharray: 6 4;
+}
+
+.roof-setback {
+  fill: none;
+  stroke: rgba(212, 242, 90, 0.55);
+  stroke-width: 1.25;
+  stroke-dasharray: 4 3;
+  pointer-events: none;
+}
+
+.roof-edge-on {
+  stroke: #d4f25a;
+  stroke-width: 3.5;
+  pointer-events: none;
+}
+
 .roof-vert {
   fill: #f4faf4;
   stroke: #1f7a4c;
@@ -2482,6 +2502,26 @@ textarea {
 
 .mod-cell.on {
   stroke: #fff;
+  stroke-width: 2;
+}
+
+.cad-check {
+  display: flex !important;
+  flex-direction: row !important;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: #c9d6c9;
+}
+
+.cad-check input {
+  width: auto;
+  min-height: 0;
+}
+
+.cad-tools button {
+  padding: 9px 3px;
+  font-size: 9px;
 }
 
 .obs-box {

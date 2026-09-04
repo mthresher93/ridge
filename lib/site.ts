@@ -72,10 +72,42 @@ export function ensureSite(design: RoofDesign): RoofDesign {
   };
 }
 
+export function moduleFootprint(design: RoofDesign, portrait = true) {
+  const shortSide = (design.panelWidthIn ?? 41) / 12;
+  const longSide = (design.panelHeightIn ?? 74) / 12;
+  return portrait ? { w: shortSide, h: longSide } : { w: longSide, h: shortSide };
+}
+
+export function moduleCorners(mod: PlacedModule, design: RoofDesign): Point[] {
+  const { w, h } = moduleFootprint(design, mod.portrait !== false);
+  const cx = mod.x + w / 2;
+  const cy = mod.y + h / 2;
+  const rad = ((mod.rotationDeg || 0) * Math.PI) / 180;
+  const cos = Math.cos(rad);
+  const sin = Math.sin(rad);
+  const local = [
+    { x: -w / 2, y: -h / 2 },
+    { x: w / 2, y: -h / 2 },
+    { x: w / 2, y: h / 2 },
+    { x: -w / 2, y: h / 2 },
+  ];
+  return local.map((p) => ({ x: cx + p.x * cos - p.y * sin, y: cy + p.x * sin + p.y * cos }));
+}
+
+export function insetTowardCentroid(points: Point[], ft: number) {
+  if (points.length < 3 || ft <= 0) return points;
+  const c = centroid(points);
+  return points.map((p) => {
+    const d = Math.hypot(p.x - c.x, p.y - c.y) || 1;
+    const t = Math.max(0.15, (d - ft) / d);
+    return { x: c.x + (p.x - c.x) * t, y: c.y + (p.y - c.y) * t };
+  });
+}
+
 export function fillFace(face: RoofFace, design: RoofDesign, existing: PlacedModule[]): PlacedModule[] {
+  if (face.eligible === false) return existing.filter((item) => item.faceId !== face.id);
   const setback = design.setbackFt ?? 3;
-  const w = (design.panelWidthIn ?? 41) / 12;
-  const h = (design.panelHeightIn ?? 74) / 12;
+  const { w, h } = moduleFootprint(design, true);
   const gap = (design.spacingIn ?? 0.5) / 12;
   const xs = face.points.map((p) => p.x);
   const ys = face.points.map((p) => p.y);
@@ -115,14 +147,31 @@ export function fillFace(face: RoofFace, design: RoofDesign, existing: PlacedMod
 export function liveMetrics(design: RoofDesign) {
   const site = ensureSite(design);
   const roofSqFt = (site.faces || []).reduce((sum, face) => sum + polygonArea(face.points), 0);
+  const eligibleSqFt = (site.faces || [])
+    .filter((face) => face.eligible !== false)
+    .reduce((sum, face) => sum + polygonArea(face.points), 0);
   const count = site.modules?.length || 0;
   const systemKw = Math.round((count * site.panelWatts) / 100) / 10;
-  const panelSqFt = count * ((site.panelWidthIn ?? 41) / 12) * ((site.panelHeightIn ?? 74) / 12);
+  const panelSqFt = Math.round(
+    count * moduleFootprint(site, true).w * moduleFootprint(site, true).h * 10,
+  ) / 10;
+  // Approximate usable after setback using centroid inset area when faces exist
+  const setback = site.setbackFt ?? 3;
+  const usableSqFt = Math.round(
+    (site.faces || []).reduce((sum, face) => {
+      if (face.eligible === false) return sum;
+      return sum + polygonArea(insetTowardCentroid(face.points, setback));
+    }, 0),
+  );
   return {
     roofSqFt: Math.round(roofSqFt),
+    eligibleSqFt: Math.round(eligibleSqFt),
+    usableSqFt,
+    panelSqFt,
     panelCount: count,
     systemKw,
     coverage: roofSqFt ? Math.round((panelSqFt / roofSqFt) * 100) : 0,
+    setbackFt: setback,
   };
 }
 

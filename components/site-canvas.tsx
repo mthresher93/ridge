@@ -7,6 +7,9 @@ import {
   classifyEdge,
   edgeLengths,
   formatFeet,
+  insetTowardCentroid,
+  moduleCorners,
+  moduleFootprint,
   polygonArea,
   rotatePoints,
 } from "@/lib/site";
@@ -21,6 +24,12 @@ export type CadSel =
   | { kind: "edge"; id: string; index: number }
   | { kind: "module"; id: string }
   | { kind: "obstruction"; id: string }
+  | null;
+
+type DragState =
+  | { kind: "vertex"; id: string; index: number }
+  | { kind: "module"; id: string; origin: Point; start: Point }
+  | { kind: "obstruction"; id: string; origin: Point; start: Point }
   | null;
 
 export function SiteCanvas({
@@ -45,12 +54,13 @@ export function SiteCanvas({
   const origin = { lat: design.lat || 0, lng: design.lng || 0 };
   const fpp = feetPerPixel(origin.lat, view.zoom);
   const hitFt = Math.max(4, 10 * fpp);
-  const [drag, setDrag] = useState<{ id: string; index: number; start: Point } | null>(null);
+  const [drag, setDrag] = useState<DragState>(null);
   const [measure, setMeasure] = useState<Point[]>([]);
 
   const faces = design.faces || [];
   const modules = design.modules || [];
   const gear = design.obstructions || [];
+  const setback = design.setbackFt ?? 3;
 
   function toSite(clientX: number, clientY: number, svg: SVGSVGElement) {
     const rect = svg.getBoundingClientRect();
@@ -71,6 +81,14 @@ export function SiteCanvas({
     return null;
   }
 
+  function hitModule(point: Point) {
+    for (let i = modules.length - 1; i >= 0; i -= 1) {
+      const mod = modules[i];
+      if (inside(point, moduleCorners(mod, design))) return mod;
+    }
+    return null;
+  }
+
   function onPointerDown(event: React.PointerEvent<SVGSVGElement>) {
     if (tool === "pan") return;
     event.stopPropagation();
@@ -83,15 +101,13 @@ export function SiteCanvas({
       return;
     }
     if (tool === "measure") {
-      const next = [...measure, site].slice(-2);
-      setMeasure(next);
+      setMeasure((prev) => [...prev, site].slice(-2));
       return;
     }
     if (tool === "panel") {
       const face = hitFace(site);
-      if (!face) return;
-      const w = (design.panelWidthIn ?? 41) / 12;
-      const h = (design.panelHeightIn ?? 74) / 12;
+      if (!face || face.eligible === false) return;
+      const { w, h } = moduleFootprint(design, true);
       const mod: PlacedModule = {
         id: uid("mod"),
         faceId: face.id,
@@ -123,7 +139,7 @@ export function SiteCanvas({
     const vertexHit = nearestVertex(faces, site, hitFt);
     if (vertexHit && (tool === "vertex" || tool === "select")) {
       onSel({ kind: "vertex", id: vertexHit.id, index: vertexHit.index });
-      setDrag({ id: vertexHit.id, index: vertexHit.index, start: site });
+      setDrag({ kind: "vertex", id: vertexHit.id, index: vertexHit.index });
       return;
     }
     const edgeHit = nearestEdge(faces, site, hitFt);
@@ -131,18 +147,16 @@ export function SiteCanvas({
       onSel({ kind: "edge", id: edgeHit.id, index: edgeHit.index });
       return;
     }
-    const modHit = modules.find((item) => {
-      const w = (design.panelWidthIn ?? 41) / 12;
-      const h = (design.panelHeightIn ?? 74) / 12;
-      return site.x >= item.x && site.x <= item.x + w && site.y >= item.y && site.y <= item.y + h;
-    });
-    if (modHit) {
+    const modHit = hitModule(site);
+    if (modHit && tool === "select") {
       onSel({ kind: "module", id: modHit.id });
+      setDrag({ kind: "module", id: modHit.id, origin: { x: modHit.x, y: modHit.y }, start: site });
       return;
     }
     const gearHit = gear.find((item) => Math.abs(item.x - site.x) <= item.widthFt / 2 && Math.abs(item.y - site.y) <= item.lengthFt / 2);
-    if (gearHit) {
+    if (gearHit && tool === "select") {
       onSel({ kind: "obstruction", id: gearHit.id });
+      setDrag({ kind: "obstruction", id: gearHit.id, origin: { x: gearHit.x, y: gearHit.y }, start: site });
       return;
     }
     const face = hitFace(site);
@@ -153,14 +167,32 @@ export function SiteCanvas({
     if (!drag) return;
     event.stopPropagation();
     const site = toSite(event.clientX, event.clientY, event.currentTarget);
-    onChange({
-      ...design,
-      faces: faces.map((face) =>
-        face.id === drag.id
-          ? { ...face, points: face.points.map((pt, i) => (i === drag.index ? site : pt)) }
-          : face,
-      ),
-    });
+    if (drag.kind === "vertex") {
+      onChange({
+        ...design,
+        faces: faces.map((face) =>
+          face.id === drag.id ? { ...face, points: face.points.map((pt, i) => (i === drag.index ? site : pt)) } : face,
+        ),
+      });
+      return;
+    }
+    if (drag.kind === "module") {
+      const dx = site.x - drag.start.x;
+      const dy = site.y - drag.start.y;
+      onChange({
+        ...design,
+        modules: modules.map((mod) => (mod.id === drag.id ? { ...mod, x: drag.origin.x + dx, y: drag.origin.y + dy } : mod)),
+      });
+      return;
+    }
+    if (drag.kind === "obstruction") {
+      const dx = site.x - drag.start.x;
+      const dy = site.y - drag.start.y;
+      onChange({
+        ...design,
+        obstructions: gear.map((item) => (item.id === drag.id ? { ...item, x: drag.origin.x + dx, y: drag.origin.y + dy } : item)),
+      });
+    }
   }
 
   function onDoubleClick() {
@@ -198,21 +230,37 @@ export function SiteCanvas({
         const poly = pts.map((p) => `${p.x},${p.y}`).join(" ");
         const active = selectedFace?.id === face.id;
         const lengths = edgeLengths(face.points);
+        const inset = active ? insetTowardCentroid(face.points, setback).map(toScreen) : [];
         return (
           <g key={face.id}>
             <polygon
               points={poly}
               className={`roof-face ${active ? "on" : ""} ${face.eligible === false ? "blocked" : ""}`}
             />
+            {active && inset.length >= 3 ? (
+              <polygon points={inset.map((p) => `${p.x},${p.y}`).join(" ")} className="roof-setback" />
+            ) : null}
             {active
               ? face.points.map((a, i) => {
                   const b = face.points[(i + 1) % face.points.length];
                   const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
                   const kind = classifyEdge(face.points, i, face.azimuthDeg);
+                  const edgeOn = sel?.kind === "edge" && sel.id === face.id && sel.index === i;
                   return (
-                    <text key={`${face.id}-e${i}`} x={mid.x} y={mid.y} className="cad-label">
-                      {kind} {formatFeet(lengths[i])}
-                    </text>
+                    <g key={`${face.id}-e${i}`}>
+                      {edgeOn ? (
+                        <line
+                          x1={toScreen(a).x}
+                          y1={toScreen(a).y}
+                          x2={toScreen(b).x}
+                          y2={toScreen(b).y}
+                          className="roof-edge-on"
+                        />
+                      ) : null}
+                      <text x={mid.x} y={mid.y} className="cad-label">
+                        {kind} {formatFeet(lengths[i])}
+                      </text>
+                    </g>
                   );
                 })
               : null}
@@ -223,23 +271,19 @@ export function SiteCanvas({
             })}
             <text x={pts[0]?.x || 0} y={(pts[0]?.y || 0) - 8} className="cad-label dim">
               {Math.round(polygonArea(face.points))} ft² · {face.pitchDeg}° · {face.azimuthDeg}°
+              {face.eligible === false ? " · blocked" : ""}
             </text>
           </g>
         );
       })}
 
       {modules.map((mod) => {
-        const w = (design.panelWidthIn ?? 41) / 12;
-        const h = (design.panelHeightIn ?? 74) / 12;
-        const a = toScreen({ x: mod.x, y: mod.y });
-        const b = toScreen({ x: mod.x + w, y: mod.y });
-        const c = toScreen({ x: mod.x + w, y: mod.y + h });
-        const d = toScreen({ x: mod.x, y: mod.y + h });
+        const corners = moduleCorners(mod, design).map(toScreen);
         const on = sel?.kind === "module" && sel.id === mod.id;
         return (
           <polygon
             key={mod.id}
-            points={`${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y} ${d.x},${d.y}`}
+            points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
             className={`mod-cell ${on ? "on" : ""}`}
           />
         );
@@ -276,10 +320,12 @@ export function SiteCanvas({
 
       {draft.length ? (
         <polyline
-          points={draft.map((pt) => {
-            const p = toScreen(pt);
-            return `${p.x},${p.y}`;
-          }).join(" ")}
+          points={draft
+            .map((pt) => {
+              const p = toScreen(pt);
+              return `${p.x},${p.y}`;
+            })
+            .join(" ")}
           className="draft-line"
         />
       ) : null}
