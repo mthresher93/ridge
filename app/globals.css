@@ -1256,7 +1256,7 @@ textarea {
 
 .call-identity {
   min-width: 0;
-  flex: 1 1 auto;
+  flex: 0 1 420px;
   max-width: 420px;
 }
 
@@ -1341,7 +1341,7 @@ textarea {
   align-content: start;
   gap: 6px;
   padding-top: 4px;
-  flex: 0 0 auto;
+  flex: 0 0 168px;
   width: 168px;
 }
 
