@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
-import { AzimuthMark } from "./mark";
+import { BrandMark } from "./mark";
 import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, floorWindow } from "@/lib/derive";
@@ -40,10 +40,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className="az-shell">
       <aside className="az-side">
         <Link href="/" className="az-brand">
-          <AzimuthMark />
+          <BrandMark />
           <div>
-            <div className="az-brand-name">Azimuth</div>
-            <div className="az-brand-sub">West solar desk</div>
+            <div className="az-brand-name">Ridge</div>
+            <div className="az-brand-sub">Solar sales desk</div>
           </div>
         </Link>
         <nav className="az-nav">

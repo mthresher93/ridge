@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { Figtree, Fraunces, IBM_Plex_Mono } from "next/font/google";
+import { DM_Sans, IBM_Plex_Mono, Instrument_Serif } from "next/font/google";
 import "./globals.css";
 import { Providers } from "./providers";
 
-const sans = Figtree({
+const sans = DM_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
@@ -15,17 +15,18 @@ const mono = IBM_Plex_Mono({
   variable: "--font-mono",
 });
 
-const display = Fraunces({
+const display = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: ["400"],
   style: ["normal", "italic"],
   variable: "--font-display",
 });
 
 export const metadata: Metadata = {
-  title: "Azimuth",
-  description: "West solar desk",
-  icons: { icon: "/azimuth.svg" },
+  title: "Ridge",
+  description: "Solar sales desk",
+  icons: { icon: "/ridge.svg" },
+  appleWebApp: { title: "Ridge", capable: true, statusBarStyle: "default" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

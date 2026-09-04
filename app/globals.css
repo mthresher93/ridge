@@ -3,26 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --ink: #e7dfd1;
-  --ink-2: #cfc3b1;
-  --panel: #fbf7ef;
-  --panel-2: #f3ece0;
-  --line: #c9bba8;
-  --line-2: #b7a790;
-  --text: #14110e;
-  --muted: #3d3832;
-  --faint: #5c564d;
-  --gold: #b44a18;
-  --gold-2: #9a3d12;
-  --gold-dim: rgba(180, 74, 24, 0.12);
-  --up: #2f6b3c;
+  --ink: #d6ddd4;
+  --ink-2: #101612;
+  --panel: #f4f7f2;
+  --panel-2: #e6ece4;
+  --line: #c3cec2;
+  --line-2: #a7b6a8;
+  --text: #101411;
+  --muted: #3b463e;
+  --faint: #66756c;
+  --gold: #1f7a4c;
+  --gold-2: #145c38;
+  --gold-dim: rgba(31, 122, 76, 0.14);
+  --up: #1f7a4c;
   --warn: #9a6b12;
   --down: #b42318;
   --blue: #2f4fbf;
-  --hover: rgba(40, 32, 22, 0.06);
-  --track: rgba(40, 32, 22, 0.1);
-  --lift: 0 1px 0 rgba(255, 252, 246, 0.95) inset, 0 12px 28px rgba(52, 36, 18, 0.16);
-  --lift-2: 0 22px 48px rgba(40, 26, 12, 0.22);
+  --hover: rgba(16, 20, 17, 0.05);
+  --track: rgba(16, 20, 17, 0.1);
+  --volt: #d4f25a;
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 20px rgba(16, 22, 18, 0.08);
+  --lift-2: 0 18px 40px rgba(16, 22, 18, 0.18);
   --background: var(--ink);
   --foreground: var(--text);
 }
@@ -65,7 +66,7 @@ body::before {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: #b7a790;
+  background: #8a9a8c;
   border-radius: 99px;
   border: 2px solid var(--ink);
 }
@@ -90,12 +91,10 @@ textarea {
 
 .az-shell {
   display: grid;
-  grid-template-columns: 212px minmax(0, 1fr);
+  grid-template-columns: 204px minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
-  background:
-    radial-gradient(900px 480px at 12% -8%, rgba(180, 74, 24, 0.1), transparent 48%),
-    linear-gradient(180deg, #efe7d8 0%, var(--ink) 42%);
+  background: linear-gradient(180deg, #e4ebe3 0%, var(--ink) 40%);
 }
 
 .az-side {
@@ -103,12 +102,11 @@ textarea {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  padding: 18px 14px 16px;
-  border-right: 1px solid var(--line);
-  background:
-    linear-gradient(180deg, rgba(255, 252, 246, 0.35), transparent 28%),
-    var(--ink-2);
-  box-shadow: 8px 0 28px rgba(72, 52, 28, 0.08);
+  padding: 18px 12px 16px;
+  border-right: 1px solid #1c2620;
+  background: var(--ink-2);
+  color: #e7eee7;
+  box-shadow: none;
 }
 
 .az-brand {
@@ -119,27 +117,27 @@ textarea {
 }
 
 .az-brand-mark {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   flex-shrink: 0;
-  filter: drop-shadow(0 4px 8px rgba(180, 74, 24, 0.28));
 }
 
 .az-brand-name {
-  font-family: var(--font-display), Georgia, serif;
-  font-style: italic;
-  font-size: 26px;
+  font-family: var(--font-sans), system-ui, sans-serif;
+  font-style: normal;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.03em;
-  color: var(--text);
+  letter-spacing: -0.04em;
+  color: #f4faf4;
 }
 
 .az-brand-sub {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;
-  letter-spacing: 0.18em;
+  letter-spacing: 0.16em;
   text-transform: uppercase;
-  color: var(--faint);
+  color: #8fa194;
   margin-top: 5px;
 }
 
@@ -155,24 +153,24 @@ textarea {
   justify-content: space-between;
   gap: 10px;
   padding: 9px 10px;
-  border-radius: 8px;
-  color: var(--muted);
-  transition: background 0.12s ease, color 0.12s ease, box-shadow 0.12s ease;
+  border-radius: 4px;
+  color: #9eaea2;
+  transition: background 0.12s ease, color 0.12s ease;
 }
 
 .az-nav a:hover {
-  color: var(--text);
-  background: var(--hover);
+  color: #f4faf4;
+  background: rgba(212, 242, 90, 0.08);
 }
 
 .az-nav a.active {
-  color: var(--text);
-  background: var(--panel);
-  box-shadow: var(--lift);
+  color: #101411;
+  background: var(--volt);
+  box-shadow: none;
 }
 
 .az-nav .label {
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -180,18 +178,19 @@ textarea {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
   letter-spacing: 0.08em;
-  color: var(--faint);
+  color: #6d7c72;
   order: -1;
 }
 
 .az-nav a.active .hint {
-  color: var(--gold);
+  color: #145c38;
 }
 
 .az-side-foot {
   margin-top: auto;
   padding: 14px 10px 0;
-  border-top: 1px solid var(--line);
+  border-top: 1px solid #24312a;
+  color: #c5d2c8;
 }
 
 .az-main {
@@ -208,11 +207,11 @@ textarea {
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 10px 18px;
+  padding: 8px 16px;
   border-bottom: 1px solid var(--line);
-  background: rgba(251, 247, 239, 0.72);
+  background: rgba(244, 247, 242, 0.9);
   backdrop-filter: blur(10px);
-  box-shadow: 0 8px 20px rgba(72, 52, 28, 0.06);
+  box-shadow: none;
   flex: 0 0 auto;
 }
 
@@ -253,9 +252,9 @@ textarea {
 .az-panel {
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 4px;
   min-height: 0;
-  box-shadow: var(--lift);
+  box-shadow: none;
 }
 
 .az-btn {
@@ -263,17 +262,17 @@ textarea {
   align-items: center;
   justify-content: center;
   gap: 8px;
-  min-height: 34px;
-  padding: 0 12px;
-  border-radius: 8px;
+  min-height: 32px;
+  padding: 0 11px;
+  border-radius: 3px;
   border: 1px solid var(--line-2);
-  background: var(--panel);
+  background: #fff;
   color: var(--text);
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.8) inset, 0 4px 10px rgba(72, 52, 28, 0.08);
-  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease, transform 0.12s ease;
+  box-shadow: none;
+  transition: border-color 0.12s ease, background 0.12s ease, color 0.12s ease;
 }
 
 .az-btn:hover {
@@ -282,11 +281,11 @@ textarea {
 }
 
 .az-btn.pri {
-  background: var(--gold);
-  border-color: #9a3d12;
-  color: #fff8f0;
+  background: var(--volt);
+  border-color: #b6d63c;
+  color: #101411;
   font-weight: 700;
-  box-shadow: 0 1px 0 rgba(255, 210, 180, 0.35) inset, 0 8px 16px rgba(180, 74, 24, 0.28);
+  box-shadow: none;
 }
 
 .az-btn.pri:hover {
@@ -341,7 +340,7 @@ textarea {
 }
 .az-chip.gold {
   color: var(--gold-2);
-  border-color: rgba(180, 74, 24, 0.35);
+  border-color: rgba(31, 122, 76, 0.35);
   background: var(--gold-dim);
 }
 
@@ -351,11 +350,11 @@ textarea {
   width: 100%;
   min-height: 36px;
   padding: 7px 10px;
-  border-radius: 8px;
+  border-radius: 3px;
   border: 1px solid var(--line);
   background: #fff;
   outline: none;
-  box-shadow: inset 0 2px 6px rgba(72, 52, 28, 0.06);
+  box-shadow: none;
 }
 
 .az-input:focus,
@@ -411,7 +410,7 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 50;
-  background: rgba(48, 36, 22, 0.38);
+  background: rgba(16, 22, 18, 0.45);
   display: flex;
   justify-content: flex-end;
 }
@@ -430,7 +429,7 @@ textarea {
   position: fixed;
   inset: 0;
   z-index: 60;
-  background: rgba(48, 36, 22, 0.32);
+  background: rgba(16, 22, 18, 0.4);
   display: flex;
   justify-content: center;
   padding: 14vh 16px 16px;
@@ -440,7 +439,7 @@ textarea {
   width: min(640px, 100%);
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 16px;
+  border-radius: 4px;
   overflow: hidden;
   box-shadow: var(--lift-2);
 }
@@ -513,7 +512,7 @@ textarea {
   min-height: 0;
   background: var(--panel-2);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.55);
@@ -523,11 +522,11 @@ textarea {
   width: 100%;
   text-align: left;
   padding: 10px;
-  border-radius: 10px;
+  border-radius: 3px;
   border: 1px solid var(--line);
   background: var(--panel);
   cursor: grab;
-  box-shadow: 0 6px 14px rgba(72, 52, 28, 0.08);
+  box-shadow: none;
 }
 
 .board-card.critical {
@@ -588,10 +587,10 @@ textarea {
   min-height: 0;
   overflow: hidden;
   padding: 0;
-  background: #2a221b;
-  color: #f6efe4;
-  border: 1px solid #3c3228;
-  border-radius: 12px;
+  background: #141c16;
+  color: #e8f0e8;
+  border: 1px solid #24312a;
+  border-radius: 4px;
   box-shadow: var(--lift-2);
 }
 
@@ -606,13 +605,13 @@ textarea {
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #e08a4f;
+  color: #d4f25a;
 }
 
 .script-now {
   padding: 14px 16px 12px;
   border-bottom: 1px dashed rgba(246, 239, 228, 0.16);
-  background: #332a22;
+  background: #18221c;
 }
 
 .script-now-meta {
@@ -621,7 +620,7 @@ textarea {
   justify-content: space-between;
   gap: 8px;
   font-size: 12px;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .script-now-meta b {
@@ -629,14 +628,14 @@ textarea {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 10px;
-  color: #e08a4f;
+  color: #d4f25a;
 }
 
 .script-now-say {
   font-family: var(--font-display), Georgia, serif;
   font-size: 23px;
   line-height: 1.28;
-  color: #fff8ee;
+  color: #f4faf4;
   margin-top: 8px;
 }
 
@@ -647,15 +646,15 @@ textarea {
 }
 
 .script-now-nav .az-btn {
-  color: #f6efe4;
-  border-color: #5a4a3c;
-  background: #3a3027;
+  color: #e8f0e8;
+  border-color: #3a4a40;
+  background: #1a2420;
   box-shadow: none;
 }
 
 .script-now-nav .az-btn.pri {
-  background: #c45c26;
-  border-color: #b24f1c;
+  background: #1f7a4c;
+  border-color: #145c38;
   color: #fff6ea;
 }
 
@@ -688,7 +687,7 @@ textarea {
 .script-idx {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;
-  color: #e08a4f;
+  color: #d4f25a;
   padding-top: 2px;
 }
 
@@ -708,14 +707,14 @@ textarea {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #e08a4f;
+  color: #d4f25a;
 }
 
 .script-label i {
   font-style: normal;
   letter-spacing: 0;
   text-transform: none;
-  color: #cbb9a4;
+  color: #9eaea2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -729,7 +728,7 @@ textarea {
 }
 
 .script-beat.active .say {
-  color: #fff8ee;
+  color: #f4faf4;
 }
 
 .script-stage .script-beat .say {
@@ -747,7 +746,7 @@ textarea {
 .script-tools button {
   border: 0;
   background: transparent;
-  color: #cbb9a4;
+  color: #9eaea2;
   font-size: 11px;
   font-weight: 600;
   padding: 4px 8px;
@@ -756,7 +755,7 @@ textarea {
 
 .script-tools button.on {
   background: rgba(196, 92, 38, 0.22);
-  color: #fff8ee;
+  color: #f4faf4;
 }
 
 .script-search {
@@ -765,9 +764,9 @@ textarea {
   min-height: 28px;
   padding: 4px 8px;
   border-radius: 6px;
-  border: 1px solid #5a4a3c;
-  background: #3a3027;
-  color: #f6efe4;
+  border: 1px solid #3a4a40;
+  background: #1a2420;
+  color: #e8f0e8;
   font-size: 12px;
 }
 
@@ -806,7 +805,7 @@ textarea {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 20px;
   letter-spacing: 0.04em;
-  color: #e08a4f;
+  color: #d4f25a;
 }
 
 .scroll-y {
@@ -834,7 +833,7 @@ textarea {
   padding: 12px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 4px;
   box-shadow: var(--lift-2);
   display: grid;
   gap: 8px;
@@ -886,7 +885,7 @@ textarea {
   padding: 6px 10px;
   background: var(--panel);
   border: 1px solid var(--line);
-  border-radius: 10px;
+  border-radius: 4px;
   box-shadow: var(--lift);
   overflow: hidden;
 }
@@ -1019,10 +1018,10 @@ textarea {
   min-width: 0;
   min-height: 0;
   overflow: hidden;
-  background: #241c16;
-  color: #f6efe4;
-  border: 1px solid #3c3228;
-  border-radius: 12px;
+  background: #101612;
+  color: #e8f0e8;
+  border: 1px solid #24312a;
+  border-radius: 4px;
   box-shadow: var(--lift-2);
 }
 
@@ -1052,7 +1051,7 @@ textarea {
 
 .call-sub {
   font-size: 12px;
-  color: #cbb9a4;
+  color: #9eaea2;
   margin-top: 6px;
 }
 
@@ -1067,9 +1066,9 @@ textarea {
   border: 1px solid currentColor;
 }
 
-.call-state.ready { color: #cbb9a4; }
+.call-state.ready { color: #9eaea2; }
 .call-state.progress {
-  color: #e08a4f;
+  color: #d4f25a;
   animation: callpulse 1s ease-in-out infinite;
 }
 .call-state.live { color: #7dba86; }
@@ -1100,7 +1099,7 @@ textarea {
   font-size: 9px;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .call-timer.live {
@@ -1122,15 +1121,15 @@ textarea {
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #cbb9a4;
+  color: #9eaea2;
   font-family: var(--font-mono), ui-monospace, monospace;
 }
 
 .call-notes {
   margin: 10px 16px;
   background: #1c1612;
-  border-color: #3c3228;
-  color: #f6efe4;
+  border-color: #24312a;
+  color: #e8f0e8;
   min-height: 72px;
   height: 100%;
   resize: none;
@@ -1157,22 +1156,22 @@ textarea {
 
 .keypad button {
   min-height: 36px;
-  border: 1px solid #5a4a3c;
-  background: #3a3027;
-  color: #f6efe4;
+  border: 1px solid #3a4a40;
+  background: #1a2420;
+  color: #e8f0e8;
   border-radius: 8px;
 }
 
 .keypad p {
   grid-column: 1 / -1;
   font-size: 10px;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .call-history {
   padding: 0 16px 12px;
   font-size: 11px;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .call-history div {
@@ -1190,11 +1189,11 @@ textarea {
   background: var(--panel);
   color: var(--text);
   border: 1px solid var(--line);
-  border-radius: 12px;
+  border-radius: 4px;
   box-shadow: var(--lift-2);
-  padding: 12px;
+  padding: 10px;
   display: grid;
-  gap: 10px;
+  gap: 8px;
 }
 
 .wrap-sheet-bar {
@@ -1229,9 +1228,9 @@ textarea {
   height: 100%;
   min-height: 0;
   background: #1b1713;
-  color: #f6efe4;
-  border: 1px solid #3c3228;
-  border-radius: 12px;
+  color: #e8f0e8;
+  border: 1px solid #24312a;
+  border-radius: 4px;
   overflow: hidden;
 }
 
@@ -1241,15 +1240,15 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  background: #241c16;
-  border-bottom: 1px solid #3c3228;
+  background: #101612;
+  border-bottom: 1px solid #24312a;
 }
 
 .cad-status {
   border-bottom: 0;
-  border-top: 1px solid #3c3228;
+  border-top: 1px solid #24312a;
   font-size: 11px;
-  color: #cbb9a4;
+  color: #9eaea2;
   justify-content: space-between;
 }
 
@@ -1258,13 +1257,13 @@ textarea {
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .cad-project select {
   background: #1c1612;
-  border: 1px solid #5a4a3c;
-  color: #f6efe4;
+  border: 1px solid #3a4a40;
+  color: #e8f0e8;
   min-height: 32px;
   padding: 0 8px;
   border-radius: 6px;
@@ -1274,7 +1273,7 @@ textarea {
   flex: 1;
   min-width: 0;
   font-size: 12px;
-  color: #cbb9a4;
+  color: #9eaea2;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -1294,15 +1293,15 @@ textarea {
 .cad-tools {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #3c3228;
+  border-right: 1px solid #24312a;
   background: #201a15;
 }
 
 .cad-tools button {
   border: 0;
-  border-bottom: 1px solid #3c3228;
+  border-bottom: 1px solid #24312a;
   background: transparent;
-  color: #cbb9a4;
+  color: #9eaea2;
   font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.04em;
@@ -1312,7 +1311,7 @@ textarea {
 
 .cad-tools button.on {
   background: rgba(196, 92, 38, 0.22);
-  color: #fff8ee;
+  color: #f4faf4;
 }
 
 .cad-canvas {
@@ -1327,7 +1326,7 @@ textarea {
   bottom: 10px;
   z-index: 3;
   font-size: 11px;
-  color: #f6efe4;
+  color: #e8f0e8;
   background: rgba(28, 22, 18, 0.78);
   padding: 6px 8px;
   border-radius: 6px;
@@ -1336,7 +1335,7 @@ textarea {
 
 .cad-inspector {
   overflow: auto;
-  border-left: 1px solid #3c3228;
+  border-left: 1px solid #24312a;
   background: #221c17;
   padding: 10px;
   display: grid;
@@ -1353,14 +1352,14 @@ textarea {
   display: grid;
   gap: 4px;
   font-size: 11px;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .cad-insp-block .az-input,
 .cad-insp-block .az-select {
   background: #1c1612;
-  color: #f6efe4;
-  border-color: #5a4a3c;
+  color: #e8f0e8;
+  border-color: #3a4a40;
 }
 
 .cad-metrics {
@@ -1373,17 +1372,17 @@ textarea {
 .cad-metrics span {
   display: block;
   font-size: 10px;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .cad-metrics.faint b {
   font-weight: 500;
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .cad-note {
   font-size: 11px;
-  color: #cbb9a4;
+  color: #9eaea2;
   line-height: 1.4;
 }
 
@@ -1437,23 +1436,23 @@ textarea {
 }
 
 .roof-face {
-  fill: rgba(180, 74, 24, 0.28);
-  stroke: #e08a4f;
+  fill: rgba(31, 122, 76, 0.32);
+  stroke: #d4f25a;
   stroke-width: 2;
 }
 
 .roof-face.on {
-  fill: rgba(180, 74, 24, 0.42);
-  stroke: #fff3e4;
+  fill: rgba(212, 242, 90, 0.28);
+  stroke: #f4faf4;
 }
 
 .roof-vert {
-  fill: #fff8ee;
-  stroke: #b44a18;
+  fill: #f4faf4;
+  stroke: #1f7a4c;
 }
 
 .roof-vert.on {
-  fill: #b44a18;
+  fill: #1f7a4c;
 }
 
 .mod-cell {
@@ -1483,7 +1482,7 @@ textarea {
 
 .draft-line {
   fill: none;
-  stroke: #fff8ee;
+  stroke: #f4faf4;
   stroke-dasharray: 6 4;
 }
 
@@ -1493,7 +1492,7 @@ textarea {
 }
 
 .cad-label {
-  fill: #fff8ee;
+  fill: #f4faf4;
   font-size: 11px;
   font-family: var(--font-mono), ui-monospace, monospace;
   paint-order: stroke;
@@ -1512,10 +1511,10 @@ textarea {
   height: 100%;
   min-height: 0;
   background: #1b1713;
-  border: 1px solid #3c3228;
-  border-radius: 12px;
+  border: 1px solid #24312a;
+  border-radius: 4px;
   overflow: hidden;
-  color: #f6efe4;
+  color: #e8f0e8;
 }
 
 .map-top {
@@ -1523,15 +1522,15 @@ textarea {
   align-items: center;
   gap: 8px;
   padding: 8px;
-  background: #241c16;
-  border-bottom: 1px solid #3c3228;
+  background: #101612;
+  border-bottom: 1px solid #24312a;
 }
 
 .map-search {
   max-width: 240px;
   background: #1c1612;
-  color: #f6efe4;
-  border-color: #5a4a3c;
+  color: #e8f0e8;
+  border-color: #3a4a40;
 }
 
 .map-filters {
@@ -1540,9 +1539,9 @@ textarea {
 }
 
 .map-filters button {
-  border: 1px solid #5a4a3c;
+  border: 1px solid #3a4a40;
   background: transparent;
-  color: #cbb9a4;
+  color: #9eaea2;
   font-size: 12px;
   font-weight: 600;
   padding: 6px 8px;
@@ -1551,8 +1550,8 @@ textarea {
 
 .map-filters button.on {
   background: var(--gold-dim);
-  color: #fff8ee;
-  border-color: #c45c26;
+  color: #f4faf4;
+  border-color: #1f7a4c;
 }
 
 .map-body {
@@ -1580,21 +1579,21 @@ textarea {
 }
 
 .map-pin.ok circle { fill: #3d8a4d; }
-.map-pin.sit circle { fill: #c45c26; }
+.map-pin.sit circle { fill: #1f7a4c; }
 .map-pin.paper circle { fill: #4d6ad6; }
 .map-pin.dnc circle { fill: #b42318; }
 .map-pin.lost circle { fill: #7a7168; }
-.map-pin.on circle { stroke: #fff8ee; stroke-width: 3; }
+.map-pin.on circle { stroke: #f4faf4; stroke-width: 3; }
 
 .map-cluster circle {
-  fill: #241c16;
-  stroke: #c45c26;
+  fill: #101612;
+  stroke: #1f7a4c;
   stroke-width: 2;
   cursor: pointer;
 }
 
 .map-cluster text {
-  fill: #fff8ee;
+  fill: #f4faf4;
   font-size: 11px;
   font-family: var(--font-mono), ui-monospace, monospace;
 }
@@ -1602,14 +1601,14 @@ textarea {
 .map-side {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
-  border-left: 1px solid #3c3228;
+  border-left: 1px solid #24312a;
   background: #221c17;
   min-height: 0;
 }
 
 .map-card {
   padding: 14px;
-  border-bottom: 1px solid #3c3228;
+  border-bottom: 1px solid #24312a;
 }
 
 .map-card h2 {
@@ -1627,9 +1626,9 @@ textarea {
   text-align: left;
   padding: 8px 14px;
   border: 0;
-  border-bottom: 1px solid #3c3228;
+  border-bottom: 1px solid #24312a;
   background: transparent;
-  color: #f6efe4;
+  color: #e8f0e8;
   display: flex;
   justify-content: space-between;
   gap: 8px;
@@ -1637,7 +1636,7 @@ textarea {
 }
 
 .map-list-row span {
-  color: #cbb9a4;
+  color: #9eaea2;
 }
 
 .map-list-row.on {
@@ -1650,8 +1649,8 @@ textarea {
   gap: 8px;
   padding: 8px 12px;
   font-size: 10px;
-  color: #cbb9a4;
-  border-top: 1px solid #3c3228;
+  color: #9eaea2;
+  border-top: 1px solid #24312a;
 }
 
 .map-legend i {
@@ -1664,7 +1663,7 @@ textarea {
 }
 
 .map-legend i.ok { background: #3d8a4d; }
-.map-legend i.sit { background: #c45c26; }
+.map-legend i.sit { background: #1f7a4c; }
 .map-legend i.paper { background: #4d6ad6; }
 .map-legend i.dnc { background: #b42318; }
 

@@ -26,7 +26,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "azimuth-workspace.json";
+    a.download = "ridge-workspace.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -72,9 +72,19 @@ export function SettingsView() {
           <section className="az-panel p-4 space-y-3">
             <h2 className="text-[13px] font-semibold">Data</h2>
             <p className="text-[12px] text-[var(--muted)] leading-relaxed">
-              Designs, proposals, and call wraps write to SQLite as well as this workspace. Starter records are labeled examples.
+              Designs, proposals, and call wraps write to SQLite. The original Conduit console shares this same workspace.
             </p>
             <div className="flex flex-wrap gap-2">
+              <a
+                className="az-btn"
+                href="/conduit-crm/index.html"
+                onClick={(event) => {
+                  event.preventDefault();
+                  window.location.assign("/conduit-crm/index.html");
+                }}
+              >
+                Open Conduit console
+              </a>
               <button type="button" className="az-btn" onClick={exportJson}>
                 Export JSON
               </button>
@@ -82,7 +92,7 @@ export function SettingsView() {
                 type="button"
                 className="az-btn danger"
                 onClick={() => {
-                  if (confirm("Restore Azimuth starter records? This replaces the current workspace.")) reset();
+                  if (confirm("Restore Ridge starter records? This replaces the current workspace.")) reset();
                 }}
               >
                 Restore starter records

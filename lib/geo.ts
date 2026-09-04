@@ -1,4 +1,4 @@
-const CITIES: Record<string, { lat: number; lng: number }> = {
+export const CITIES: Record<string, { lat: number; lng: number }> = {
   Bakersfield: { lat: 35.3733, lng: -119.0187 },
   Fresno: { lat: 36.7378, lng: -119.7871 },
   "San Diego": { lat: 32.7157, lng: -117.1611 },
