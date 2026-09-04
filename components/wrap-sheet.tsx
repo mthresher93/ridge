@@ -25,6 +25,10 @@ export function WrapSheet({
   const needsWhen = picked === "callback_scheduled" || picked === "appointment_set";
 
   useEffect(() => {
+    setPicked(defaultDisposition);
+  }, [defaultDisposition]);
+
+  useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
       const tag = (event.target as HTMLElement | null)?.tagName;
       if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;

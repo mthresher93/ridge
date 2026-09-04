@@ -81,9 +81,13 @@ export function FloorView() {
   const live = state === "connected" || state === "hold" || state === "muted";
   const visual: DialState = live && muted ? "muted" : state;
   const stamp = CALL_STATES[visual];
-  const history = (workspace.callLogs || []).filter((row) => row.leadId === active?.id).slice(0, 5);
+  const history = (workspace.callLogs || []).filter((row) => row.leadId === active?.id).slice(0, 4);
   const dialTarget = workspace.settings.dialTarget || 80;
   const targetPct = Math.min(100, Math.round((session.attempts / dialTarget) * 100));
+  const answerRate = session.attempts ? Math.round((session.answered / session.attempts) * 100) : 0;
+  const setRate = session.attempts ? Math.round((session.appointments / session.attempts) * 100) : 0;
+  const ringing = state === "dialing" || state === "ringing";
+  const stageTone = ringing ? "progress" : live ? (muted || state === "hold" ? "hold" : "live") : state === "wrap" ? "wrap" : state === "failed" ? "down" : "ready";
 
   useEffect(() => {
     if (active) setNotes(active.notes);
@@ -133,6 +137,7 @@ export function FloorView() {
     setBeat(0);
     setMuted(false);
     setPad("");
+    setShowPad(false);
   }
 
   function startCall() {
@@ -156,6 +161,7 @@ export function FloorView() {
     setWrapDefault("qualified_lead");
     setState("wrap");
     setMuted(false);
+    setShowPad(false);
   }
 
   function cancelRing() {
@@ -300,33 +306,42 @@ export function FloorView() {
 
   if (loading) return <div className="text-[var(--muted)]">Opening the dialer…</div>;
 
-  const answerRate = session.attempts ? Math.round((session.answered / session.attempts) * 100) : 0;
-  const setRate = session.attempts ? Math.round((session.appointments / session.attempts) * 100) : 0;
-
   return (
     <div className="dialer-desk">
-      <header className="dialer-bar">
-        <div className="dialer-stats">
-          <Stat k="Attempted" v={`${session.attempts}`} />
-          <Stat k="Target" v={`${session.attempts}/${dialTarget}`} />
-          <Stat k="Answered" v={`${session.answered}`} />
-          <Stat k="Answer" v={`${answerRate}%`} />
-          <Stat k="Talk" v={fmt(session.talkSec)} />
-          <Stat k="Sets" v={`${session.appointments}`} />
-          <Stat k="Set rate" v={`${setRate}%`} />
-          <Stat k="Queue" v={`${remaining}`} />
-        </div>
-        <div className="dialer-bar-actions">
-          <div className="dial-target-meter" title={`${targetPct}% of daily dial target`}>
-            <span style={{ width: `${targetPct}%` }} />
+      <header className="dialer-chrome">
+        <div className="dialer-session" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps} · Talk ${fmt(session.talkSec)}`}>
+          <SessionStat label="Dials" value={`${session.attempts}`} />
+          <SessionStat label="Answer" value={`${answerRate}%`} />
+          <SessionStat label="Sets" value={`${session.appointments}`} />
+          <SessionStat label="Set %" value={`${setRate}%`} />
+          <div className="dialer-pace">
+            <div className="dialer-pace-meta">
+              <span>Pace</span>
+              <b className="az-num">
+                {session.attempts}/{dialTarget}
+              </b>
+            </div>
+            <div className="dial-target-meter" title={`${targetPct}% of daily dial target`}>
+              <span style={{ width: `${targetPct}%` }} />
+            </div>
           </div>
+          <SessionStat label="Left" value={`${remaining}`} />
+        </div>
+        <div className="dialer-tools">
           <button type="button" className={`az-btn ${power ? "pri" : ""}`} onClick={() => setPower((v) => !v)}>
             {power ? "Power · on" : "Power dial"}
           </button>
           <AudioPopover />
-          <div className="script-mode">
+          <div className="script-mode" role="tablist" aria-label="Workspace mode">
             {(["collapsed", "split", "focus"] as const).map((item) => (
-              <button key={item} type="button" className={scriptMode === item ? "on" : ""} onClick={() => setScriptMode(item)}>
+              <button
+                key={item}
+                type="button"
+                role="tab"
+                aria-selected={scriptMode === item}
+                className={scriptMode === item ? "on" : ""}
+                onClick={() => setScriptMode(item)}
+              >
                 {item === "collapsed" ? "Call" : item === "split" ? "Split" : "Script"}
               </button>
             ))}
@@ -334,124 +349,155 @@ export function FloorView() {
         </div>
       </header>
 
-      <div className={`dialer-body ${scriptMode}`}>
-        <section className="dialer-queue az-panel">
-          <div className="dialer-queue-head">
-            <span>{power ? "Power" : "Queue"}</span>
+      <div className={`dialer-layout ${scriptMode}`}>
+        <aside className="dialer-rail az-panel">
+          <div className="dialer-rail-head">
+            <div>
+              <span>{power ? "Power queue" : "Queue"}</span>
+              <b className="az-num">{queue.length}</b>
+            </div>
             <button type="button" className={`az-chip ${callableOnly ? "gold" : ""}`} onClick={() => setCallableOnly((v) => !v)}>
-              {callableOnly ? "Callable" : "All"} · {queue.length}
+              {callableOnly ? "Callable" : "All"}
             </button>
           </div>
           <div className="scroll-y flex-1">
-            {queue.map((lead) => (
-              <button
-                key={lead.id}
-                type="button"
-                onClick={() => pick(lead.id)}
-                className={`dialer-q-row ${active?.id === lead.id ? "on" : ""}`}
-                title={lead.name}
-              >
-                {scriptMode === "focus" ? (
-                  <b>{lead.name.split(" ").map((part) => part[0]).join("")}</b>
-                ) : (
-                  <>
-                    <div className="flex items-center justify-between gap-2">
-                      <b>{lead.name}</b>
-                      <span className={`az-chip ${leadEligibility(lead).tone}`}>{leadEligibility(lead).label}</span>
-                    </div>
-                    <div className="meta">
-                      {lead.city} · {lead.attempts}×
-                    </div>
-                  </>
-                )}
-              </button>
-            ))}
-            {!queue.length ? <div className="p-3 text-[12px] text-[var(--muted)]">No callable leads in queue.</div> : null}
-          </div>
-        </section>
-
-        <section className={`dialer-well ${scriptMode === "focus" ? "compact" : ""}`}>
-            {active ? (
-              <>
-                <div className="call-head">
-                <div className="call-hud">
-                  <div className="min-w-0">
-                    <span className={`call-state ${stamp.tone}`}>{stamp.label}</span>
-                    <h2 className="call-name">{active.name}</h2>
-                    <div className="dial-phone">{phonePretty(active.phone)}{pad ? ` · ${pad}` : ""}</div>
-                    <div className="call-sub">
-                      {active.property} · {active.city}
-                      {power ? ` · ${remaining} remaining` : ""}
-                    </div>
-                  </div>
-                  <div className={`call-timer ${live || state === "dialing" || state === "ringing" ? "live" : ""}`}>
-                    <div className="az-num">{fmt(seconds)}</div>
-                    <div>{live ? "Talk" : state === "ringing" ? "Ring" : "Clock"}</div>
-                  </div>
-                </div>
-
-                {scriptMode !== "focus" ? (
-                  <div className="call-facts">
-                    <Fact k="Utility / bill" v={`${active.utility} · ${active.monthlyBill ? `$${active.monthlyBill}` : "—"}`} />
-                    <Fact k="Roof" v={design ? `${design.roofAge}y ${design.roofMaterial}` : "—"} />
-                    <Fact k="Array" v={estimate ? `${estimate.systemKw} kW · ${estimate.offset}% offset` : "Unsized"} />
-                    <Fact k="Next" v={active.nextAction || "—"} />
-                  </div>
-                ) : null}
-                </div>
-
-                {scriptMode === "collapsed" ? (
-                  <textarea className="az-area call-notes" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Live notes — saved at wrap-up" />
-                ) : (
-                  <textarea className="az-area call-notes slim" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="Notes" />
-                )}
-
-                <div className="call-foot">
-                <div className="call-controls">
-                  {state === "ready" || state === "failed" ? (
-                    <button type="button" className="az-btn pri" disabled={!canDial} onClick={startCall}>
-                      {canDial ? "Dial" : "Blocked"}
-                    </button>
-                  ) : null}
-                  {state === "dialing" || state === "ringing" ? (
-                    <button type="button" className="az-btn" onClick={cancelRing}>
-                      Cancel
-                    </button>
-                  ) : null}
-                  {live ? (
+            {queue.map((lead) => {
+              const tone = leadEligibility(lead).tone;
+              return (
+                <button
+                  key={lead.id}
+                  type="button"
+                  onClick={() => pick(lead.id)}
+                  className={`dialer-q-row ${active?.id === lead.id ? "on" : ""}`}
+                  title={`${lead.name} · ${lead.city}`}
+                >
+                  {scriptMode === "focus" ? (
+                    <b className="dialer-q-initials">{lead.name.split(" ").map((part) => part[0]).join("")}</b>
+                  ) : (
                     <>
-                      <button type="button" className="az-btn danger" onClick={hangup}>
-                        End call
-                      </button>
-                      <button type="button" className={`az-btn ${muted ? "pri" : ""}`} onClick={() => setMuted((v) => !v)}>
-                        {muted ? "Unmute" : "Mute"}
-                      </button>
-                      <button
-                        type="button"
-                        className={`az-btn ${state === "hold" ? "pri" : ""}`}
-                        onClick={() => setState(state === "hold" ? "connected" : "hold")}
-                      >
-                        {state === "hold" ? "Resume" : "Hold"}
-                      </button>
+                      <span className={`dialer-q-dot ${tone}`} />
+                      <span className="dialer-q-copy">
+                        <b>{lead.name}</b>
+                        <i>
+                          {lead.city || "—"} · {lead.attempts}×
+                        </i>
+                      </span>
                     </>
-                  ) : null}
-                  <button type="button" className="az-btn ghost" onClick={() => setShowPad((v) => !v)}>
-                    Keypad
-                  </button>
-                </div>
-                {showPad ? (
-                  <div className="keypad">
-                    {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((key) => (
-                      <button key={key} type="button" onClick={() => setPad((value) => value + key)}>
-                        {key}
-                      </button>
-                    ))}
-                    <p>Local keypad only — no carrier DTMF. Space dials · Esc ends.</p>
+                  )}
+                </button>
+              );
+            })}
+            {!queue.length ? <div className="dialer-empty">No callable leads.</div> : null}
+          </div>
+        </aside>
+
+        <section className={`dialer-well tone-${stageTone} ${scriptMode === "focus" ? "compact" : ""}`}>
+          {active ? (
+            <>
+              <div className="call-stage">
+                <div className="call-identity">
+                  <span className={`call-state ${stamp.tone}`}>{stamp.label}</span>
+                  <h2 className="call-name">{active.name}</h2>
+                  <div className="dial-phone">
+                    {phonePretty(active.phone)}
+                    {pad ? <span className="dial-pad-echo"> · {pad}</span> : null}
                   </div>
-                ) : null}
-                {!canDial ? <BlockNote lead={active} /> : null}
+                  <div className="call-sub">
+                    {active.property}
+                    {active.city ? ` · ${active.city}` : ""}
+                    {power ? ` · ${remaining} remaining` : ""}
+                  </div>
+                  {scriptMode !== "focus" ? (
+                    <div className="call-goal">
+                      <span>Next</span>
+                      <p>{active.nextAction || "Open the call and qualify bill + roof"}</p>
+                    </div>
+                  ) : null}
+                </div>
+
+                <div className={`call-action ${state === "wrap" ? "is-wrap" : ""}`}>
+                  <div className={`call-timer ${live || ringing ? "live" : ""}`}>
+                    <div className="az-num">{fmt(seconds)}</div>
+                    <div>
+                      {live ? "Talk" : state === "ringing" ? "Ring" : state === "dialing" ? "Dial" : state === "wrap" ? "Wrap" : "Clock"}
+                    </div>
+                  </div>
+
+                  {state !== "wrap" ? (
+                    <div className="call-controls">
+                      {state === "ready" || state === "failed" ? (
+                        <button type="button" className="dial-primary" disabled={!canDial} onClick={startCall}>
+                          {canDial ? "Dial" : "Blocked"}
+                        </button>
+                      ) : null}
+                      {ringing ? (
+                        <button type="button" className="dial-secondary" onClick={cancelRing}>
+                          Cancel
+                        </button>
+                      ) : null}
+                      {live ? (
+                        <button type="button" className="dial-primary end" onClick={hangup}>
+                          End call
+                        </button>
+                      ) : null}
+                      {live ? (
+                        <>
+                          <button type="button" className={`dial-secondary ${muted ? "on" : ""}`} onClick={() => setMuted((v) => !v)}>
+                            {muted ? "Unmute" : "Mute"}
+                          </button>
+                          <button
+                            type="button"
+                            className={`dial-secondary ${state === "hold" ? "on" : ""}`}
+                            onClick={() => setState(state === "hold" ? "connected" : "hold")}
+                          >
+                            {state === "hold" ? "Resume" : "Hold"}
+                          </button>
+                        </>
+                      ) : null}
+                      <button type="button" className={`dial-ghost ${showPad ? "on" : ""}`} onClick={() => setShowPad((v) => !v)}>
+                        Keypad
+                      </button>
+                    </div>
+                  ) : (
+                    <p className="call-wrap-hint">Disposition the call below</p>
+                  )}
+
+                  {state !== "wrap" && !canDial ? <BlockNote lead={active} /> : null}
+                  {state !== "wrap" && showPad ? (
+                    <div className="keypad">
+                      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((key) => (
+                        <button key={key} type="button" onClick={() => setPad((value) => value + key)}>
+                          {key}
+                        </button>
+                      ))}
+                      <p>Local keypad only — no carrier DTMF. Space dials · Esc ends · M mutes.</p>
+                    </div>
+                  ) : null}
+                </div>
+              </div>
+
+              {scriptMode !== "focus" ? (
+                <div className="call-chips">
+                  <Fact k="Utility" v={`${active.utility || "—"} · ${active.monthlyBill ? `$${active.monthlyBill}` : "no bill"}`} />
+                  <Fact k="Roof" v={design ? `${design.roofAge}y ${design.roofMaterial}` : "—"} />
+                  <Fact k="Array" v={estimate ? `${estimate.systemKw} kW · ${estimate.offset}%` : "Unsized"} />
+                  <Fact k="Consent" v={eligibility?.label || "—"} />
+                </div>
+              ) : null}
+
+              <div className="call-dock">
+                <label className="call-notes-label">
+                  Live notes
+                  <textarea
+                    className={`az-area call-notes ${scriptMode === "collapsed" ? "" : "slim"}`}
+                    value={notes}
+                    onChange={(event) => setNotes(event.target.value)}
+                    placeholder="Saved at wrap-up"
+                  />
+                </label>
                 {scriptMode === "collapsed" && history.length ? (
                   <div className="call-history">
+                    <span className="call-history-label">Recent</span>
                     {history.map((row) => (
                       <div key={row.id}>
                         <b>{row.outcome.replaceAll("_", " ")}</b>
@@ -460,12 +506,12 @@ export function FloorView() {
                     ))}
                   </div>
                 ) : null}
-                </div>
-              </>
-            ) : (
-              <div className="text-[var(--muted)] p-4">Queue is empty.</div>
-            )}
-          </section>
+              </div>
+            </>
+          ) : (
+            <div className="dialer-empty stage">Queue is empty.</div>
+          )}
+        </section>
 
         {scriptMode !== "collapsed" ? (
           <ScriptPanel lead={active} design={design} beat={beat} onBeat={setBeat} large mode={scriptMode} />
@@ -473,44 +519,47 @@ export function FloorView() {
       </div>
 
       {state === "wrap" && active ? (
-        <WrapSheet
-          name={active.name}
-          seconds={seconds}
-          notes={notes}
-          onNotes={setNotes}
-          defaultDisposition={wrapDefault}
-          onSave={applyWrap}
-          onSkip={() => {
-            setState("ready");
-            setSeconds(0);
-          }}
-        />
+        <>
+          <div className="wrap-backdrop" aria-hidden />
+          <WrapSheet
+            name={active.name}
+            seconds={seconds}
+            notes={notes}
+            onNotes={setNotes}
+            defaultDisposition={wrapDefault}
+            onSave={applyWrap}
+            onSkip={() => {
+              setState("ready");
+              setSeconds(0);
+            }}
+          />
+        </>
       ) : null}
     </div>
   );
 }
 
-function Stat({ k, v }: { k: string; v: string }) {
+function SessionStat({ label, value }: { label: string; value: string }) {
   return (
     <div className="dialer-stat">
-      <span>{k}</span>
-      <b className="az-num">{v}</b>
+      <span>{label}</span>
+      <b className="az-num">{value}</b>
     </div>
   );
 }
 
 function Fact({ k, v }: { k: string; v: string }) {
   return (
-    <div>
-      <div className="k">{k}</div>
-      <div className="truncate">{v}</div>
+    <div className="call-chip">
+      <span>{k}</span>
+      <b>{v}</b>
     </div>
   );
 }
 
 function BlockNote({ lead }: { lead: Lead }) {
   const reason = lead.dnc ? "Internal DNC. Do not dial." : lead.consent !== "verified" ? "Consent is not verified." : "Phone is not callable.";
-  return <p className="text-[11px] text-[var(--down)] px-4">{reason}</p>;
+  return <p className="call-block">{reason}</p>;
 }
 
 function fmt(seconds: number) {

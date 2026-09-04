@@ -99,7 +99,12 @@ export function AudioPopover() {
   useEffect(() => () => stopTest(), []);
 
   useEffect(() => {
-    if (!open) return;
+    if (!open) {
+      stopTest();
+      return;
+    }
+    void listDevices();
+    void startTest();
     const onDoc = (event: MouseEvent) => {
       if (!wrapRef.current?.contains(event.target as Node)) setOpen(false);
     };
