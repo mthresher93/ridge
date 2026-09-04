@@ -2047,7 +2047,7 @@ textarea {
 
 .cad-body {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 250px;
+  grid-template-columns: 52px minmax(0, 1fr) 228px;
   min-height: 0;
 }
 
@@ -2063,16 +2063,36 @@ textarea {
   border-bottom: 1px solid #24312a;
   background: transparent;
   color: #9eaea2;
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 10px 4px;
+  padding: 8px 3px 6px;
+  display: grid;
+  gap: 2px;
+  justify-items: center;
+  line-height: 1.15;
+}
+
+.cad-tools button kbd {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #6f8074;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
 .cad-tools button.on {
   background: rgba(212, 242, 90, 0.16);
   color: #f4faf4;
+}
+
+.cad-tools button.on kbd {
+  color: #c9d98a;
 }
 
 .cad-canvas {
@@ -2086,6 +2106,7 @@ textarea {
   left: 10px;
   bottom: 10px;
   z-index: 3;
+  max-width: min(520px, calc(100% - 20px));
   font-size: 11px;
   color: #e8f0e8;
   background: rgba(16, 22, 18, 0.82);
@@ -2098,20 +2119,20 @@ textarea {
   overflow: auto;
   border-left: 1px solid #24312a;
   background: #141c16;
-  padding: 10px;
+  padding: 8px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
 }
 
 .cad-insp-block {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cad-insp-block label {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   font-size: 11px;
   color: #9eaea2;
 }
@@ -2121,6 +2142,26 @@ textarea {
   background: #1a2420;
   color: #e8f0e8;
   border-color: #3a4a40;
+  min-height: 30px;
+  padding: 4px 7px;
+  font-size: 12px;
+}
+
+.cad-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.cad-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cad-sys-strip {
+  padding-bottom: 4px;
+  border-bottom: 1px solid #24312a;
 }
 
 .cad-metrics {
@@ -2128,6 +2169,15 @@ textarea {
   grid-template-columns: 1fr 1fr;
   gap: 8px;
   font-size: 12px;
+}
+
+.cad-metrics-tight {
+  gap: 6px 8px;
+}
+
+.cad-metrics-tight b {
+  font-size: 13px;
+  line-height: 1.2;
 }
 
 .cad-metrics span {
@@ -2139,6 +2189,47 @@ textarea {
 .cad-metrics.faint b {
   font-weight: 500;
   color: #9eaea2;
+}
+
+.cad-prop-fold {
+  border-top: 1px solid #24312a;
+  padding-top: 6px;
+}
+
+.cad-prop-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: #c9d6c9;
+  padding: 4px 0 8px;
+}
+
+.cad-prop-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cad-prop-fold > summary span {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #9eaea2;
+  font-size: 11px;
+}
+
+.cad-prop-fold[open] > summary {
+  color: #f4faf4;
+}
+
+.cad-top-actions .az-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .cad-note {
@@ -2448,16 +2539,46 @@ textarea {
 .site-svg {
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .site-svg.tool-pan {
   pointer-events: none;
 }
 
+.site-svg.tool-select {
+  cursor: default;
+}
+
+.site-svg.tool-draw,
+.site-svg.tool-vertex,
+.site-svg.tool-measure {
+  cursor: crosshair;
+}
+
+.site-svg.tool-panel {
+  cursor: copy;
+}
+
+.site-svg.tool-gear,
+.site-svg.tool-tree {
+  cursor: cell;
+}
+
+.site-svg.is-drag {
+  cursor: grabbing;
+}
+
 .roof-face {
   fill: rgba(31, 122, 76, 0.32);
   stroke: #d4f25a;
   stroke-width: 2;
+  transition: fill 80ms ease;
+}
+
+.roof-face.hov {
+  fill: rgba(31, 122, 76, 0.46);
+  stroke: #e8f59a;
 }
 
 .roof-face.on {
@@ -2485,13 +2606,26 @@ textarea {
   pointer-events: none;
 }
 
+.roof-edge-hov {
+  stroke: rgba(212, 242, 90, 0.7);
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+
 .roof-vert {
   fill: #f4faf4;
   stroke: #1f7a4c;
+  stroke-width: 1.5;
+}
+
+.roof-vert.hov {
+  fill: #d4f25a;
+  stroke: #f4faf4;
 }
 
 .roof-vert.on {
   fill: #1f7a4c;
+  stroke: #d4f25a;
 }
 
 .mod-cell {
@@ -2500,9 +2634,16 @@ textarea {
   stroke-width: 1;
 }
 
+.mod-cell.hov {
+  stroke: #d4f25a;
+  stroke-width: 1.5;
+  fill: rgba(40, 100, 72, 0.9);
+}
+
 .mod-cell.on {
   stroke: #fff;
   stroke-width: 2;
+  fill: rgba(48, 118, 84, 0.92);
 }
 
 .cad-check {
@@ -2519,11 +2660,6 @@ textarea {
   min-height: 0;
 }
 
-.cad-tools button {
-  padding: 9px 3px;
-  font-size: 9px;
-}
-
 .obs-box {
   fill: rgba(40, 40, 40, 0.7);
   stroke: #eee;
@@ -2532,6 +2668,11 @@ textarea {
 .obs-tree {
   fill: rgba(47, 107, 60, 0.35);
   stroke: #7dba86;
+}
+
+.obs-box.hov,
+.obs-tree.hov {
+  stroke: #d4f25a;
 }
 
 .obs-box.on,
@@ -2543,11 +2684,21 @@ textarea {
   fill: none;
   stroke: #f4faf4;
   stroke-dasharray: 6 4;
+  stroke-width: 1.5;
+  pointer-events: none;
 }
 
 .measure-line {
   stroke: #7db7ff;
   stroke-width: 2;
+  pointer-events: none;
+}
+
+.snap-mark {
+  fill: none;
+  stroke: #7db7ff;
+  stroke-width: 1.5;
+  pointer-events: none;
 }
 
 .cad-label {
@@ -2557,10 +2708,11 @@ textarea {
   paint-order: stroke;
   stroke: rgba(20, 14, 10, 0.7);
   stroke-width: 3px;
+  pointer-events: none;
 }
 
 .cad-label.dim {
-  fill: #f0d2b4;
+  fill: #d8c4a8;
   font-size: 10px;
 }
 

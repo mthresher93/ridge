@@ -10,8 +10,11 @@ import {
   insetTowardCentroid,
   moduleCorners,
   moduleFootprint,
+  orthoFrom,
   polygonArea,
   rotatePoints,
+  snapPoint,
+  vertexAnchors,
 } from "@/lib/site";
 import { uid } from "@/lib/format";
 import type { Obstruction, ObstructionKind, PlacedModule, Point, RoofDesign, RoofFace } from "@/lib/types";
@@ -22,14 +25,22 @@ export type CadSel =
   | { kind: "face"; id: string }
   | { kind: "vertex"; id: string; index: number }
   | { kind: "edge"; id: string; index: number }
-  | { kind: "module"; id: string }
+  | { kind: "module"; id: string; ids?: string[] }
   | { kind: "obstruction"; id: string }
   | null;
 
 type DragState =
   | { kind: "vertex"; id: string; index: number }
-  | { kind: "module"; id: string; origin: Point; start: Point }
+  | { kind: "module"; ids: string[]; origins: Record<string, Point>; start: Point }
   | { kind: "obstruction"; id: string; origin: Point; start: Point }
+  | null;
+
+type HoverState =
+  | { kind: "face"; id: string }
+  | { kind: "vertex"; id: string; index: number }
+  | { kind: "edge"; id: string; index: number }
+  | { kind: "module"; id: string }
+  | { kind: "obstruction"; id: string }
   | null;
 
 export function SiteCanvas({
@@ -39,6 +50,7 @@ export function SiteCanvas({
   sel,
   onSel,
   onChange,
+  onGestureStart,
   draft,
   onDraft,
 }: {
@@ -48,14 +60,19 @@ export function SiteCanvas({
   sel: CadSel;
   onSel: (next: CadSel) => void;
   onChange: (next: RoofDesign) => void;
+  onGestureStart?: () => void;
   draft: Point[];
   onDraft: (next: Point[]) => void;
 }) {
   const origin = { lat: design.lat || 0, lng: design.lng || 0 };
   const fpp = feetPerPixel(origin.lat, view.zoom);
-  const hitFt = Math.max(4, 10 * fpp);
+  const hitFt = Math.max(3.5, 9 * fpp);
+  const snapFt = Math.max(2.5, 7 * fpp);
   const [drag, setDrag] = useState<DragState>(null);
   const [measure, setMeasure] = useState<Point[]>([]);
+  const [hover, setHover] = useState<HoverState>(null);
+  const [snapGuide, setSnapGuide] = useState<Point | null>(null);
+  const [draftCursor, setDraftCursor] = useState<Point | null>(null);
 
   const faces = design.faces || [];
   const modules = design.modules || [];
@@ -71,6 +88,22 @@ export function SiteCanvas({
   function toScreen(point: Point) {
     const geo = siteToLngLat(origin, point.x, point.y);
     return projectToScreen(geo.lng, geo.lat, view);
+  }
+
+  function snapSite(site: Point, opts?: { exclude?: { id: string; index: number }; from?: Point; shift?: boolean }) {
+    let next = site;
+    if (opts?.shift && opts.from) next = orthoFrom(opts.from, next);
+    const anchors = vertexAnchors(faces, opts?.exclude);
+    if (draft.length) anchors.push(...draft);
+    return snapPoint(next, anchors, snapFt);
+  }
+
+  function refine(site: Point, opts?: { exclude?: { id: string; index: number }; from?: Point; shift?: boolean }) {
+    const beforeOrtho = opts?.shift && opts.from ? orthoFrom(opts.from, site) : site;
+    const snapped = snapSite(site, opts);
+    const moved = Math.hypot(snapped.x - beforeOrtho.x, snapped.y - beforeOrtho.y) > 0.05;
+    setSnapGuide(moved ? snapped : null);
+    return snapped;
   }
 
   function hitFace(point: Point) {
@@ -89,24 +122,37 @@ export function SiteCanvas({
     return null;
   }
 
+  function selectedModuleIds() {
+    if (sel?.kind !== "module") return [] as string[];
+    return sel.ids?.length ? sel.ids : [sel.id];
+  }
+
   function onPointerDown(event: React.PointerEvent<SVGSVGElement>) {
     if (tool === "pan") return;
     event.stopPropagation();
     const svg = event.currentTarget;
-    const site = toSite(event.clientX, event.clientY, svg);
+    svg.setPointerCapture?.(event.pointerId);
+    const raw = toSite(event.clientX, event.clientY, svg);
+    const shift = event.shiftKey;
 
     if (tool === "draw") {
+      onGestureStart?.();
+      const from = draft[draft.length - 1];
+      const site = refine(raw, { from, shift });
       onDraft([...draft, site]);
       onSel(null);
       return;
     }
     if (tool === "measure") {
+      const site = refine(raw);
       setMeasure((prev) => [...prev, site].slice(-2));
       return;
     }
     if (tool === "panel") {
+      const site = refine(raw);
       const face = hitFace(site);
       if (!face || face.eligible === false) return;
+      onGestureStart?.();
       const { w, h } = moduleFootprint(design, true);
       const mod: PlacedModule = {
         id: uid("mod"),
@@ -121,6 +167,8 @@ export function SiteCanvas({
       return;
     }
     if (tool === "gear" || tool === "tree") {
+      const site = refine(raw);
+      onGestureStart?.();
       const kind: ObstructionKind = tool === "tree" ? "tree" : "vent";
       const item: Obstruction = {
         id: uid("obs"),
@@ -136,58 +184,146 @@ export function SiteCanvas({
       return;
     }
 
-    const vertexHit = nearestVertex(faces, site, hitFt);
+    const vertexHit = nearestVertex(faces, raw, hitFt);
     if (vertexHit && (tool === "vertex" || tool === "select")) {
+      onGestureStart?.();
       onSel({ kind: "vertex", id: vertexHit.id, index: vertexHit.index });
       setDrag({ kind: "vertex", id: vertexHit.id, index: vertexHit.index });
       return;
     }
-    const edgeHit = nearestEdge(faces, site, hitFt);
+    const edgeHit = nearestEdge(faces, raw, hitFt);
     if (edgeHit && tool === "select") {
       onSel({ kind: "edge", id: edgeHit.id, index: edgeHit.index });
       return;
     }
-    const modHit = hitModule(site);
+    const modHit = hitModule(raw);
     if (modHit && tool === "select") {
-      onSel({ kind: "module", id: modHit.id });
-      setDrag({ kind: "module", id: modHit.id, origin: { x: modHit.x, y: modHit.y }, start: site });
+      const prev = selectedModuleIds();
+      const ids = shift
+        ? prev.includes(modHit.id)
+          ? prev.filter((id) => id !== modHit.id)
+          : [...prev, modHit.id]
+        : [modHit.id];
+      if (!ids.length) {
+        onSel(null);
+        return;
+      }
+      onGestureStart?.();
+      onSel({ kind: "module", id: ids[ids.length - 1], ids: ids.length > 1 ? ids : undefined });
+      const origins: Record<string, Point> = {};
+      for (const id of ids) {
+        const row = modules.find((m) => m.id === id);
+        if (row) origins[id] = { x: row.x, y: row.y };
+      }
+      setDrag({ kind: "module", ids, origins, start: raw });
       return;
     }
-    const gearHit = gear.find((item) => Math.abs(item.x - site.x) <= item.widthFt / 2 && Math.abs(item.y - site.y) <= item.lengthFt / 2);
+    const gearHit = gear.find((item) => Math.abs(item.x - raw.x) <= item.widthFt / 2 && Math.abs(item.y - raw.y) <= item.lengthFt / 2);
     if (gearHit && tool === "select") {
+      onGestureStart?.();
       onSel({ kind: "obstruction", id: gearHit.id });
-      setDrag({ kind: "obstruction", id: gearHit.id, origin: { x: gearHit.x, y: gearHit.y }, start: site });
+      setDrag({ kind: "obstruction", id: gearHit.id, origin: { x: gearHit.x, y: gearHit.y }, start: raw });
       return;
     }
-    const face = hitFace(site);
+    const face = hitFace(raw);
     onSel(face ? { kind: "face", id: face.id } : null);
   }
 
   function onPointerMove(event: React.PointerEvent<SVGSVGElement>) {
-    if (!drag) return;
-    event.stopPropagation();
     const site = toSite(event.clientX, event.clientY, event.currentTarget);
+
+    if (!drag) {
+      if (tool === "pan") {
+        setHover(null);
+        setDraftCursor(null);
+        return;
+      }
+      if (tool === "draw") {
+        const from = draft[draft.length - 1];
+        setDraftCursor(snapSite(site, { from, shift: event.shiftKey }));
+      } else {
+        setDraftCursor(null);
+      }
+      const vertexHit = nearestVertex(faces, site, hitFt);
+      if (vertexHit && (tool === "vertex" || tool === "select")) {
+        setHover({ kind: "vertex", id: vertexHit.id, index: vertexHit.index });
+        setSnapGuide(null);
+        return;
+      }
+      const edgeHit = nearestEdge(faces, site, hitFt);
+      if (edgeHit && tool === "select") {
+        setHover({ kind: "edge", id: edgeHit.id, index: edgeHit.index });
+        setSnapGuide(null);
+        return;
+      }
+      const modHit = hitModule(site);
+      if (modHit && (tool === "select" || tool === "panel")) {
+        setHover({ kind: "module", id: modHit.id });
+        setSnapGuide(null);
+        return;
+      }
+      const gearHit = gear.find((item) => Math.abs(item.x - site.x) <= item.widthFt / 2 && Math.abs(item.y - site.y) <= item.lengthFt / 2);
+      if (gearHit && tool === "select") {
+        setHover({ kind: "obstruction", id: gearHit.id });
+        setSnapGuide(null);
+        return;
+      }
+      const face = hitFace(site);
+      setHover(face ? { kind: "face", id: face.id } : null);
+      if (tool === "measure" || tool === "panel") {
+        refine(site);
+      } else if (tool !== "draw") {
+        setSnapGuide(null);
+      } else {
+        const from = draft[draft.length - 1];
+        const snapped = snapSite(site, { from, shift: event.shiftKey });
+        const moved = Math.hypot(snapped.x - site.x, snapped.y - site.y) > 0.05;
+        setSnapGuide(moved ? snapped : null);
+      }
+      return;
+    }
+
+    event.stopPropagation();
     if (drag.kind === "vertex") {
+      const face = faces.find((f) => f.id === drag.id);
+      const prevPt = face?.points[(drag.index - 1 + (face?.points.length || 1)) % (face?.points.length || 1)];
+      const sitePt = refine(site, {
+        exclude: { id: drag.id, index: drag.index },
+        from: prevPt,
+        shift: event.shiftKey,
+      });
       onChange({
         ...design,
-        faces: faces.map((face) =>
-          face.id === drag.id ? { ...face, points: face.points.map((pt, i) => (i === drag.index ? site : pt)) } : face,
+        faces: faces.map((row) =>
+          row.id === drag.id ? { ...row, points: row.points.map((pt, i) => (i === drag.index ? sitePt : pt)) } : row,
         ),
       });
       return;
     }
     if (drag.kind === "module") {
-      const dx = site.x - drag.start.x;
-      const dy = site.y - drag.start.y;
+      let dx = site.x - drag.start.x;
+      let dy = site.y - drag.start.y;
+      if (event.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
       onChange({
         ...design,
-        modules: modules.map((mod) => (mod.id === drag.id ? { ...mod, x: drag.origin.x + dx, y: drag.origin.y + dy } : mod)),
+        modules: modules.map((mod) => {
+          const originPt = drag.origins[mod.id];
+          if (!originPt) return mod;
+          return { ...mod, x: originPt.x + dx, y: originPt.y + dy };
+        }),
       });
       return;
     }
     if (drag.kind === "obstruction") {
-      const dx = site.x - drag.start.x;
-      const dy = site.y - drag.start.y;
+      let dx = site.x - drag.start.x;
+      let dy = site.y - drag.start.y;
+      if (event.shiftKey) {
+        if (Math.abs(dx) >= Math.abs(dy)) dy = 0;
+        else dx = 0;
+      }
       onChange({
         ...design,
         obstructions: gear.map((item) => (item.id === drag.id ? { ...item, x: drag.origin.x + dx, y: drag.origin.y + dy } : item)),
@@ -195,8 +331,14 @@ export function SiteCanvas({
     }
   }
 
+  function endDrag() {
+    setDrag(null);
+    setSnapGuide(null);
+  }
+
   function onDoubleClick() {
     if (tool === "draw" && draft.length >= 3) {
+      onGestureStart?.();
       const face: RoofFace = {
         id: uid("face"),
         points: draft,
@@ -216,75 +358,97 @@ export function SiteCanvas({
     measure.length === 2 ? Math.hypot(measure[1].x - measure[0].x, measure[1].y - measure[0].y) : 0;
 
   const selectedFace = sel?.kind === "face" || sel?.kind === "vertex" || sel?.kind === "edge" ? faces.find((f) => f.id === sel.id) : null;
+  const moduleIds = selectedModuleIds();
+  const draftPreview = tool === "draw" && draft.length && draftCursor ? draftCursor : null;
 
   return (
     <svg
-      className={`site-svg tool-${tool}`}
+      className={`site-svg tool-${tool}${drag ? " is-drag" : ""}`}
       onPointerDown={onPointerDown}
       onPointerMove={onPointerMove}
-      onPointerUp={() => setDrag(null)}
+      onPointerUp={endDrag}
+      onPointerLeave={() => {
+        setHover(null);
+        setSnapGuide(null);
+        setDraftCursor(null);
+      }}
       onDoubleClick={onDoubleClick}
     >
       {faces.map((face) => {
         const pts = face.points.map(toScreen);
         const poly = pts.map((p) => `${p.x},${p.y}`).join(" ");
         const active = selectedFace?.id === face.id;
+        const hovered = hover?.kind === "face" && hover.id === face.id && !active;
         const lengths = edgeLengths(face.points);
         const inset = active ? insetTowardCentroid(face.points, setback).map(toScreen) : [];
         return (
           <g key={face.id}>
             <polygon
               points={poly}
-              className={`roof-face ${active ? "on" : ""} ${face.eligible === false ? "blocked" : ""}`}
+              className={`roof-face ${active ? "on" : ""} ${hovered ? "hov" : ""} ${face.eligible === false ? "blocked" : ""}`}
             />
             {active && inset.length >= 3 ? (
               <polygon points={inset.map((p) => `${p.x},${p.y}`).join(" ")} className="roof-setback" />
             ) : null}
-            {active
-              ? face.points.map((a, i) => {
-                  const b = face.points[(i + 1) % face.points.length];
-                  const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
-                  const kind = classifyEdge(face.points, i, face.azimuthDeg);
-                  const edgeOn = sel?.kind === "edge" && sel.id === face.id && sel.index === i;
-                  return (
-                    <g key={`${face.id}-e${i}`}>
-                      {edgeOn ? (
-                        <line
-                          x1={toScreen(a).x}
-                          y1={toScreen(a).y}
-                          x2={toScreen(b).x}
-                          y2={toScreen(b).y}
-                          className="roof-edge-on"
-                        />
-                      ) : null}
-                      <text x={mid.x} y={mid.y} className="cad-label">
-                        {kind} {formatFeet(lengths[i])}
-                      </text>
-                    </g>
-                  );
-                })
-              : null}
+            {face.points.map((a, i) => {
+              const b = face.points[(i + 1) % face.points.length];
+              const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+              const kind = classifyEdge(face.points, i, face.azimuthDeg);
+              const edgeOn = sel?.kind === "edge" && sel.id === face.id && sel.index === i;
+              const edgeHov = hover?.kind === "edge" && hover.id === face.id && hover.index === i;
+              const showLabel = active || edgeOn || edgeHov;
+              return (
+                <g key={`${face.id}-e${i}`}>
+                  {edgeOn || edgeHov ? (
+                    <line
+                      x1={toScreen(a).x}
+                      y1={toScreen(a).y}
+                      x2={toScreen(b).x}
+                      y2={toScreen(b).y}
+                      className={edgeOn ? "roof-edge-on" : "roof-edge-hov"}
+                    />
+                  ) : null}
+                  {showLabel ? (
+                    <text x={mid.x} y={mid.y} className={`cad-label ${edgeOn ? "" : "dim"}`}>
+                      {kind} {formatFeet(lengths[i])}
+                    </text>
+                  ) : null}
+                </g>
+              );
+            })}
             {face.points.map((pt, i) => {
               const p = toScreen(pt);
               const on = sel?.kind === "vertex" && sel.id === face.id && sel.index === i;
-              return <circle key={`${face.id}-v${i}`} cx={p.x} cy={p.y} r={on ? 7 : 5} className={`roof-vert ${on ? "on" : ""}`} />;
+              const hov = hover?.kind === "vertex" && hover.id === face.id && hover.index === i;
+              return (
+                <circle
+                  key={`${face.id}-v${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={on ? 7 : hov ? 6 : active ? 5 : 4}
+                  className={`roof-vert ${on ? "on" : ""} ${hov ? "hov" : ""}`}
+                />
+              );
             })}
-            <text x={pts[0]?.x || 0} y={(pts[0]?.y || 0) - 8} className="cad-label dim">
-              {Math.round(polygonArea(face.points))} ft² · {face.pitchDeg}° · {face.azimuthDeg}°
-              {face.eligible === false ? " · blocked" : ""}
-            </text>
+            {(active || hovered) && pts[0] ? (
+              <text x={pts[0].x} y={pts[0].y - 10} className="cad-label dim">
+                {Math.round(polygonArea(face.points))} ft² · {face.pitchDeg}° · {face.azimuthDeg}°
+                {face.eligible === false ? " · blocked" : ""}
+              </text>
+            ) : null}
           </g>
         );
       })}
 
       {modules.map((mod) => {
         const corners = moduleCorners(mod, design).map(toScreen);
-        const on = sel?.kind === "module" && sel.id === mod.id;
+        const on = moduleIds.includes(mod.id);
+        const hov = hover?.kind === "module" && hover.id === mod.id && !on;
         return (
           <polygon
             key={mod.id}
             points={corners.map((p) => `${p.x},${p.y}`).join(" ")}
-            className={`mod-cell ${on ? "on" : ""}`}
+            className={`mod-cell ${on ? "on" : ""} ${hov ? "hov" : ""}`}
           />
         );
       })}
@@ -293,6 +457,7 @@ export function SiteCanvas({
         const a = toScreen({ x: item.x - item.widthFt / 2, y: item.y - item.lengthFt / 2 });
         const b = toScreen({ x: item.x + item.widthFt / 2, y: item.y + item.lengthFt / 2 });
         const on = sel?.kind === "obstruction" && sel.id === item.id;
+        const hov = hover?.kind === "obstruction" && hover.id === item.id && !on;
         if (item.kind === "tree") {
           const c = toScreen({ x: item.x, y: item.y });
           const rim = toScreen({ x: item.x + item.widthFt / 2, y: item.y });
@@ -302,7 +467,7 @@ export function SiteCanvas({
               cx={c.x}
               cy={c.y}
               r={Math.max(6, Math.abs(rim.x - c.x))}
-              className={`obs-tree ${on ? "on" : ""}`}
+              className={`obs-tree ${on ? "on" : ""} ${hov ? "hov" : ""}`}
             />
           );
         }
@@ -313,21 +478,42 @@ export function SiteCanvas({
             y={Math.min(a.y, b.y)}
             width={Math.abs(b.x - a.x)}
             height={Math.abs(b.y - a.y)}
-            className={`obs-box ${on ? "on" : ""}`}
+            className={`obs-box ${on ? "on" : ""} ${hov ? "hov" : ""}`}
           />
         );
       })}
 
       {draft.length ? (
-        <polyline
-          points={draft
-            .map((pt) => {
-              const p = toScreen(pt);
-              return `${p.x},${p.y}`;
-            })
-            .join(" ")}
-          className="draft-line"
-        />
+        <>
+          <polyline
+            points={[...draft, ...(draftPreview ? [draftPreview] : [])]
+              .map((pt) => {
+                const p = toScreen(pt);
+                return `${p.x},${p.y}`;
+              })
+              .join(" ")}
+            className="draft-line"
+          />
+          {draft.map((pt, i) => {
+            const p = toScreen(pt);
+            return <circle key={`d${i}`} cx={p.x} cy={p.y} r={4} className="roof-vert on" />;
+          })}
+          {draft.length >= 2
+            ? draft.slice(0, -1).map((a, i) => {
+                const b = draft[i + 1];
+                const mid = toScreen({ x: (a.x + b.x) / 2, y: (a.y + b.y) / 2 });
+                return (
+                  <text key={`dl${i}`} x={mid.x} y={mid.y} className="cad-label dim">
+                    {formatFeet(Math.hypot(b.x - a.x, b.y - a.y))}
+                  </text>
+                );
+              })
+            : null}
+        </>
+      ) : null}
+
+      {snapGuide ? (
+        <circle cx={toScreen(snapGuide).x} cy={toScreen(snapGuide).y} r={8} className="snap-mark" />
       ) : null}
 
       {measure.length === 2 ? (
@@ -343,6 +529,9 @@ export function SiteCanvas({
             {formatFeet(measureLen)}
           </text>
         </>
+      ) : null}
+      {measure.length === 1 ? (
+        <circle cx={toScreen(measure[0]).x} cy={toScreen(measure[0]).y} r={4} className="roof-vert on" />
       ) : null}
     </svg>
   );
