@@ -5,7 +5,7 @@ import { PeopleView } from "@/components/people-view";
 
 export default function Page() {
   return (
-    <Suspense fallback={<div className="text-[var(--muted)]">Loading people…</div>}>
+    <Suspense fallback={<div className="text-[var(--muted)]">Loading contacts…</div>}>
       <PeopleView />
     </Suspense>
   );

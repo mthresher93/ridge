@@ -108,7 +108,7 @@ export function TodayView() {
         </div>
         <div className="scroll-y flex-1">
           {queue.length === 0 ? (
-            <div className="px-3 py-8 text-[12px] text-[var(--muted)] text-center">Queue is clear. Open Dialer for the next callable lead.</div>
+            <div className="px-3 py-8 text-[12px] text-[var(--muted)] text-center">Queue is clear. Open Dialer for the next callable contact.</div>
           ) : null}
           {queue.map((item) => {
             const person = workspace.leads.find((row) => row.id === item.leadId);

@@ -69,15 +69,15 @@ export function PeopleView() {
     setSelectedLeadId(id);
   }
 
-  if (loading) return <div className="text-[var(--muted)]">Loading people…</div>;
+  if (loading) return <div className="text-[var(--muted)]">Loading contacts…</div>;
 
   return (
     <PageDesk>
     <div className="az-fill" style={{ gridTemplateRows: "auto auto minmax(0,1fr)" }}>
       <div className="flex items-center justify-between gap-3">
-        <div className="az-title">People</div>
+        <div className="az-title">Contacts</div>
         <button className="az-btn pri" onClick={addLead}>
-          Add lead
+          Add contact
         </button>
       </div>
 
@@ -101,7 +101,7 @@ export function PeopleView() {
         <table className="az-table min-w-[980px]">
           <thead>
             <tr>
-              <th>Person</th>
+              <th>Contact</th>
               <th>Phone</th>
               <th>Stage</th>
               <th>Score</th>
@@ -115,9 +115,9 @@ export function PeopleView() {
             {leads.length === 0 ? (
               <tr className="cursor-default">
                 <td colSpan={8} className="py-10 text-center text-[var(--muted)]">
-                  No people match.{" "}
+                  No contacts match.{" "}
                   <button type="button" className="text-[var(--gold-2)] underline" onClick={addLead}>
-                    Add a lead
+                    Add a contact
                   </button>
                 </td>
               </tr>

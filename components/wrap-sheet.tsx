@@ -58,10 +58,10 @@ export function WrapSheet({
   }, [picked, when, onSave, onSkip]);
 
   return (
-    <div className="wrap-sheet" role="dialog" aria-label="Post-call wrap-up">
+    <div className="wrap-sheet" role="dialog" aria-label="Call disposition">
       <div className="wrap-sheet-bar">
         <div>
-          <div className="az-kicker">Wrap-up</div>
+          <div className="az-kicker">Disposition</div>
           <div className="text-[15px] font-semibold text-[#e8f0e8]">
             {name} · {fmt(seconds)}
           </div>
@@ -93,7 +93,7 @@ export function WrapSheet({
       <textarea className="az-area" rows={3} value={notes} onChange={(event) => onNotes(event.target.value)} placeholder="Call notes" />
       <div className="flex flex-wrap gap-2">
         <button type="button" className="az-btn pri" onClick={() => onSave(picked, when, true)}>
-          Save + next lead
+          Save + next
         </button>
         <button type="button" className="az-btn" onClick={() => onSave(picked, when, false)}>
           Save

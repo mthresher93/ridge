@@ -20,7 +20,7 @@ export const CALL_STATES = {
   connected: { label: "Connected", tone: "live" },
   hold: { label: "On hold", tone: "hold" },
   muted: { label: "Muted", tone: "hold" },
-  wrap: { label: "Wrap-up", tone: "wrap" },
+  wrap: { label: "Disposition", tone: "wrap" },
   failed: { label: "Failed", tone: "down" },
 } as const;
 

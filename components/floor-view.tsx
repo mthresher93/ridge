@@ -218,7 +218,7 @@ export function FloorView() {
                   leadId: active.id,
                   type: "promising" as const,
                   dueAt: due,
-                  reason: notes || "Callback from wrap-up",
+                  reason: notes || "Callback from disposition",
                   assignedUser: prev.settings.operator,
                   notes,
                   status: "open" as const,
@@ -310,10 +310,10 @@ export function FloorView() {
   return (
     <div className="dialer-desk">
       <header className="dialer-chrome">
-        <div className="dialer-session" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps} · Talk ${fmt(session.talkSec)} · Set ${setRate}%`}>
+        <div className="dialer-session" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps} · Talk ${fmt(session.talkSec)} · Appointments ${setRate}%`}>
           <SessionStat label="Dials" value={`${session.attempts}`} />
           <SessionStat label="Answer" value={`${answerRate}%`} />
-          <SessionStat label="Sets" value={`${session.appointments}`} />
+          <SessionStat label="Appointments" value={`${session.appointments}`} />
           <div className="dialer-pace">
             <div className="dialer-pace-meta">
               <span>Pace</span>
@@ -387,7 +387,7 @@ export function FloorView() {
                 </button>
               );
             })}
-            {!queue.length ? <div className="dialer-empty">No callable leads.</div> : null}
+            {!queue.length ? <div className="dialer-empty">Queue is empty.</div> : null}
           </div>
         </aside>
 
@@ -430,7 +430,7 @@ export function FloorView() {
                   <div className={`call-timer ${live || ringing ? "live" : ""}`}>
                     <div className="az-num">{fmt(seconds)}</div>
                     <div>
-                      {live ? "Talk" : state === "ringing" ? "Ring" : state === "dialing" ? "Dial" : state === "wrap" ? "Wrap" : "Clock"}
+                      {live ? "Talk" : state === "ringing" ? "Ring" : state === "dialing" ? "Dial" : state === "wrap" ? "Disposition" : "Clock"}
                     </div>
                   </div>
 
@@ -503,12 +503,12 @@ export function FloorView() {
                     className={`az-area call-notes ${scriptMode === "collapsed" && !live ? "" : "slim"}`}
                     value={notes}
                     onChange={(event) => setNotes(event.target.value)}
-                    placeholder="Saved at wrap-up"
+                    placeholder="Saved with disposition"
                   />
                 </label>
                 {scriptMode === "collapsed" && !live && !ringing && history.length ? (
                   <div className="call-history">
-                    <span className="call-history-label">Recent</span>
+                    <span className="call-history-label">Call History</span>
                     {history.map((row) => (
                       <div key={row.id}>
                         <b>{row.outcome.replaceAll("_", " ")}</b>

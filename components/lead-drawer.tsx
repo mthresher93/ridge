@@ -46,12 +46,12 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
       ),
       updatedAt: nowIso(),
     }));
-    log("lead", lead.id, "updated", "Lead saved");
+    log("lead", lead.id, "updated", "Contact saved");
     onClose();
   }
 
   function remove() {
-    if (!confirm("Delete this lead and linked deals, callbacks, appointments, designs, and call logs?")) return;
+    if (!confirm("Delete this contact and linked deals, follow-ups, appointments, designs, and call logs?")) return;
     setWorkspace((prev) => cascadeDeleteLead(prev, lead.id));
     log("lead", lead.id, "deleted", "Lead and linked records deleted");
     onClose();
@@ -62,7 +62,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
       <aside className="az-drawer" onClick={(event) => event.stopPropagation()}>
         <div className="flex items-start justify-between gap-3 mb-5">
           <div>
-            <div className="az-kicker">Lead</div>
+            <div className="az-kicker">Contact</div>
             <h2 className="text-[24px] tracking-tight mt-1">{lead.name}</h2>
             <div className="mt-2">
               <span className={`az-chip ${eligibility.tone}`}>{eligibility.label}</span>

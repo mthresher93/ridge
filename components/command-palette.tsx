@@ -42,7 +42,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         { id: `${lead.id}-dial`, title: `${lead.name} · Dialer`, detail: `${lead.property} · ${phonePretty(lead.phone)}`, run: () => open("/floor") },
         { id: `${lead.id}-design`, title: `${lead.name} · Design`, detail: lead.city || lead.status, run: () => open("/design") },
         { id: `${lead.id}-map`, title: `${lead.name} · Map`, detail: lead.status, run: () => open("/map") },
-        { id: `${lead.id}-record`, title: `${lead.name} · Record`, detail: lead.status, run: () => open(`/people?id=${lead.id}`) },
+        { id: `${lead.id}-record`, title: `${lead.name} · Contact`, detail: lead.status, run: () => open(`/people?id=${lead.id}`) },
       );
       if (people.length >= 16) break;
     }
