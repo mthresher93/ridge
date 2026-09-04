@@ -11,9 +11,10 @@ import {
   liveMetrics,
   parseFeetInches,
   polygonArea,
+  siteBounds,
   syncLegacy,
 } from "@/lib/site";
-import { coordsFor } from "@/lib/geo";
+import { coordsFor, siteToLngLat } from "@/lib/geo";
 import { TileMap, type MapKind } from "./tile-map";
 import { SiteCanvas, rotateSelectedFace, type CadSel, type CadTool } from "./site-canvas";
 import type { Obstruction, Point, RoofDesign, RoofFace } from "@/lib/types";
@@ -70,23 +71,66 @@ export function DesignView() {
   function saveProposal() {
     if (!lead || !estimate || !live) return;
     const notes = live.panelCount
-      ? `${live.systemKw} kW · ${live.panelCount} modules · ${live.roofSqFt} ft² roof`
-      : `${estimate.systemKw} kW estimated from bill · no modules placed`;
-    setWorkspace((prev) => ({
-      ...prev,
-      proposals: {
-        ...prev.proposals,
-        [lead.id]: {
-          leadId: lead.id,
-          status: "Internal review",
-          version: (prev.proposals?.[lead.id]?.version || 0) + 1,
-          notes,
-          updatedAt: nowIso(),
+      ? `${live.systemKw} kW · ${live.panelCount} modules · ${live.roofSqFt} ft² roof · ${estimate.offset}% offset · cash ${money(estimate.netPrice)}`
+      : `${estimate.systemKw} kW estimated from bill · no modules placed · cash ${money(estimate.netPrice)}`;
+    setWorkspace((prev) => {
+      const stamped = nowIso();
+      const next = {
+        ...prev,
+        proposals: {
+          ...prev.proposals,
+          [lead.id]: {
+            leadId: lead.id,
+            status: "Internal review",
+            version: (prev.proposals?.[lead.id]?.version || 0) + 1,
+            notes,
+            updatedAt: stamped,
+          },
         },
-      },
-      updatedAt: nowIso(),
-    }));
+        leads: prev.leads.map((item) =>
+          item.id === lead.id && !/Proposal|Contract|PTO|Won/.test(item.status)
+            ? { ...item, status: "Proposal", nextAction: "Present proposal", updatedAt: stamped }
+            : item,
+        ),
+        opportunities: prev.opportunities.map((item) => {
+          if (item.leadId !== lead.id || /Proposal|Contract|Won|Lost/.test(item.stage)) return item;
+          return {
+            ...item,
+            stage: "Proposal",
+            probability: 60,
+            value: item.value || estimate.netPrice,
+            stageEnteredAt: stamped,
+            updatedAt: stamped,
+            history: [{ from: item.stage, to: "Proposal", at: stamped, source: "design" }, ...item.history],
+          };
+        }),
+        updatedAt: stamped,
+      };
+      return next;
+    });
     log("lead", lead.id, "proposal", notes);
+  }
+
+  function fitSite() {
+    if (!design) return;
+    const origin = { lat: design.lat || center.lat, lng: design.lng || center.lng };
+    const bounds = siteBounds(design);
+    const pad = 1.35;
+    const spanFt = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 40) * pad;
+    const mid = siteToLngLat(origin, bounds.cx, bounds.cy);
+    let z = 19;
+    if (spanFt > 220) z = 18;
+    if (spanFt > 420) z = 17;
+    if (spanFt > 800) z = 16;
+    if (spanFt > 1500) z = 15;
+    setCenter({ lat: mid.lat, lng: mid.lng });
+    setZoom(z);
+  }
+
+  function setOriginFromView() {
+    if (!lead) return;
+    patch({ lat: center.lat, lng: center.lng });
+    log("lead", lead.id, "site_origin", `Site origin set to ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
   }
 
   useEffect(() => {
@@ -153,8 +197,11 @@ export function DesignView() {
           <button type="button" className="az-btn" onClick={() => setKind((k) => (k === "satellite" ? "streets" : "satellite"))}>
             {kind === "satellite" ? "Satellite" : "Streets"}
           </button>
-          <button type="button" className="az-btn" onClick={() => setZoom(19)}>
+          <button type="button" className="az-btn" onClick={fitSite}>
             Fit
+          </button>
+          <button type="button" className="az-btn" onClick={setOriginFromView}>
+            Set origin
           </button>
           <button type="button" className="az-btn pri" onClick={saveProposal}>
             Save proposal v{(workspace.proposals?.[lead.id]?.version || 0) + 1}
@@ -257,7 +304,7 @@ export function DesignView() {
             <div className="cad-insp-block">
               <div className="az-kicker">Module</div>
               <p className="cad-note">
-                {(design.panelWidthIn ?? 41)}" × {(design.panelHeightIn ?? 74)}" · {design.panelWatts}W
+                {(design.panelWidthIn ?? 41)}&quot; × {(design.panelHeightIn ?? 74)}&quot; · {design.panelWatts}W
               </p>
               <button type="button" className="az-btn" onClick={() => patch({ modules: (design.modules || []).filter((item) => item.id !== sel.id) })}>
                 Delete module
@@ -308,10 +355,44 @@ export function DesignView() {
 
           <div className="cad-insp-block">
             <div className="az-kicker">Proposal</div>
-            <div className="text-[12px] text-[var(--muted)]">
-              Cash {money(estimate.netPrice)} after ITC · loan {money(estimate.monthlyPayment)}/mo
+            <div className="cad-metrics">
+              <div>
+                <span>Cash after ITC</span>
+                <b className="az-num">{money(estimate.netPrice)}</b>
+              </div>
+              <div>
+                <span>Loan</span>
+                <b className="az-num">{money(estimate.monthlyPayment)}/mo</b>
+              </div>
+              <div>
+                <span>Offset</span>
+                <b className="az-num">{estimate.offset}%</b>
+              </div>
+              <div>
+                <span>Version</span>
+                <b className="az-num">v{workspace.proposals?.[lead.id]?.version || 0}</b>
+              </div>
             </div>
-            <p className="cad-note">{workspace.proposals?.[lead.id]?.notes || "No proposal saved yet."}</p>
+            <p className="cad-note">{workspace.proposals?.[lead.id]?.notes || "No proposal saved yet. Save bumps version and moves the deal to Proposal."}</p>
+            <button
+              type="button"
+              className="az-btn mt-2"
+              onClick={() => {
+                const text = [
+                  `Azimuth proposal · ${lead.name}`,
+                  lead.property,
+                  live.panelCount ? `${live.systemKw} kW · ${live.panelCount} modules` : `${estimate.systemKw} kW planning size`,
+                  `Offset ${estimate.offset}% · Year-1 ${estimate.annualProduction.toLocaleString()} kWh`,
+                  `Cash ${money(estimate.netPrice)} after ITC · Loan ${money(estimate.monthlyPayment)}/mo`,
+                  workspace.proposals?.[lead.id]?.notes || "",
+                ]
+                  .filter(Boolean)
+                  .join("\n");
+                void navigator.clipboard?.writeText(text);
+              }}
+            >
+              Copy summary
+            </button>
           </div>
         </aside>
       </div>

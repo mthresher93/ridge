@@ -1,22 +1,26 @@
 "use client";
 
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
-import { formatWhen, moneyShort, relativeDue } from "@/lib/format";
+import { formatWhen, moneyShort, nowIso, relativeDue } from "@/lib/format";
 import { PIPELINE_GROUPS } from "@/lib/stages";
 import { estimateFor } from "@/lib/solar";
 import { ScriptPanel } from "./script-panel";
 
 export function TodayView() {
-  const { workspace, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
+  const router = useRouter();
+  const { workspace, setWorkspace, log, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
   const [beat, setBeat] = useState(0);
   const metrics = useMemo(() => derive(workspace), [workspace]);
   const move = useMemo(() => topMove(workspace), [workspace]);
   const lead = workspace.leads.find((item) => item.id === (selectedLeadId || move.leadId)) || workspace.leads[0] || null;
   const design = lead ? workspace.designs?.[lead.id] : null;
   const estimate = lead && design ? estimateFor(lead, design) : null;
+  const dialTarget = workspace.settings.dialTarget || 80;
+  const dialsToday = workspace.kpiEvents.filter((item) => item.type === "dial_attempt" && item.at.slice(0, 10) === new Date().toISOString().slice(0, 10)).length;
 
   const pulse = PIPELINE_GROUPS.map((group) => {
     const rows = workspace.opportunities.filter((opp) => (group.stages as readonly string[]).includes(opp.stage));
@@ -26,6 +30,27 @@ export function TodayView() {
   const queue = [...metrics.overdueCallbacks, ...metrics.dueCallbacks]
     .filter((item, index, all) => all.findIndex((row) => row.id === item.id) === index)
     .slice(0, 8);
+
+  function completeCallback(id: string) {
+    setWorkspace((prev) => ({
+      ...prev,
+      callbacks: prev.callbacks.map((item) => (item.id === id ? { ...item, status: "completed", completedAt: nowIso() } : item)),
+      updatedAt: nowIso(),
+    }));
+    log("callback", id, "completed", "Callback completed from Today");
+  }
+
+  function snoozeCallback(id: string) {
+    const due = new Date();
+    due.setDate(due.getDate() + 1);
+    due.setHours(10, 0, 0, 0);
+    setWorkspace((prev) => ({
+      ...prev,
+      callbacks: prev.callbacks.map((item) => (item.id === id ? { ...item, dueAt: due.toISOString() } : item)),
+      updatedAt: nowIso(),
+    }));
+    log("callback", id, "snoozed", "Callback snoozed +1 day");
+  }
 
   if (loading) return <div className="text-[var(--muted)]">Orienting…</div>;
 
@@ -41,11 +66,37 @@ export function TodayView() {
               Sit · {workspace.leads.find((row) => row.id === metrics.todaySits[0].leadId)?.name} {formatWhen(metrics.todaySits[0].startsAt)}
             </p>
           ) : null}
+          <div className="flex flex-wrap gap-2 mt-2">
+            {lead ? (
+              <button
+                type="button"
+                className="az-btn pri"
+                onClick={() => {
+                  setSelectedLeadId(lead.id);
+                  router.push("/floor");
+                }}
+              >
+                Call now
+              </button>
+            ) : null}
+            {lead ? (
+              <button
+                type="button"
+                className="az-btn"
+                onClick={() => {
+                  setSelectedLeadId(lead.id);
+                  router.push("/design");
+                }}
+              >
+                Design
+              </button>
+            ) : null}
+          </div>
         </div>
         <Stat label="Pipeline" value={moneyShort(metrics.openValue)} detail={`${metrics.open.length} open`} />
         <Stat label="Due" value={`${metrics.dueCallbacks.length}`} detail={`${metrics.overdueCallbacks.length} late`} warn={metrics.overdueCallbacks.length > 0} />
         <Stat label="Sits" value={`${metrics.todaySits.length}`} detail={`${metrics.upcoming.length} up`} />
-        <Stat label="Fit" value={estimate ? `${estimate.fit}` : "—"} detail={estimate ? `${estimate.systemKw} kW` : "no design"} />
+        <Stat label="Dials" value={`${dialsToday}`} detail={`of ${dialTarget} target`} />
       </section>
 
       <section className="az-panel overflow-hidden flex flex-col">
@@ -56,28 +107,53 @@ export function TodayView() {
           </Link>
         </div>
         <div className="scroll-y flex-1">
+          {queue.length === 0 ? (
+            <div className="px-3 py-8 text-[12px] text-[var(--muted)] text-center">Queue is clear. Open Dialer for the next callable lead.</div>
+          ) : null}
           {queue.map((item) => {
             const person = workspace.leads.find((row) => row.id === item.leadId);
             const overdue = Date.parse(item.dueAt) < Date.now();
             return (
-              <button
+              <div
                 key={item.id}
-                className={`w-full text-left px-3 py-2 border-b border-[var(--line)] hover:bg-[var(--hover)] ${
-                  lead?.id === item.leadId ? "bg-[var(--gold-dim)]" : ""
-                }`}
-                onClick={() => {
-                  setSelectedLeadId(item.leadId);
-                  setBeat(0);
-                }}
+                className={`px-3 py-2 border-b border-[var(--line)] ${lead?.id === item.leadId ? "bg-[var(--gold-dim)]" : ""}`}
               >
-                <div className="flex items-center justify-between gap-2">
-                  <b className="text-[13px]">{person?.name}</b>
-                  <span className={`az-num text-[11px] ${overdue ? "text-[var(--down)]" : "text-[var(--muted)]"}`}>
-                    {relativeDue(item.dueAt)}
-                  </span>
+                <button
+                  type="button"
+                  className="w-full text-left"
+                  onClick={() => {
+                    setSelectedLeadId(item.leadId);
+                    setBeat(0);
+                  }}
+                >
+                  <div className="flex items-center justify-between gap-2">
+                    <b className="text-[13px]">{person?.name}</b>
+                    <span className={`az-num text-[11px] ${overdue ? "text-[var(--down)]" : "text-[var(--muted)]"}`}>
+                      {relativeDue(item.dueAt)}
+                    </span>
+                  </div>
+                  <div className="text-[11px] text-[var(--muted)] truncate">{item.reason}</div>
+                </button>
+                <div className="flex flex-wrap gap-1.5 mt-2">
+                  <button
+                    type="button"
+                    className="az-btn pri"
+                    style={{ padding: "0.2rem 0.55rem", fontSize: 11 }}
+                    onClick={() => {
+                      setSelectedLeadId(item.leadId);
+                      router.push("/floor");
+                    }}
+                  >
+                    Call
+                  </button>
+                  <button type="button" className="az-btn" style={{ padding: "0.2rem 0.55rem", fontSize: 11 }} onClick={() => completeCallback(item.id)}>
+                    Done
+                  </button>
+                  <button type="button" className="az-btn ghost" style={{ padding: "0.2rem 0.55rem", fontSize: 11 }} onClick={() => snoozeCallback(item.id)}>
+                    +1 day
+                  </button>
                 </div>
-                <div className="text-[11px] text-[var(--muted)] truncate">{item.reason}</div>
-              </button>
+              </div>
             );
           })}
         </div>

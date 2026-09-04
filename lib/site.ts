@@ -178,3 +178,26 @@ export function syncLegacy(design: RoofDesign): RoofDesign {
     roofMaterial: face?.material || site.roofMaterial,
   };
 }
+
+/** Bounding box of faces/modules in site feet, for Fit framing. */
+export function siteBounds(design: RoofDesign) {
+  const site = ensureSite(design);
+  const points: Point[] = [];
+  for (const face of site.faces || []) points.push(...face.points);
+  for (const mod of site.modules || []) {
+    const w = (site.panelWidthIn ?? 41) / 12;
+    const h = (site.panelHeightIn ?? 74) / 12;
+    points.push({ x: mod.x, y: mod.y }, { x: mod.x + w, y: mod.y + h });
+  }
+  for (const gear of site.obstructions || []) {
+    points.push({ x: gear.x - gear.widthFt / 2, y: gear.y - gear.lengthFt / 2 }, { x: gear.x + gear.widthFt / 2, y: gear.y + gear.lengthFt / 2 });
+  }
+  if (!points.length) return { minX: -40, maxX: 40, minY: -30, maxY: 30, cx: 0, cy: 0 };
+  const xs = points.map((p) => p.x);
+  const ys = points.map((p) => p.y);
+  const minX = Math.min(...xs);
+  const maxX = Math.max(...xs);
+  const minY = Math.min(...ys);
+  const maxY = Math.max(...ys);
+  return { minX, maxX, minY, maxY, cx: (minX + maxX) / 2, cy: (minY + maxY) / 2 };
+}

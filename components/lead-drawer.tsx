@@ -3,6 +3,7 @@
 import { useWorkspace } from "@/lib/workspace-context";
 import { STAGES } from "@/lib/stages";
 import { leadEligibility, nowIso } from "@/lib/format";
+import { cascadeDeleteLead } from "@/lib/crm";
 import type { Consent, Lead, Priority } from "@/lib/types";
 
 export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void }) {
@@ -50,13 +51,9 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
   }
 
   function remove() {
-    if (!confirm("Delete this lead?")) return;
-    setWorkspace((prev) => ({
-      ...prev,
-      leads: prev.leads.filter((item) => item.id !== lead.id),
-      updatedAt: nowIso(),
-    }));
-    log("lead", lead.id, "deleted", "Lead deleted");
+    if (!confirm("Delete this lead and linked deals, callbacks, appointments, designs, and call logs?")) return;
+    setWorkspace((prev) => cascadeDeleteLead(prev, lead.id));
+    log("lead", lead.id, "deleted", "Lead and linked records deleted");
     onClose();
   }
 

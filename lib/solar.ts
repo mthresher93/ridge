@@ -115,7 +115,8 @@ export function compassLabel(deg: number) {
   return dirs[Math.round(deg / 45) % 8];
 }
 
-export function auroraUrl(_address: string) {
+export function auroraUrl(_address?: string) {
+  void _address;
   return `https://app.aurorasolar.com/`;
 }
 

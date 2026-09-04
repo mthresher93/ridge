@@ -97,6 +97,38 @@ textarea {
   background: linear-gradient(180deg, #e4ebe3 0%, var(--ink) 40%);
 }
 
+.az-shell.density-compact {
+  font-size: 13px;
+}
+
+.az-shell.density-compact .az-top {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.az-shell.density-compact .az-nav a {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.az-shell.density-compact .az-table td,
+.az-shell.density-compact .az-table th {
+  padding-top: 6px;
+  padding-bottom: 6px;
+}
+
+.az-save {
+  min-width: 72px;
+  text-align: right;
+  font-size: 11px;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  color: var(--faint);
+}
+
+.az-save.saving { color: var(--warn); }
+.az-save.saved { color: var(--up); }
+.az-save.error { color: var(--down); }
+
 .az-side {
   position: relative;
   height: 100vh;
@@ -930,6 +962,20 @@ textarea {
   flex-shrink: 0;
 }
 
+.dial-target-meter {
+  width: 72px;
+  height: 6px;
+  border-radius: 99px;
+  background: var(--track);
+  overflow: hidden;
+}
+
+.dial-target-meter span {
+  display: block;
+  height: 100%;
+  background: var(--gold);
+}
+
 .script-mode {
   display: flex;
   border: 1px solid var(--line);
@@ -1209,12 +1255,24 @@ textarea {
 }
 
 .wrap-pick {
+  position: relative;
   min-height: 34px;
   border: 1px solid var(--line);
   background: var(--panel-2);
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
+  padding-left: 1.6rem;
+}
+
+.wrap-hotkey {
+  position: absolute;
+  left: 0.45rem;
+  top: 50%;
+  transform: translateY(-50%);
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 10px;
+  color: var(--faint);
 }
 
 .wrap-pick.on {
@@ -1583,7 +1641,12 @@ textarea {
 .map-pin.paper circle { fill: #4d6ad6; }
 .map-pin.dnc circle { fill: #b42318; }
 .map-pin.lost circle { fill: #7a7168; }
+<<<<<<< HEAD
 .map-pin.on circle { stroke: #f4faf4; stroke-width: 3; }
+=======
+.map-pin.on circle { stroke: #fff8ee; stroke-width: 3; }
+.map-pin.dragging circle { stroke: var(--gold); stroke-width: 3; cursor: grabbing; }
+>>>>>>> 9533125 (Harden sales loop across Dialer, Map, Design, and CRM.)
 
 .map-cluster circle {
   fill: #101612;

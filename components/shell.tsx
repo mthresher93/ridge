@@ -13,7 +13,7 @@ import { NAV } from "@/lib/nav";
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { workspace, loading } = useWorkspace();
+  const { workspace, loading, saveStatus } = useWorkspace();
   const [now, setNow] = useState(() => new Date());
   const [palette, setPalette] = useState(false);
 
@@ -35,9 +35,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   const metrics = useMemo(() => derive(workspace), [workspace]);
   const floor = floorWindow(now);
+  const density = workspace.settings.density || "comfortable";
 
   return (
-    <div className="az-shell">
+    <div className={`az-shell density-${density}`}>
       <aside className="az-side">
         <Link href="/" className="az-brand">
           <BrandMark />
@@ -76,6 +77,9 @@ export function Shell({ children }: { children: React.ReactNode }) {
             </div>
           </div>
           <div className="flex items-center gap-5">
+            <span className={`az-save ${saveStatus}`} title="Workspace save status">
+              {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save failed" : ""}
+            </span>
             <div className="hidden sm:block text-right">
               <div className="az-num text-[12px] text-[var(--muted)]">PP {formatClock(now, "Asia/Phnom_Penh")}</div>
               <div className="az-num text-[12px] text-[var(--gold)]">PT {formatClock(now, "America/Los_Angeles")}</div>
