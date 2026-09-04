@@ -139,6 +139,9 @@ export function fillFace(face: RoofFace, design: RoofDesign, existing: PlacedMod
         rotationDeg: face.azimuthDeg,
         portrait: true,
       });
+      if (next.length >= 320) {
+        return [...existing.filter((item) => item.faceId !== face.id), ...next];
+      }
     }
   }
   return [...existing.filter((item) => item.faceId !== face.id), ...next];
