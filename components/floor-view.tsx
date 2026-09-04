@@ -515,6 +515,9 @@ export function FloorView() {
                         <span>{fmt(row.duration)}</span>
                       </div>
                     ))}
+                    {history.length < 4 ? (
+                      <p className="call-history-empty">Earlier outcomes appear here after wrap.</p>
+                    ) : null}
                   </div>
                 ) : null}
               </div>

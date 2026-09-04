@@ -995,7 +995,7 @@ textarea {
 }
 
 .dialer-stat b {
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   line-height: 1.15;
   color: #e8f0e8;
@@ -1516,7 +1516,7 @@ textarea {
   display: block;
   font-size: 12px;
   font-weight: 500;
-  color: #d6e2d6;
+  color: #e0ebe0;
 }
 
 .call-chips {
@@ -1525,30 +1525,35 @@ textarea {
 
 .call-dock {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-columns: minmax(0, 1fr) minmax(140px, 180px);
   gap: 12px;
-  align-items: start;
+  align-items: stretch;
   padding: 6px 14px 10px;
   border-top: 1px solid rgba(246, 239, 228, 0.08);
-  margin-top: 0;
-  flex: 0 0 auto;
+  margin-top: 4px;
+  flex: 1 1 auto;
   min-height: 0;
+  max-height: min(280px, 38vh);
 }
 
 .call-dock.live {
   grid-template-columns: 1fr;
+  max-height: min(320px, 42vh);
 }
 
 .dialer-well.compact .call-dock {
   grid-template-columns: 1fr;
   padding: 0 10px 8px;
   border-top: 0;
+  max-height: min(200px, 32vh);
 }
 
 .call-notes-label {
   display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
   gap: 4px;
   min-height: 0;
+  height: 100%;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -1561,28 +1566,26 @@ textarea {
   background: #0a0f0c;
   border-color: #24312a;
   color: #e8f0e8;
-  min-height: 72px;
-  height: 72px;
-  max-height: 72px;
+  min-height: 88px;
+  height: 100%;
+  max-height: none;
   resize: none;
   border-radius: 2px;
 }
 
 .call-notes.slim {
-  min-height: 52px;
-  height: 52px;
-  max-height: 52px;
+  min-height: 64px;
 }
 
 .call-dock.live .call-notes,
 .call-dock.live .call-notes.slim {
-  min-height: 96px;
-  height: 96px;
-  max-height: 96px;
+  min-height: 110px;
 }
 
 .call-history {
-  width: 150px;
+  width: auto;
+  min-height: 0;
+  overflow: auto;
   padding-top: 14px;
   font-size: 11px;
   color: #9eaea2;
