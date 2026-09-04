@@ -67,6 +67,7 @@ export function SiteCanvas({
   const origin = { lat: design.lat || 0, lng: design.lng || 0 };
   const fpp = feetPerPixel(origin.lat, view.zoom);
   const hitFt = Math.max(3.5, 9 * fpp);
+  const edgeHitFt = Math.max(5.5, 14 * fpp);
   const snapFt = Math.max(2.5, 7 * fpp);
   const [drag, setDrag] = useState<DragState>(null);
   const [measure, setMeasure] = useState<Point[]>([]);
@@ -191,7 +192,7 @@ export function SiteCanvas({
       setDrag({ kind: "vertex", id: vertexHit.id, index: vertexHit.index });
       return;
     }
-    const edgeHit = nearestEdge(faces, raw, hitFt);
+    const edgeHit = nearestEdge(faces, raw, edgeHitFt);
     if (edgeHit && tool === "select") {
       onSel({ kind: "edge", id: edgeHit.id, index: edgeHit.index });
       return;
@@ -250,7 +251,7 @@ export function SiteCanvas({
         setSnapGuide(null);
         return;
       }
-      const edgeHit = nearestEdge(faces, site, hitFt);
+      const edgeHit = nearestEdge(faces, site, edgeHitFt);
       if (edgeHit && tool === "select") {
         setHover({ kind: "edge", id: edgeHit.id, index: edgeHit.index });
         setSnapGuide(null);

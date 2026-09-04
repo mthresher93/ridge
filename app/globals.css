@@ -2068,22 +2068,37 @@ textarea {
   letter-spacing: 0.04em;
   text-transform: uppercase;
   padding: 8px 3px 6px;
-  display: grid;
-  gap: 2px;
-  justify-items: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
   line-height: 1.15;
+  min-height: 44px;
+}
+
+.cad-tools button .cad-tool-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .cad-tools button kbd {
+  display: block;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
   font-weight: 600;
   letter-spacing: 0;
   text-transform: none;
   color: #6f8074;
-  background: transparent;
-  border: 0;
-  padding: 0;
+  background: #1a2420;
+  border: 1px solid #2c3a32;
+  border-radius: 2px;
+  min-width: 14px;
+  text-align: center;
+  padding: 0 3px;
+  line-height: 1.4;
 }
 
 .cad-tools button.on {
@@ -2208,11 +2223,23 @@ textarea {
   letter-spacing: 0.06em;
   text-transform: uppercase;
   color: #c9d6c9;
-  padding: 4px 0 8px;
+  padding: 6px 0 8px;
 }
 
 .cad-prop-fold > summary::-webkit-details-marker {
   display: none;
+}
+
+.cad-prop-title {
+  letter-spacing: 0.06em;
+}
+
+.cad-prop-meta {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: #9eaea2;
+  font-size: 11px;
 }
 
 .cad-prop-fold > summary span {
@@ -2221,6 +2248,14 @@ textarea {
   text-transform: none;
   color: #9eaea2;
   font-size: 11px;
+}
+
+.cad-prop-fold > summary .cad-prop-title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
+  font-size: inherit;
 }
 
 .cad-prop-fold[open] > summary {

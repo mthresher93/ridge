@@ -24,9 +24,9 @@ const TOOLS: { id: CadTool; label: string; key: string }[] = [
   { id: "pan", label: "Pan", key: "H" },
   { id: "select", label: "Select", key: "V" },
   { id: "draw", label: "Roof", key: "R" },
-  { id: "vertex", label: "Vertex", key: "A" },
+  { id: "vertex", label: "Vertex", key: "E" },
   { id: "panel", label: "Panel", key: "P" },
-  { id: "gear", label: "Obstruction", key: "O" },
+  { id: "gear", label: "Obst", key: "O" },
   { id: "tree", label: "Tree", key: "T" },
   { id: "measure", label: "Measure", key: "M" },
 ];
@@ -51,6 +51,11 @@ export function DesignView() {
   const pastRef = useRef<RoofDesign[]>([]);
   const futureRef = useRef<RoofDesign[]>([]);
   const designRef = useRef<RoofDesign | null>(null);
+  const selRef = useRef<CadSel>(null);
+  const toolRef = useRef<CadTool>(tool);
+  const draftRef = useRef<Point[]>(draft);
+  const centerRef = useRef(center);
+  const leadIdRef = useRef(lead?.id);
 
   useEffect(() => {
     if (!raw) return;
@@ -67,6 +72,11 @@ export function DesignView() {
 
   const design = raw;
   designRef.current = design || null;
+  selRef.current = sel;
+  toolRef.current = tool;
+  draftRef.current = draft;
+  centerRef.current = center;
+  leadIdRef.current = lead?.id;
   const estimate = lead && design ? estimateFor(lead, design) : null;
   const live = design ? liveMetrics(design) : null;
   const face = design && (sel?.kind === "face" || sel?.kind === "vertex" || sel?.kind === "edge")
@@ -78,11 +88,12 @@ export function DesignView() {
   void histTick;
 
   function writeDesign(next: RoofDesign) {
-    if (!lead) return;
+    const leadId = leadIdRef.current;
+    if (!leadId) return;
     const synced = syncLegacy(next);
     setWorkspace((prev) => ({
       ...prev,
-      designs: { ...prev.designs, [lead.id]: { ...synced, updatedAt: nowIso() } },
+      designs: { ...prev.designs, [leadId]: { ...synced, updatedAt: nowIso() } },
       updatedAt: nowIso(),
     }));
   }
@@ -96,9 +107,10 @@ export function DesignView() {
   }
 
   function patch(partial: Partial<RoofDesign> | ((prev: RoofDesign) => RoofDesign), opts?: { record?: boolean }) {
-    if (!lead || !design) return;
+    const current = designRef.current;
+    if (!leadIdRef.current || !current) return;
     if (opts?.record !== false) checkpoint();
-    const next = typeof partial === "function" ? partial(design) : { ...design, ...partial };
+    const next = typeof partial === "function" ? partial(current) : { ...current, ...partial };
     writeDesign(next);
   }
 
@@ -208,9 +220,11 @@ export function DesignView() {
   }
 
   function fitSite() {
-    if (!design) return;
-    const origin = { lat: design.lat || center.lat, lng: design.lng || center.lng };
-    const bounds = siteBounds(design);
+    const current = designRef.current;
+    if (!current) return;
+    const view = centerRef.current;
+    const origin = { lat: current.lat || view.lat, lng: current.lng || view.lng };
+    const bounds = siteBounds(current);
     const pad = 1.35;
     const spanFt = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 40) * pad;
     const mid = siteToLngLat(origin, bounds.cx, bounds.cy);
@@ -224,15 +238,27 @@ export function DesignView() {
   }
 
   function setOriginFromView() {
-    if (!lead) return;
-    patch({ lat: center.lat, lng: center.lng });
-    log("lead", lead.id, "site_origin", `Site origin set to ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+    if (!leadIdRef.current) return;
+    const view = centerRef.current;
+    patch({ lat: view.lat, lng: view.lng });
+    if (lead) log("lead", lead.id, "site_origin", `Site origin set to ${view.lat.toFixed(5)}, ${view.lng.toFixed(5)}`);
   }
 
   function moduleIdsFromSel(selection: CadSel) {
     if (selection?.kind !== "module") return [] as string[];
     return selection.ids?.length ? selection.ids : [selection.id];
   }
+
+  const actionsRef = useRef({
+    undo,
+    redo,
+    checkpoint,
+    writeDesign,
+    patch,
+    fitSite,
+    moduleIdsFromSel,
+  });
+  actionsRef.current = { undo, redo, checkpoint, writeDesign, patch, fitSite, moduleIdsFromSel };
 
   useEffect(() => {
     const typing = (target: EventTarget | null) => {
@@ -245,6 +271,11 @@ export function DesignView() {
     const onKeyDown = (event: KeyboardEvent) => {
       if (typing(event.target)) return;
       const meta = event.metaKey || event.ctrlKey;
+      const currentDesign = designRef.current;
+      const currentSel = selRef.current;
+      const currentTool = toolRef.current;
+      const currentDraft = draftRef.current;
+      const api = actionsRef.current;
 
       if (event.code === "Space" && !event.repeat) {
         event.preventDefault();
@@ -254,13 +285,13 @@ export function DesignView() {
 
       if (meta && event.key.toLowerCase() === "z") {
         event.preventDefault();
-        if (event.shiftKey) redo();
-        else undo();
+        if (event.shiftKey) api.redo();
+        else api.undo();
         return;
       }
       if (meta && event.key.toLowerCase() === "y") {
         event.preventDefault();
-        redo();
+        api.redo();
         return;
       }
 
@@ -271,38 +302,43 @@ export function DesignView() {
         return;
       }
 
-      if (event.key === "Enter" && tool === "draw" && draft.length >= 3 && design) {
-        checkpoint();
+      if ((event.key === "Backspace" || event.key === "Delete") && currentTool === "draw" && currentDraft.length) {
+        event.preventDefault();
+        setDraft((prev) => prev.slice(0, -1));
+        return;
+      }
+
+      if (event.key === "Enter" && currentTool === "draw" && currentDraft.length >= 3 && currentDesign) {
+        event.preventDefault();
+        api.checkpoint();
         const next: RoofFace = {
           id: uid("face"),
-          points: draft,
-          pitchDeg: design.tiltDeg,
-          azimuthDeg: design.azimuthDeg,
+          points: currentDraft,
+          pitchDeg: currentDesign.tiltDeg,
+          azimuthDeg: currentDesign.azimuthDeg,
           heightFt: 12,
-          material: design.roofMaterial,
+          material: currentDesign.roofMaterial,
           eligible: true,
         };
-        writeDesign({ ...design, faces: [...(design.faces || []), next] });
+        api.writeDesign({ ...currentDesign, faces: [...(currentDesign.faces || []), next] });
         setDraft([]);
         setSel({ kind: "face", id: next.id });
         setTool("select");
         return;
       }
 
-      if ((event.key === "Backspace" || event.key === "Delete") && sel && design) {
+      if ((event.key === "Backspace" || event.key === "Delete") && currentSel && currentDesign) {
         event.preventDefault();
-        if (sel.kind === "face") {
-          patch({
-            faces: (design.faces || []).filter((item) => item.id !== sel.id),
-            modules: (design.modules || []).filter((item) => item.faceId !== sel.id),
+        if (currentSel.kind === "face") {
+          api.patch({
+            faces: (currentDesign.faces || []).filter((item) => item.id !== currentSel.id),
+            modules: (currentDesign.modules || []).filter((item) => item.faceId !== currentSel.id),
           });
-        } else if (sel.kind === "module") {
-          const ids = new Set(moduleIdsFromSel(sel));
-          patch({ modules: (design.modules || []).filter((item) => !ids.has(item.id)) });
-        } else if (sel.kind === "obstruction") {
-          patch({ obstructions: (design.obstructions || []).filter((item) => item.id !== sel.id) });
-        } else if (sel.kind === "vertex" && draft.length) {
-          setDraft((prev) => prev.slice(0, -1));
+        } else if (currentSel.kind === "module") {
+          const ids = new Set(api.moduleIdsFromSel(currentSel));
+          api.patch({ modules: (currentDesign.modules || []).filter((item) => !ids.has(item.id)) });
+        } else if (currentSel.kind === "obstruction") {
+          api.patch({ obstructions: (currentDesign.obstructions || []).filter((item) => item.id !== currentSel.id) });
         }
         setSel(null);
         return;
@@ -310,16 +346,16 @@ export function DesignView() {
 
       if (event.key.toLowerCase() === "f" && !meta) {
         event.preventDefault();
-        fitSite();
+        api.fitSite();
         return;
       }
 
-      if ((event.key === "[" || event.key === "]") && sel?.kind === "module" && design) {
+      if ((event.key === "[" || event.key === "]") && currentSel?.kind === "module" && currentDesign) {
         event.preventDefault();
-        const ids = new Set(moduleIdsFromSel(sel));
+        const ids = new Set(api.moduleIdsFromSel(currentSel));
         const delta = event.key === "]" ? 90 : -90;
-        patch({
-          modules: (design.modules || []).map((row) =>
+        api.patch({
+          modules: (currentDesign.modules || []).map((row) =>
             ids.has(row.id) ? { ...row, rotationDeg: ((row.rotationDeg + delta) % 360 + 360) % 360 } : row,
           ),
         });
@@ -344,7 +380,7 @@ export function DesignView() {
       window.removeEventListener("keydown", onKeyDown);
       window.removeEventListener("keyup", onKeyUp);
     };
-  }, [tool, draft, sel, design, center.lat, center.lng]);
+  }, []);
 
   const address = lead ? lead.address || `${lead.property}, ${lead.city}` : "";
   const saved = lead ? workspace.proposals?.[lead.id] : undefined;
@@ -411,10 +447,11 @@ export function DesignView() {
               key={item.id}
               type="button"
               className={activeTool === item.id ? "on" : ""}
+              onMouseDown={(event) => event.preventDefault()}
               onClick={() => setTool(item.id)}
               title={`${item.label} (${item.key})`}
             >
-              <span>{item.label}</span>
+              <span className="cad-tool-label">{item.label}</span>
               <kbd>{item.key}</kbd>
             </button>
           ))}
@@ -581,8 +618,8 @@ export function DesignView() {
 
           <details className="cad-prop-fold" open={proposalOpen} onToggle={(event) => setProposalOpen((event.target as HTMLDetailsElement).open)}>
             <summary>
-              Proposal
-              <span>{saved ? `v${saved.version} · ${saved.status}` : "unsaved"}</span>
+              <span className="cad-prop-title">Proposal</span>
+              <span className="cad-prop-meta">{saved ? `v${saved.version} · ${saved.status}` : "unsaved"}</span>
             </summary>
             <div className="cad-insp-block prop-insp">
               <ProposalFlow
