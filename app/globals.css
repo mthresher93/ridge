@@ -1641,12 +1641,8 @@ textarea {
 .map-pin.paper circle { fill: #4d6ad6; }
 .map-pin.dnc circle { fill: #b42318; }
 .map-pin.lost circle { fill: #7a7168; }
-<<<<<<< HEAD
 .map-pin.on circle { stroke: #f4faf4; stroke-width: 3; }
-=======
-.map-pin.on circle { stroke: #fff8ee; stroke-width: 3; }
 .map-pin.dragging circle { stroke: var(--gold); stroke-width: 3; cursor: grabbing; }
->>>>>>> 9533125 (Harden sales loop across Dialer, Map, Design, and CRM.)
 
 .map-cluster circle {
   fill: #101612;
