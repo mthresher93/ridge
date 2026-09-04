@@ -229,7 +229,7 @@ export function MapView() {
                 <button type="button" className="az-btn" onClick={() => router.push("/design")}>
                   Design
                 </button>
-                <button type="button" className="az-btn" onClick={() => router.push("/people")}>
+                <button type="button" className="az-btn" onClick={() => router.push(`/people?id=${selected.id}`)}>
                   Record
                 </button>
               </div>
