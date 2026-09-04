@@ -62,10 +62,10 @@ export function WrapSheet({
       <div className="wrap-sheet-bar">
         <div>
           <div className="az-kicker">Wrap-up</div>
-          <div className="text-[15px] font-semibold">
+          <div className="text-[15px] font-semibold text-[#e8f0e8]">
             {name} · {fmt(seconds)}
           </div>
-          <div className="text-[11px] text-[var(--muted)] mt-0.5">1–9 / 0 pick · Enter save+next · Esc skip</div>
+          <div className="text-[11px] text-[#9eaea2] mt-0.5">1–9 / 0 pick · Enter save+next · Esc skip</div>
         </div>
         <button type="button" className="az-btn ghost" onClick={onSkip}>
           Skip
@@ -85,7 +85,7 @@ export function WrapSheet({
         ))}
       </div>
       {needsWhen ? (
-        <label className="block text-[11px] text-[var(--muted)]">
+        <label className="block text-[11px] text-[#9eaea2]">
           {picked === "appointment_set" ? "Appointment time" : "Callback time"}
           <input type="datetime-local" className="az-input mt-1" value={when} onChange={(event) => setWhen(event.target.value)} />
         </label>

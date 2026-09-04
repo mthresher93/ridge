@@ -264,6 +264,7 @@ export function FloorView() {
     setState("ready");
     setSeconds(0);
     setBeat(0);
+    setShowPad(false);
     const nxt = advance || powerRef.current ? nextCallable(active.id) : null;
     if (nxt) {
       setSelectedLeadId(nxt.id);

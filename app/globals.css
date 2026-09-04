@@ -959,9 +959,9 @@ textarea {
   padding: 0 10px;
   font-size: 12px;
   box-shadow: none;
-  color: #e8f0e8;
-  border-color: #3a4a40;
-  background: transparent;
+  color: #d6e2d6;
+  border-color: #4a5c50;
+  background: #1a2420;
 }
 
 .dialer-tools .az-btn.pri {
@@ -1241,8 +1241,8 @@ textarea {
 .call-stage {
   display: flex;
   align-items: flex-start;
-  justify-content: space-between;
-  gap: 20px;
+  justify-content: flex-start;
+  gap: 28px;
   padding: 12px 14px 4px;
   min-height: 0;
   flex: 0 0 auto;
@@ -1527,11 +1527,11 @@ textarea {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 12px;
-  align-items: stretch;
+  align-items: start;
   padding: 6px 14px 10px;
   border-top: 1px solid rgba(246, 239, 228, 0.08);
   margin-top: 0;
-  flex: 1 1 auto;
+  flex: 0 0 auto;
   min-height: 0;
 }
 
@@ -1547,10 +1547,8 @@ textarea {
 
 .call-notes-label {
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr);
   gap: 4px;
   min-height: 0;
-  height: 100%;
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
   letter-spacing: 0.1em;
@@ -1564,19 +1562,23 @@ textarea {
   border-color: #24312a;
   color: #e8f0e8;
   min-height: 72px;
-  height: 100%;
-  max-height: none;
+  height: 72px;
+  max-height: 72px;
   resize: none;
   border-radius: 2px;
 }
 
 .call-notes.slim {
-  min-height: 56px;
+  min-height: 52px;
+  height: 52px;
+  max-height: 52px;
 }
 
 .call-dock.live .call-notes,
 .call-dock.live .call-notes.slim {
-  min-height: 88px;
+  min-height: 96px;
+  height: 96px;
+  max-height: 96px;
 }
 
 .call-history {
@@ -1632,11 +1634,11 @@ textarea {
   transform: translateX(-50%);
   width: min(640px, calc(100% - 16px));
   z-index: 8;
-  background: #f4f7f2;
-  color: var(--text);
-  border: 1px solid #c3cec2;
+  background: #182018;
+  color: #e8f0e8;
+  border: 1px solid #3a4a40;
   border-radius: 2px;
-  box-shadow: 0 14px 32px rgba(16, 22, 18, 0.32);
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.45);
   padding: 9px;
   display: grid;
   gap: 6px;
@@ -1654,6 +1656,41 @@ textarea {
   align-items: center;
 }
 
+.wrap-sheet .az-kicker {
+  color: var(--volt);
+}
+
+.wrap-sheet .text-\[var\(--muted\)\],
+.wrap-sheet [class*="text-[var(--muted)]"] {
+  color: #9eaea2 !important;
+}
+
+.wrap-sheet .az-btn {
+  color: #e8f0e8;
+  border-color: #3a4a40;
+  background: #121914;
+  box-shadow: none;
+}
+
+.wrap-sheet .az-btn.ghost {
+  border-color: transparent;
+  color: #9eaea2;
+  background: transparent;
+}
+
+.wrap-sheet .az-btn.pri {
+  background: var(--volt);
+  border-color: var(--volt);
+  color: #101411;
+}
+
+.wrap-sheet .az-area,
+.wrap-sheet .az-input {
+  background: #0e1410;
+  border-color: #3a4a40;
+  color: #e8f0e8;
+}
+
 .wrap-grid {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
@@ -1662,9 +1699,10 @@ textarea {
 
 .wrap-pick {
   position: relative;
-  min-height: 32px;
-  border: 1px solid #c3cec2;
-  background: #e6ece4;
+  min-height: 30px;
+  border: 1px solid #3a4a40;
+  background: #121914;
+  color: #e8f0e8;
   border-radius: 2px;
   font-size: 11px;
   font-weight: 600;
@@ -1678,12 +1716,13 @@ textarea {
   transform: translateY(-50%);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 9px;
-  color: var(--faint);
+  color: #7a8a7e;
 }
 
 .wrap-pick.on {
-  border-color: #1f7a4c;
-  background: rgba(31, 122, 76, 0.14);
+  border-color: var(--volt);
+  background: rgba(212, 242, 90, 0.12);
+  color: #f4faf4;
 }
 
 .cad-desk {
