@@ -49,7 +49,7 @@ export function SettingsView() {
   const active = TABS.find((item) => item.id === tab) || TABS[0];
 
   return (
-    <PageDesk>
+    <PageDesk script={false}>
       <div className="az-fill settings-desk">
         <header className="settings-head">
           <div>

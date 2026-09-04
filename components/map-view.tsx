@@ -110,7 +110,7 @@ export function MapView() {
   return (
     <div className="map-desk">
       <header className="map-top">
-        <input className="az-input map-search" placeholder="Search people, city, status" value={query} onChange={(event) => setQuery(event.target.value)} />
+        <input className="az-input map-search" placeholder="Search contacts, city, status" value={query} onChange={(event) => setQuery(event.target.value)} />
         <div className="map-filters">
           {([
             ["all", "All"],
@@ -247,7 +247,7 @@ export function MapView() {
           )}
           <div className="map-list">
             {rows.length === 0 ? (
-              <div className="px-3 py-6 text-[12px] text-[var(--muted)] text-center">No leads match these filters.</div>
+              <div className="px-3 py-6 text-[12px] text-[var(--muted)] text-center">No contacts match these filters.</div>
             ) : null}
             {rows.map((lead) => (
               <button

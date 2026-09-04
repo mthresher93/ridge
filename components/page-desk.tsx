@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { ScriptPanel } from "./script-panel";
 
-export function PageDesk({ children }: { children: React.ReactNode }) {
+export function PageDesk({ children, script = true }: { children: React.ReactNode; script?: boolean }) {
   const { workspace, selectedLeadId } = useWorkspace();
   const [beat, setBeat] = useState(0);
   const lead = workspace.leads.find((item) => item.id === selectedLeadId) || workspace.leads[0] || null;
@@ -15,9 +15,9 @@ export function PageDesk({ children }: { children: React.ReactNode }) {
   }, [lead?.id]);
 
   return (
-    <div className="page-desk">
+    <div className={`page-desk ${script ? "" : "solo"}`.trim()}>
       <div className="page-desk-body">{children}</div>
-      <ScriptPanel lead={lead} design={design} beat={beat} onBeat={setBeat} />
+      {script ? <ScriptPanel lead={lead} design={design} beat={beat} onBeat={setBeat} /> : null}
     </div>
   );
 }

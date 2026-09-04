@@ -94,7 +94,7 @@ textarea {
   grid-template-columns: 204px minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
-  background: linear-gradient(180deg, #e4ebe3 0%, var(--ink) 40%);
+  background: var(--ink);
 }
 
 .az-shell.density-compact {
@@ -248,7 +248,7 @@ textarea {
 }
 
 .az-page {
-  padding: 14px 16px 16px;
+  padding: 12px 14px 14px;
   min-width: 0;
   min-height: 0;
   flex: 1;
@@ -261,7 +261,7 @@ textarea {
   flex: 1;
   min-height: 0;
   display: grid;
-  gap: 12px;
+  gap: 10px;
 }
 
 .az-kicker {
@@ -275,7 +275,7 @@ textarea {
 
 .az-title {
   font-family: var(--font-display), Georgia, serif;
-  font-size: 26px;
+  font-size: 24px;
   font-weight: 600;
   letter-spacing: -0.03em;
   line-height: 1.12;
@@ -339,12 +339,18 @@ textarea {
   cursor: not-allowed;
 }
 
+.az-btn-sm {
+  min-height: 26px;
+  padding: 0 8px;
+  font-size: 11px;
+}
+
 .az-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 3px 8px;
-  border-radius: 999px;
+  padding: 2px 7px;
+  border-radius: 2px;
   border: 1px solid var(--line);
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;
@@ -380,8 +386,8 @@ textarea {
 .az-select,
 .az-area {
   width: 100%;
-  min-height: 36px;
-  padding: 7px 10px;
+  min-height: 32px;
+  padding: 6px 10px;
   border-radius: 3px;
   border: 1px solid var(--line);
   background: #fff;
@@ -393,7 +399,7 @@ textarea {
 .az-select:focus,
 .az-area:focus {
   border-color: var(--gold);
-  box-shadow: inset 0 2px 6px rgba(72, 52, 28, 0.06), 0 0 0 3px var(--gold-dim);
+  box-shadow: 0 0 0 2px var(--gold-dim);
 }
 
 .az-area {
@@ -604,13 +610,17 @@ textarea {
   display: grid;
   grid-template-columns: 1.15fr 0.95fr 300px;
   grid-template-rows: auto minmax(0, 1fr);
-  gap: 12px;
+  gap: 10px;
   height: 100%;
   min-height: 0;
 }
 
 .desk-hero {
   grid-column: 1 / 3;
+}
+
+.desk-hero .az-title {
+  font-size: 22px;
 }
 
 .script-card {
@@ -622,8 +632,8 @@ textarea {
   background: #141c16;
   color: #e8f0e8;
   border: 1px solid #24312a;
-  border-radius: 4px;
-  box-shadow: var(--lift-2);
+  border-radius: 3px;
+  box-shadow: none;
 }
 
 .script-head {
@@ -817,9 +827,13 @@ textarea {
 .page-desk {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 300px;
-  gap: 12px;
+  gap: 10px;
   height: 100%;
   min-height: 0;
+}
+
+.page-desk.solo {
+  grid-template-columns: minmax(0, 1fr);
 }
 
 .page-desk-body {
@@ -1035,6 +1049,40 @@ textarea {
   border-top: 1px solid var(--line);
 }
 
+.report-kpis {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.report-kpi {
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+
+.report-kpi:last-child {
+  border-right: 0;
+}
+
+.playbook-offers {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  border: 1px solid var(--line);
+  background: var(--panel);
+}
+
+.playbook-offer {
+  padding: 10px 12px;
+  border-right: 1px solid var(--line);
+  min-width: 0;
+}
+
+.playbook-offer:last-child {
+  border-right: 0;
+}
+
 @media (max-width: 720px) {
   .settings-layout {
     grid-template-columns: 1fr;
@@ -1053,6 +1101,22 @@ textarea {
 
   .settings-rail-btn small {
     display: none;
+  }
+
+  .report-kpis,
+  .playbook-offers {
+    grid-template-columns: 1fr;
+  }
+
+  .report-kpi,
+  .playbook-offer {
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+  }
+
+  .report-kpi:last-child,
+  .playbook-offer:last-child {
+    border-bottom: 0;
   }
 }
 
@@ -1958,12 +2022,12 @@ textarea {
 }
 
 .cad-project select {
-  background: #1c1612;
+  background: #1a2420;
   border: 1px solid #3a4a40;
   color: #e8f0e8;
   min-height: 32px;
   padding: 0 8px;
-  border-radius: 6px;
+  border-radius: 3px;
 }
 
 .cad-address {
@@ -1991,7 +2055,7 @@ textarea {
   display: flex;
   flex-direction: column;
   border-right: 1px solid #24312a;
-  background: #201a15;
+  background: #141c16;
 }
 
 .cad-tools button {
@@ -2007,7 +2071,7 @@ textarea {
 }
 
 .cad-tools button.on {
-  background: rgba(196, 92, 38, 0.22);
+  background: rgba(212, 242, 90, 0.16);
   color: #f4faf4;
 }
 
@@ -2024,16 +2088,16 @@ textarea {
   z-index: 3;
   font-size: 11px;
   color: #e8f0e8;
-  background: rgba(28, 22, 18, 0.78);
+  background: rgba(16, 22, 18, 0.82);
   padding: 6px 8px;
-  border-radius: 6px;
+  border-radius: 3px;
   pointer-events: none;
 }
 
 .cad-inspector {
   overflow: auto;
   border-left: 1px solid #24312a;
-  background: #221c17;
+  background: #141c16;
   padding: 10px;
   display: grid;
   gap: 12px;
@@ -2054,7 +2118,7 @@ textarea {
 
 .cad-insp-block .az-input,
 .cad-insp-block .az-select {
-  background: #1c1612;
+  background: #1a2420;
   color: #e8f0e8;
   border-color: #3a4a40;
 }
@@ -2465,9 +2529,9 @@ textarea {
   grid-template-rows: auto minmax(0, 1fr);
   height: 100%;
   min-height: 0;
-  background: #1b1713;
+  background: #141c16;
   border: 1px solid #24312a;
-  border-radius: 4px;
+  border-radius: 3px;
   overflow: hidden;
   color: #e8f0e8;
 }
@@ -2483,7 +2547,7 @@ textarea {
 
 .map-search {
   max-width: 240px;
-  background: #1c1612;
+  background: #1a2420;
   color: #e8f0e8;
   border-color: #3a4a40;
 }
@@ -2499,14 +2563,15 @@ textarea {
   color: #9eaea2;
   font-size: 12px;
   font-weight: 600;
-  padding: 6px 8px;
-  border-radius: 6px;
+  padding: 5px 8px;
+  min-height: 28px;
+  border-radius: 3px;
 }
 
 .map-filters button.on {
-  background: var(--gold-dim);
+  background: rgba(212, 242, 90, 0.14);
   color: #f4faf4;
-  border-color: #1f7a4c;
+  border-color: #6f8f2a;
 }
 
 .map-body {
@@ -2534,7 +2599,7 @@ textarea {
 }
 
 .map-pin.ok circle { fill: #3d8a4d; }
-.map-pin.sit circle { fill: #1f7a4c; }
+.map-pin.sit circle { fill: #d4f25a; stroke: #1b1713; }
 .map-pin.paper circle { fill: #4d6ad6; }
 .map-pin.dnc circle { fill: #b42318; }
 .map-pin.lost circle { fill: #7a7168; }
@@ -2558,7 +2623,7 @@ textarea {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr) auto;
   border-left: 1px solid #24312a;
-  background: #221c17;
+  background: #141c16;
   min-height: 0;
 }
 
@@ -2596,7 +2661,7 @@ textarea {
 }
 
 .map-list-row.on {
-  background: rgba(196, 92, 38, 0.18);
+  background: rgba(212, 242, 90, 0.12);
 }
 
 .map-legend {
@@ -2612,14 +2677,14 @@ textarea {
 .map-legend i {
   width: 8px;
   height: 8px;
-  border-radius: 99px;
+  border-radius: 2px;
   display: inline-block;
   margin-right: 4px;
   background: #c9bba8;
 }
 
 .map-legend i.ok { background: #3d8a4d; }
-.map-legend i.sit { background: #1f7a4c; }
+.map-legend i.sit { background: #d4f25a; }
 .map-legend i.paper { background: #4d6ad6; }
 .map-legend i.dnc { background: #b42318; }
 

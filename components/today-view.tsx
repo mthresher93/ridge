@@ -137,8 +137,7 @@ export function TodayView() {
                 <div className="flex flex-wrap gap-1.5 mt-2">
                   <button
                     type="button"
-                    className="az-btn pri"
-                    style={{ padding: "0.2rem 0.55rem", fontSize: 11 }}
+                    className="az-btn pri az-btn-sm"
                     onClick={() => {
                       setSelectedLeadId(item.leadId);
                       router.push("/floor");
@@ -146,10 +145,10 @@ export function TodayView() {
                   >
                     Call
                   </button>
-                  <button type="button" className="az-btn" style={{ padding: "0.2rem 0.55rem", fontSize: 11 }} onClick={() => completeCallback(item.id)}>
+                  <button type="button" className="az-btn az-btn-sm" onClick={() => completeCallback(item.id)}>
                     Done
                   </button>
-                  <button type="button" className="az-btn ghost" style={{ padding: "0.2rem 0.55rem", fontSize: 11 }} onClick={() => snoozeCallback(item.id)}>
+                  <button type="button" className="az-btn ghost az-btn-sm" onClick={() => snoozeCallback(item.id)}>
                     +1 day
                   </button>
                 </div>

@@ -24,14 +24,14 @@ export function NumbersView() {
   if (loading) return <div className="text-[var(--muted)]">Crunching the tape…</div>;
 
   return (
-    <PageDesk>
+    <PageDesk script={false}>
       <div className="az-fill" style={{ gridTemplateRows: "auto auto minmax(0,1fr)" }}>
         <div className="flex items-baseline justify-between gap-3">
           <div className="az-title">Reports</div>
           <span className="text-[11px] text-[var(--muted)]">Recorded events only</span>
         </div>
 
-        <div className="grid grid-cols-5 gap-2">
+        <div className="report-kpis">
           <Kpi label="Dials" value={`${metrics.attempts}`} detail={`target ${workspace.settings.dialTarget}`} />
           <Kpi label="Connect" value={`${metrics.connectRate}%`} detail={`${metrics.connected} live`} />
           <Kpi label="Set" value={`${metrics.setRate}%`} detail={`${metrics.sets} sits`} />
@@ -99,7 +99,7 @@ export function NumbersView() {
 
 function Kpi({ label, value, detail }: { label: string; value: string; detail: string }) {
   return (
-    <div className="az-panel px-3 py-2">
+    <div className="report-kpi">
       <div className="text-[9px] font-mono uppercase tracking-[0.12em] text-[var(--faint)]">{label}</div>
       <div className="az-num text-[20px] leading-tight">{value}</div>
       <div className="text-[10px] text-[var(--muted)]">{detail}</div>

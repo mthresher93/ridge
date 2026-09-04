@@ -81,7 +81,7 @@ export function PeopleView() {
         </button>
       </div>
 
-      <div className="grid md:grid-cols-[1fr_200px_auto] gap-2">
+      <div className="grid md:grid-cols-[1fr_200px_auto] gap-2 items-center">
         <input
           className="az-input"
           placeholder="Search name, property, city, phone"
@@ -94,7 +94,7 @@ export function PeopleView() {
             <option key={stage}>{stage}</option>
           ))}
         </select>
-        <div className="az-chip gold self-center justify-self-start">{leads.length} shown</div>
+        <div className="text-[11px] font-mono uppercase tracking-[0.1em] text-[var(--faint)]">{leads.length} shown</div>
       </div>
 
       <div className="az-panel overflow-auto min-h-0">

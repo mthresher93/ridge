@@ -26,9 +26,9 @@ export function PlaybookView() {
     <PageDesk>
       <div className="az-fill" style={{ gridTemplateRows: "auto auto minmax(0,1fr)" }}>
         <div className="az-title">Playbook</div>
-        <div className="grid grid-cols-3 gap-2">
+        <div className="playbook-offers">
           {OFFERS.map((offer) => (
-            <article key={offer.name} className="az-panel px-3 py-2">
+            <article key={offer.name} className="playbook-offer">
               <div className="az-kicker">{offer.size}</div>
               <div className="text-[15px] mt-0.5">{offer.name}</div>
               <div className="az-num text-[var(--gold-2)]">{offer.range}</div>
