@@ -4,6 +4,10 @@ import { useEffect, useRef, useState, type ReactNode } from "react";
 import { lngLatToWorld, screenToLngLat, tileUrl, worldToLngLat } from "@/lib/geo";
 
 const TILE = 256;
+/** Highest native tile level. Beyond this, tiles are upscaled so CAD zoom stays continuous. */
+const MAX_TILE_Z = 19;
+export const MAX_ZOOM = 22;
+export const MIN_ZOOM = 4;
 
 export type MapKind = "satellite" | "streets";
 
@@ -56,7 +60,7 @@ export function TileMap({
     const onWheel = (event: WheelEvent) => {
       event.preventDefault();
       const { view: current, onMove: move } = latest.current;
-      const nextZoom = Math.max(4, Math.min(19, current.zoom + (event.deltaY > 0 ? -0.35 : 0.35)));
+      const nextZoom = Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, current.zoom + (event.deltaY > 0 ? -0.35 : 0.35)));
       const rect = el.getBoundingClientRect();
       const local = { x: event.clientX - rect.left, y: event.clientY - rect.top };
       const before = screenToLngLat(local.x, local.y, current);
@@ -70,16 +74,17 @@ export function TileMap({
     el.addEventListener("wheel", onWheel, { passive: false });
     return () => el.removeEventListener("wheel", onWheel);
   }, []);
-  const z = Math.max(3, Math.min(19, Math.round(zoom)));
+  const z = Math.max(3, Math.min(MAX_TILE_Z, Math.round(zoom)));
   const n = 2 ** z;
-  const scale = TILE * n;
+  const tileSize = TILE * 2 ** (zoom - z);
+  const scale = TILE * 2 ** zoom;
   const center = lngLatToWorld(lng, lat);
   const originX = center.x * scale - size.width / 2;
   const originY = center.y * scale - size.height / 2;
-  const x0 = Math.floor(originX / TILE);
-  const y0 = Math.floor(originY / TILE);
-  const x1 = Math.floor((originX + size.width) / TILE);
-  const y1 = Math.floor((originY + size.height) / TILE);
+  const x0 = Math.floor(originX / tileSize);
+  const y0 = Math.floor(originY / tileSize);
+  const x1 = Math.floor((originX + size.width) / tileSize);
+  const y1 = Math.floor((originY + size.height) / tileSize);
   const tiles: { key: string; left: number; top: number; src: string }[] = [];
   for (let y = y0; y <= y1; y += 1) {
     if (y < 0 || y >= n) continue;
@@ -87,8 +92,8 @@ export function TileMap({
       const tx = ((x % n) + n) % n;
       tiles.push({
         key: `${z}:${tx}:${y}`,
-        left: x * TILE - originX,
-        top: y * TILE - originY,
+        left: x * tileSize - originX,
+        top: y * tileSize - originY,
         src: tileUrl(kind, z, tx, y),
       });
     }
@@ -103,7 +108,7 @@ export function TileMap({
   return (
     <div
       ref={ref}
-      className={`tile-map ${className || ""}`}
+      className={`tile-map kind-${kind} ${className || ""}`}
       onPointerDown={(event) => {
         if (event.button !== 0) return;
         (event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
@@ -118,7 +123,14 @@ export function TileMap({
       }}
     >
       {tiles.map((tile) => (
-        <img key={tile.key} alt="" draggable={false} src={tile.src} className="tile-map-img" style={{ left: tile.left, top: tile.top }} />
+        <img
+          key={tile.key}
+          alt=""
+          draggable={false}
+          src={tile.src}
+          className="tile-map-img"
+          style={{ left: tile.left, top: tile.top, width: tileSize + 0.5, height: tileSize + 0.5 }}
+        />
       ))}
       <div className="tile-map-overlay">{children?.(view)}</div>
       <div className="tile-map-attr">

@@ -3,6 +3,8 @@ import { Exo_2, Instrument_Serif, JetBrains_Mono, Orbitron } from "next/font/goo
 import "./globals.css";
 import "./current.css";
 import "./dialer.css";
+import "./design.css";
+import "./map.css";
 import { Providers } from "./providers";
 
 const sans = Exo_2({

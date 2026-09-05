@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { compassLabel, estimateFor } from "@/lib/solar";
 import { money, nowIso, uid } from "@/lib/format";
@@ -15,21 +15,21 @@ import {
   syncLegacy,
 } from "@/lib/site";
 import { coordsFor, siteToLngLat } from "@/lib/geo";
-import { TileMap, type MapKind } from "./tile-map";
+import { MAX_ZOOM, MIN_ZOOM, TileMap, type MapKind } from "./tile-map";
 import { SiteCanvas, rotateSelectedFace, type CadSel, type CadTool } from "./site-canvas";
 import type { Obstruction, Point, Proposal, RoofDesign, RoofFace } from "@/lib/types";
 import { ProposalFlow } from "./proposal-flow";
 import { Station } from "./page-intro";
 
-const TOOLS: { id: CadTool; label: string }[] = [
-  { id: "pan", label: "Pan" },
-  { id: "select", label: "Select" },
-  { id: "draw", label: "Roof" },
-  { id: "vertex", label: "Vertex" },
-  { id: "panel", label: "Panel" },
-  { id: "gear", label: "Obstruction" },
-  { id: "tree", label: "Tree" },
-  { id: "measure", label: "Measure" },
+const TOOLS: { id: CadTool; label: string; key: string; glyph: string }[] = [
+  { id: "pan", label: "Pan", key: "H", glyph: "✥" },
+  { id: "select", label: "Select", key: "V", glyph: "↖" },
+  { id: "draw", label: "Roof", key: "R", glyph: "⬠" },
+  { id: "vertex", label: "Vertex", key: "E", glyph: "◇" },
+  { id: "panel", label: "Panel", key: "P", glyph: "▦" },
+  { id: "gear", label: "Obstruct", key: "O", glyph: "◎" },
+  { id: "tree", label: "Tree", key: "T", glyph: "♣" },
+  { id: "measure", label: "Measure", key: "M", glyph: "⟷" },
 ];
 
 export function DesignView() {
@@ -42,13 +42,17 @@ export function DesignView() {
   const [kind, setKind] = useState<MapKind>("satellite");
   const [zoom, setZoom] = useState(19);
   const [center, setCenter] = useState({ lat: 35.37, lng: -119.02 });
+  const canvasRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (!raw) return;
-    const lat = raw.lat || coordsFor(lead?.city || "", lead?.id || "").lat;
-    const lng = raw.lng || coordsFor(lead?.city || "", lead?.id || "").lng;
-    setCenter({ lat, lng });
-    setZoom(19);
+    const origin = {
+      lat: raw.lat || coordsFor(lead?.city || "", lead?.id || "").lat,
+      lng: raw.lng || coordsFor(lead?.city || "", lead?.id || "").lng,
+    };
+    const fit = fitFor(raw, origin, canvasRef.current);
+    setCenter(fit.center);
+    setZoom(fit.zoom);
     setSel(null);
     setDraft([]);
   }, [lead?.id]);
@@ -157,17 +161,13 @@ export function DesignView() {
   function fitSite() {
     if (!design) return;
     const origin = { lat: design.lat || center.lat, lng: design.lng || center.lng };
-    const bounds = siteBounds(design);
-    const pad = 1.35;
-    const spanFt = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 40) * pad;
-    const mid = siteToLngLat(origin, bounds.cx, bounds.cy);
-    let z = 19;
-    if (spanFt > 220) z = 18;
-    if (spanFt > 420) z = 17;
-    if (spanFt > 800) z = 16;
-    if (spanFt > 1500) z = 15;
-    setCenter({ lat: mid.lat, lng: mid.lng });
-    setZoom(z);
+    const fit = fitFor(design, origin, canvasRef.current);
+    setCenter(fit.center);
+    setZoom(fit.zoom);
+  }
+
+  function zoomBy(delta: number) {
+    setZoom((z) => Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, z + delta)));
   }
 
   function setOriginFromView() {
@@ -178,6 +178,21 @@ export function DesignView() {
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
+      const tag = (event.target as HTMLElement | null)?.tagName;
+      const typing = tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT";
+      if (!typing && !event.metaKey && !event.ctrlKey && !event.altKey) {
+        const hit = TOOLS.find((item) => item.key.toLowerCase() === event.key.toLowerCase());
+        if (hit) {
+          event.preventDefault();
+          setTool(hit.id);
+          return;
+        }
+        if (event.key === "f" || event.key === "F") {
+          event.preventDefault();
+          fitSite();
+          return;
+        }
+      }
       if (event.key === "Escape") {
         setDraft([]);
         setSel(null);
@@ -222,12 +237,9 @@ export function DesignView() {
       n="07"
       title="Design"
       fill
-      lede={
-        <>
-          Roof planes in feet, 425W modules, live azimuth. <em>Size from the heading, not a brochure.</em>
-        </>
-      }
-      chip={lead.city || "ROOF"}
+      compact
+      lede={<>Roof planes in feet · {design.panelWatts}W modules · live azimuth</>}
+      chip={live.panelCount ? `${live.systemKw} kW` : "UNSIZED"}
     >
     <div className="cad-desk">
       <header className="cad-top">
@@ -251,9 +263,17 @@ export function DesignView() {
           <button type="button" className="az-btn" onClick={() => setKind((k) => (k === "satellite" ? "streets" : "satellite"))}>
             {kind === "satellite" ? "Satellite" : "Streets"}
           </button>
-          <button type="button" className="az-btn" onClick={fitSite}>
-            Fit
-          </button>
+          <div className="cad-zoom" role="group" aria-label="Zoom">
+            <button type="button" onClick={() => zoomBy(-0.5)} title="Zoom out">
+              −
+            </button>
+            <button type="button" onClick={fitSite} title="Fit roof to view">
+              Fit
+            </button>
+            <button type="button" onClick={() => zoomBy(0.5)} title="Zoom in">
+              +
+            </button>
+          </div>
           <button type="button" className="az-btn" onClick={setOriginFromView}>
             Set origin
           </button>
@@ -266,13 +286,21 @@ export function DesignView() {
       <div className="cad-body">
         <aside className="cad-tools">
           {TOOLS.map((item) => (
-            <button key={item.id} type="button" className={tool === item.id ? "on" : ""} onClick={() => setTool(item.id)} title={item.label}>
-              {item.label}
+            <button
+              key={item.id}
+              type="button"
+              className={tool === item.id ? "on" : ""}
+              onClick={() => setTool(item.id)}
+              title={`${item.label} (${item.key})`}
+            >
+              <i aria-hidden>{item.glyph}</i>
+              <span>{item.label}</span>
+              <kbd>{item.key}</kbd>
             </button>
           ))}
         </aside>
 
-        <div className="cad-canvas">
+        <div className="cad-canvas" ref={canvasRef}>
           <TileMap lat={center.lat} lng={center.lng} zoom={zoom} kind={kind} onMove={(next) => { setCenter({ lat: next.lat, lng: next.lng }); setZoom(next.zoom); }}>
             {(view) => (
               <SiteCanvas
@@ -471,6 +499,19 @@ export function DesignView() {
     </div>
     </Station>
   );
+}
+
+/** Continuous zoom so the roof footprint fills ~60% of the shorter canvas edge. */
+function fitFor(design: RoofDesign, origin: { lat: number; lng: number }, el: HTMLDivElement | null) {
+  const bounds = siteBounds(design);
+  const spanFt = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 40);
+  const width = el?.clientWidth || 900;
+  const height = el?.clientHeight || 600;
+  const targetPx = Math.min(width, height) * 0.6;
+  const metersPerPx = (spanFt * 0.3048) / targetPx;
+  const zoom = Math.log2((156543.03392 * Math.cos((origin.lat * Math.PI) / 180)) / metersPerPx);
+  const mid = siteToLngLat(origin, bounds.cx, bounds.cy);
+  return { center: { lat: mid.lat, lng: mid.lng }, zoom: Math.max(MIN_ZOOM, Math.min(MAX_ZOOM, zoom)) };
 }
 
 function FaceInspector({

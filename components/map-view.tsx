@@ -182,7 +182,7 @@ export function MapView() {
 
   if (loading) {
     return (
-      <Station n="08" title="Map" fill lede="Territory pins from recorded cities and saved designs." chip="LOCAL">
+      <Station n="08" title="Map" fill compact lede="Territory pins from recorded cities and saved designs." chip="LOCAL">
         <div className="map-desk map-loading">
           <div className="map-empty-state">Loading map workspace…</div>
         </div>
@@ -195,11 +195,8 @@ export function MapView() {
       n="08"
       title="Map"
       fill
-      lede={
-        <>
-          City pins, filters, clustering. <em>Hollow pins are city estimates</em> until you drop a design pin.
-        </>
-      }
+      compact
+      lede={<>Territory · hollow pins are city estimates until a design pin is dropped</>}
       chip={`${rows.length} PINS`}
     >
     <div className="map-desk">

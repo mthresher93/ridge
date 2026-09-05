@@ -1,0 +1,350 @@
+/* Design — CAD workspace chrome on the Current palette. */
+
+.cad-desk {
+  grid-template-rows: 40px minmax(0, 1fr) 24px;
+  background: var(--bg);
+  color: var(--tx);
+  border: 0;
+  border-top: 1px solid var(--br);
+  border-radius: 0;
+}
+
+.cad-top,
+.cad-status {
+  background: var(--bg2);
+  border-color: var(--br);
+}
+
+.cad-status {
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--tx4);
+}
+
+.cad-status span b {
+  color: var(--tx2);
+  font-weight: 500;
+}
+
+.cad-project {
+  color: var(--tx4);
+}
+
+.cad-project > span {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+}
+
+.cad-project select {
+  background: var(--bg);
+  border-color: var(--br);
+  color: var(--tx);
+  min-height: 28px;
+  border-radius: 7px;
+  font-size: 12px;
+}
+
+.cad-address {
+  color: var(--tx3);
+}
+
+.cad-top-actions {
+  align-items: center;
+  gap: 6px;
+}
+
+.cad-top-actions .az-btn {
+  min-height: 28px;
+  white-space: nowrap;
+}
+
+.cad-zoom {
+  display: flex;
+  border: 1px solid var(--br);
+  border-radius: 7px;
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.cad-zoom button {
+  border: 0;
+  background: transparent;
+  color: var(--tx2);
+  min-height: 26px;
+  min-width: 28px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cad-zoom button + button {
+  border-left: 1px solid var(--br);
+}
+
+.cad-zoom button:hover {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--tx);
+}
+
+/* Tool rail */
+
+.cad-body {
+  grid-template-columns: 64px minmax(0, 1fr) 272px;
+}
+
+.cad-tools {
+  background: var(--bg2);
+  border-color: var(--br);
+  padding: 6px 0;
+  gap: 2px;
+}
+
+.cad-tools button,
+.cad-tools button.on {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 8px 2px 7px;
+  border: 0;
+  border-left: 2px solid transparent;
+  background: transparent;
+  color: var(--tx4);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: var(--fm);
+}
+
+.cad-tools button i {
+  font-style: normal;
+  font-size: 16px;
+  line-height: 1;
+  color: var(--tx3);
+}
+
+.cad-tools button kbd {
+  position: absolute;
+  top: 3px;
+  right: 4px;
+  font-family: var(--fm);
+  font-size: 7px;
+  color: var(--tx4);
+  opacity: 0.6;
+}
+
+.cad-tools button:hover {
+  color: var(--tx2);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.cad-tools button.on {
+  border-left-color: var(--cy);
+  background: rgba(0, 229, 255, 0.08);
+  color: var(--cy);
+}
+
+.cad-tools button.on i {
+  color: var(--cy);
+}
+
+/* Canvas */
+
+.cad-canvas {
+  background: #0a0f18;
+}
+
+.cad-hint {
+  left: 12px;
+  bottom: 12px;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.02em;
+  color: var(--tx2);
+  background: rgba(8, 14, 24, 0.85);
+  border: 1px solid var(--br);
+  border-radius: 7px;
+  padding: 6px 10px;
+  backdrop-filter: blur(6px);
+}
+
+.tile-map {
+  cursor: crosshair;
+}
+
+/* Geometry palette: cyan planes, teal modules, amber selection */
+
+.roof-face {
+  fill: rgba(0, 229, 255, 0.14);
+  stroke: var(--cy);
+  stroke-width: 1.5;
+}
+
+.roof-face.on {
+  fill: rgba(255, 171, 0, 0.14);
+  stroke: var(--am);
+  stroke-width: 2;
+}
+
+.roof-face.blocked {
+  fill: rgba(255, 23, 68, 0.12);
+  stroke: var(--rd);
+}
+
+.roof-setback {
+  stroke: rgba(0, 229, 255, 0.5);
+}
+
+.roof-edge-on {
+  stroke: var(--am);
+}
+
+.roof-vert {
+  fill: #0a0f18;
+  stroke: var(--cy);
+  stroke-width: 1.5;
+}
+
+.roof-vert.on {
+  fill: var(--am);
+  stroke: var(--am);
+}
+
+.mod-cell {
+  fill: rgba(0, 200, 150, 0.55);
+  stroke: rgba(200, 255, 240, 0.7);
+  stroke-width: 0.75;
+}
+
+.mod-cell.on {
+  stroke: var(--am);
+  stroke-width: 1.5;
+}
+
+.obs-box {
+  fill: rgba(20, 24, 32, 0.8);
+  stroke: var(--tx3);
+}
+
+.obs-tree {
+  fill: rgba(0, 230, 118, 0.25);
+  stroke: var(--gr);
+}
+
+.draft-line {
+  stroke: var(--cy);
+}
+
+.measure-line {
+  stroke: var(--am);
+}
+
+.cad-label {
+  fill: var(--tx);
+  font-size: 10px;
+  stroke: rgba(5, 8, 15, 0.85);
+  stroke-width: 3.5px;
+}
+
+.cad-label.dim {
+  fill: var(--am);
+}
+
+/* Inspector */
+
+.cad-inspector {
+  background: var(--bg2);
+  border-color: var(--br);
+  padding: 12px;
+  gap: 14px;
+}
+
+.cad-insp-block .az-kicker {
+  color: var(--cy);
+  font-family: var(--fh);
+  letter-spacing: 0.2em;
+  font-size: 10px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--br);
+}
+
+.cad-insp-block label {
+  color: var(--tx4);
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.cad-insp-block .az-input,
+.cad-insp-block .az-select {
+  background: var(--bg);
+  border-color: var(--br);
+  min-height: 30px;
+  font-size: 12px;
+  font-family: var(--fm);
+}
+
+.cad-metrics {
+  gap: 8px 12px;
+}
+
+.cad-metrics span {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--tx4);
+}
+
+.cad-metrics b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.cad-metrics.faint b {
+  font-size: 12px;
+  color: var(--tx3);
+}
+
+.cad-note {
+  color: var(--tx4);
+  font-size: 11px;
+}
+
+.cad-inspector .az-btn {
+  min-height: 28px;
+  font-size: 11px;
+}
+
+.prop-title {
+  font-family: var(--fh);
+  font-style: normal;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 15px;
+  color: var(--tx);
+}
+
+.prop-kicker {
+  color: var(--cy);
+}
+
+.prop-steps button.on {
+  color: var(--cy);
+  border-color: var(--cy);
+}
+
+@media (max-width: 1200px) {
+  .cad-body {
+    grid-template-columns: 56px minmax(0, 1fr) 240px;
+  }
+  .cad-tools button span {
+    display: none;
+  }
+}
