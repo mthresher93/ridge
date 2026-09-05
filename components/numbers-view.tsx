@@ -5,7 +5,6 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { derive } from "@/lib/derive";
 import { PIPELINE_GROUPS } from "@/lib/stages";
 import { formatWhen, money, moneyShort } from "@/lib/format";
-import { Station } from "./page-intro";
 
 export function NumbersView() {
   const { workspace, loading } = useWorkspace();
@@ -24,18 +23,14 @@ export function NumbersView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Crunching the tape…</div>;
 
   return (
-    <Station
-      n="10"
-      title="Reports"
-      fill
-      lede={
-        <>
-          Recorded activity only — connect and set rates come from call history, not a hoped-for funnel.
-        </>
-      }
-      chip="RECORDED · LOCAL"
-    >
-      <div className="az-fill" style={{ gridTemplateRows: "auto minmax(0,1fr)", height: "100%" }}>
+    <div className="cd-page fill">
+      <div className="az-fill crm-desk">
+        <header className="crm-desk-head">
+          <div>
+            <h1>Reports</h1>
+            <p>Connect and set rates come from call history, not a hoped-for funnel.</p>
+          </div>
+        </header>
 
         <div className="report-kpis">
           <Kpi label="Dials" value={`${metrics.attempts}`} detail={`target ${workspace.settings.dialTarget}`} />
@@ -99,7 +94,7 @@ export function NumbersView() {
           </section>
         </div>
       </div>
-    </Station>
+    </div>
   );
 }
 

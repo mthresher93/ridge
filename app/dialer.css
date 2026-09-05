@@ -10,7 +10,7 @@
   grid-template-rows: 40px minmax(0, 1fr);
   height: 100%;
   min-height: 0;
-  background: #fff;
+  background: var(--bg);
 }
 
 .dl-collapsed {
@@ -33,7 +33,7 @@
   gap: 12px;
   padding: 0 12px;
   border-bottom: 1px solid var(--br);
-  background: #fff;
+  background: var(--bg);
   min-width: 0;
 }
 
@@ -118,7 +118,7 @@
   padding: 2px;
   border: 1px solid var(--br);
   border-radius: 6px;
-  background: #f7f4ee;
+  background: var(--bg3);
 }
 
 .script-mode button {
@@ -131,8 +131,8 @@
 }
 
 .script-mode button.on {
-  background: #c2410c;
-  color: #fff8f0;
+  background: var(--action);
+  color: var(--action-ink);
 }
 
 .dl-queue {
@@ -140,7 +140,7 @@
   flex-direction: column;
   min-height: 0;
   border-right: 1px solid var(--br);
-  background: #faf8f5;
+  background: var(--bg2);
 }
 
 .dl-queue-head {
@@ -187,8 +187,8 @@
 }
 
 .dl .rail-filter.on {
-  color: #c2410c;
-  background: #fff4ec;
+  color: var(--action);
+  background: var(--gold-dim);
 }
 
 .dl-split .dl-queue-head,
@@ -227,12 +227,12 @@
 }
 
 .dialer-q-row.on {
-  background: #fff4ec;
-  box-shadow: inset 2px 0 0 #c2410c;
+  background: var(--gold-dim);
+  box-shadow: inset 2px 0 0 var(--action);
 }
 
 .dialer-q-row.next:not(.on) .dialer-q-copy i {
-  color: #c2410c;
+  color: var(--action);
 }
 
 .dialer-q-dot {
@@ -281,22 +281,22 @@
   display: grid;
   place-items: center;
   border-radius: 4px;
-  background: #fff;
+  background: var(--bg);
   border: 1px solid var(--br);
   font-weight: 700;
 }
 
 .dl-split .dialer-q-row.on .dialer-q-initials,
 .dl-focus .dialer-q-row.on .dialer-q-initials {
-  background: #c2410c;
-  color: #fff8f0;
-  border-color: #c2410c;
+  background: var(--action);
+  color: var(--action-ink);
+  border-color: var(--action);
 }
 
 .dl-split .dialer-q-row.next:not(.on) .dialer-q-initials,
 .dl-focus .dialer-q-row.next:not(.on) .dialer-q-initials {
   border-color: #e06a2b;
-  color: #c2410c;
+  color: var(--action);
 }
 
 .dialer-empty {
@@ -313,7 +313,19 @@
   min-height: 0;
   padding: 18px 24px 14px;
   gap: 12px;
-  background: #fff;
+  background: var(--bg);
+}
+
+.dl-stage.is-ring {
+  box-shadow: inset 3px 0 0 var(--warning);
+}
+
+.dl-stage.is-live {
+  box-shadow: inset 3px 0 0 var(--success);
+}
+
+.dl-stage.is-wrap {
+  box-shadow: inset 3px 0 0 var(--action);
 }
 
 .dl-stage.is-live,
@@ -375,11 +387,11 @@
 }
 
 .dl-state.idle { color: var(--tx4); }
-.dl-state.progress { color: #c2410c; }
+.dl-state.progress { color: var(--action); }
 .dl-state.progress i { animation: dlpulse 0.9s ease-in-out infinite; }
 .dl-state.live { color: var(--tl); }
 .dl-state.hold { color: var(--am); }
-.dl-state.wrap { color: #9a3412; }
+.dl-state.wrap { color: var(--gold-2); }
 .dl-state.down { color: var(--rd); }
 .dl-state.outcome { color: var(--tx3); }
 
@@ -394,7 +406,7 @@
   text-transform: none;
   font-weight: 600;
   line-height: 1.1;
-  color: #1c1915;
+  color: var(--tx);
 }
 
 .dl-focus .dl-name {
@@ -404,7 +416,7 @@
 .dl-phone {
   font-family: var(--fm);
   font-size: 14px;
-  color: #3f3a33;
+  color: var(--tx2);
 }
 
 .dl-focus .dl-phone {
@@ -437,7 +449,7 @@
 }
 
 .dl-timer.live b { color: var(--tl); }
-.dl-timer.progress b { color: #c2410c; }
+.dl-timer.progress b { color: var(--action); }
 
 .dl-timer span {
   font-family: var(--fm);
@@ -458,9 +470,9 @@
   width: 100%;
   min-height: 42px;
   border-radius: 6px;
-  border: 1px solid #c2410c;
-  background: #c2410c;
-  color: #fff8f0;
+  border: 1px solid var(--action);
+  background: var(--action);
+  color: var(--action-ink);
   font-family: var(--fb);
   font-size: 13px;
   letter-spacing: 0.06em;
@@ -505,8 +517,8 @@
   padding: 0 10px;
   border-radius: 5px;
   border: 1px solid var(--br);
-  background: #fff;
-  color: #3f3a33;
+  background: var(--bg);
+  color: var(--tx2);
   font-size: 12px;
   font-weight: 600;
 }
@@ -514,7 +526,7 @@
 .dl-secondary.on {
   border-color: var(--am);
   color: var(--am);
-  background: #fff7ed;
+  background: var(--gold-dim);
 }
 
 .dl-secondary.ghost {
@@ -526,7 +538,7 @@
 .dl-secondary.ghost:hover,
 .dl-secondary.ghost.on {
   color: var(--tx);
-  background: #f7f4ee;
+  background: var(--bg3);
 }
 
 .dl-wrap-hint,
@@ -536,7 +548,7 @@
   text-align: center;
 }
 
-.dl-wrap-hint { color: #9a3412; }
+.dl-wrap-hint { color: var(--gold-2); }
 .dl-block { color: var(--rd); }
 
 .dl .keypad {
@@ -550,14 +562,14 @@
   min-height: 32px;
   border-radius: 4px;
   border: 1px solid var(--br);
-  background: #fff;
+  background: var(--bg);
   font-family: var(--fm);
   font-size: 14px;
-  color: #1c1915;
+  color: var(--tx);
 }
 
 .dl .keypad button:hover {
-  background: #fff4ec;
+  background: var(--gold-dim);
 }
 
 .dl .keypad p {
@@ -578,7 +590,7 @@
   font-size: 9px;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: #c2410c;
+  color: var(--action);
 }
 
 .dl-next b {
@@ -614,16 +626,16 @@
   height: 100%;
   min-height: 56px;
   resize: none;
-  background: #faf8f5;
+  background: var(--bg2);
   border: 1px solid var(--br);
-  color: #1c1915;
+  color: var(--tx);
   border-radius: 4px;
   font-family: var(--fb);
   font-size: 13px;
 }
 
 .dl-notes.live textarea {
-  background: #fff;
+  background: var(--bg);
   border-color: #e06a2b;
 }
 
@@ -637,7 +649,7 @@
   overflow: auto;
   min-height: 0;
   padding: 12px 14px 16px;
-  background: #faf8f5;
+  background: var(--bg2);
 }
 
 .dl-ctx-head {
@@ -714,13 +726,13 @@
   border-left: 1px solid var(--br);
   border-radius: 0;
   min-height: 0;
-  background: #faf8f5;
+  background: var(--bg2);
 }
 
 .dl .script-head {
   padding: 8px 12px 6px;
   letter-spacing: 0.1em;
-  color: #c2410c;
+  color: var(--action);
 }
 
 .dl .script-tools {
@@ -728,15 +740,15 @@
 }
 
 .dl .script-tools button.on {
-  background: #fff4ec;
-  color: #c2410c;
+  background: var(--gold-dim);
+  color: var(--action);
 }
 
 .dl .script-search {
-  background: #fff;
+  background: var(--bg);
   border-color: var(--br);
   border-radius: 4px;
-  color: #1c1915;
+  color: var(--tx);
 }
 
 .dl .script-now {
@@ -746,13 +758,13 @@
 .dl .script-now-meta b,
 .dl .script-idx,
 .dl .script-label {
-  color: #9a3412;
+  color: var(--gold-2);
 }
 
 .dl .script-now-say {
   font-size: 16px;
   line-height: 1.45;
-  color: #1c1915;
+  color: var(--tx);
 }
 
 .dl .script-focus .script-now-say {
@@ -761,15 +773,15 @@
 }
 
 .dl .script-now-nav .az-btn {
-  background: #fff;
+  background: var(--bg);
   border-color: var(--br);
   color: var(--tx);
 }
 
 .dl .script-now-nav .az-btn.pri {
-  background: #c2410c;
-  border-color: #c2410c;
-  color: #fff8f0;
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--action-ink);
 }
 
 .dl .script-beat {
@@ -777,7 +789,7 @@
 }
 
 .dl .script-beat.active {
-  background: #fff4ec;
+  background: var(--gold-dim);
 }
 
 .dl .wrap-backdrop {
@@ -789,18 +801,18 @@
   width: min(580px, calc(100% - 24px));
   border-radius: 8px;
   border: 1px solid var(--br);
-  background: #fff;
+  background: var(--bg);
   padding: 12px 14px;
   gap: 8px;
   box-shadow: 0 10px 28px rgba(28, 25, 21, 0.1);
 }
 
 .dl .wrap-sheet .az-kicker {
-  color: #c2410c;
+  color: var(--action);
 }
 
 .dl .wrap-sheet .az-btn {
-  background: #fff;
+  background: var(--bg);
   border-color: var(--br);
   color: var(--tx);
 }
@@ -812,16 +824,16 @@
 }
 
 .dl .wrap-sheet .az-btn.pri {
-  background: #c2410c;
-  border-color: #c2410c;
-  color: #fff8f0;
+  background: var(--action);
+  border-color: var(--action);
+  color: var(--action-ink);
 }
 
 .dl .wrap-sheet .az-area,
 .dl .wrap-sheet .az-input {
-  background: #faf8f5;
+  background: var(--bg2);
   border-color: var(--br);
-  color: #1c1915;
+  color: var(--tx);
 }
 
 .wrap-title {
@@ -864,20 +876,20 @@
 .dl .wrap-pick {
   border-radius: 5px;
   border: 1px solid var(--br);
-  background: #fff;
+  background: var(--bg);
   min-height: 28px;
   font-size: 11px;
 }
 
 .dl .wrap-pick.on {
-  border-color: #c2410c;
-  color: #c2410c;
-  background: #fff4ec;
+  border-color: var(--action);
+  color: var(--action);
+  background: var(--gold-dim);
 }
 
 .dl .az-pop.audio-pop {
   width: 240px;
-  background: #fff;
+  background: var(--bg);
   border: 1px solid var(--br);
   border-radius: 10px;
   box-shadow: 0 12px 32px rgba(28, 25, 21, 0.12);
@@ -889,11 +901,11 @@
 
 .dl .mic-meter {
   height: 8px;
-  background: #efeae1;
+  background: var(--bg4);
 }
 
 .dl .mic-meter-fill {
-  background: linear-gradient(90deg, #ea580c, #c2410c);
+  background: linear-gradient(90deg, #ea580c, var(--action));
 }
 
 @media (max-width: 1360px) {

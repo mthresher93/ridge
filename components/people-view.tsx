@@ -7,7 +7,6 @@ import { STAGES } from "@/lib/stages";
 import { leadEligibility, leadScore, money, nowIso, phonePretty, uid } from "@/lib/format";
 import { createLinkedOpportunity } from "@/lib/crm";
 import { LeadDrawer } from "./lead-drawer";
-import { Station } from "./page-intro";
 import type { Lead } from "@/lib/types";
 
 export function PeopleView() {
@@ -72,25 +71,19 @@ export function PeopleView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading contacts…</div>;
 
   return (
-    <Station
-      n="03"
-      title="Contacts"
-      fill
-      lede={
-        <>
-          Contacts on file. <em>Consent and DNC stay visible.</em> No score is invented from a missing bill.
-        </>
-      }
-      chip={`${leads.length} SHOWN`}
-      actions={
+    <div className="cd-page fill">
+    <div className="az-fill crm-desk">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Contacts</h1>
+          <p>Consent and DNC stay visible. Score is not invented from a missing bill.</p>
+        </div>
         <button className="az-btn pri sm" onClick={addLead}>
           Add lead
         </button>
-      }
-    >
-    <div className="az-fill" style={{ gridTemplateRows: "auto minmax(0,1fr)", height: "100%" }}>
+      </header>
 
-      <div className="grid md:grid-cols-[1fr_200px_auto] gap-2 items-center">
+      <div className="crm-desk-tools">
         <input
           className="az-input"
           placeholder="Search name, property, city, phone"
@@ -103,10 +96,10 @@ export function PeopleView() {
             <option key={stage}>{stage}</option>
           ))}
         </select>
-        <div className="text-[11px] font-mono uppercase tracking-[0.1em] text-[var(--faint)]">{leads.length} shown</div>
+        <div className="text-[11px] text-[var(--tx4)]">{leads.length} shown</div>
       </div>
 
-      <div className="az-panel overflow-auto min-h-0">
+      <div className="az-panel overflow-auto min-h-0 crm-table-wrap">
         <table className="az-table min-w-[980px]">
           <thead>
             <tr>
@@ -136,6 +129,7 @@ export function PeopleView() {
               return (
                 <tr
                   key={lead.id}
+                  className={lead.id === selectedId ? "on" : ""}
                   onClick={() => {
                     setSelectedId(lead.id);
                     setSelectedLeadId(lead.id);
@@ -169,6 +163,6 @@ export function PeopleView() {
 
       {selected ? <LeadDrawer lead={selected} onClose={() => setSelectedId(null)} /> : null}
     </div>
-    </Station>
+    </div>
   );
 }

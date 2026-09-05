@@ -14,7 +14,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 ];
 
 const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
-  { id: "cyan", label: "Ember", swatch: "#c2410c" },
+  { id: "cyan", label: "Ember", swatch: "#e24a12" },
   { id: "violet", label: "Violet", swatch: "#7c4dff" },
   { id: "amber", label: "Amber", swatch: "#ffab00" },
   { id: "teal", label: "Teal", swatch: "#00bfa5" },

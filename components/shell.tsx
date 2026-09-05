@@ -55,8 +55,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <span className="az-chip">⌘K</span>
         </button>
 
-        <div className="right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
-          <div className="mode" style={{ display: "flex", gap: 3, padding: 3, border: "1px solid var(--br)", borderRadius: 8, background: "var(--bg2)" }}>
+        <div className="az-deck-right">
+          <div className="mode">
             <button type="button" className={`mode-b ${mode === "solo" ? "on" : ""}`} onClick={() => setMode("solo")}>
               Solo
             </button>
@@ -68,7 +68,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <span className={`livedot ${floor.open ? "" : "off"}`} />
             {loading ? "Syncing" : saveStatus === "error" ? "Save failed" : "Ready"}
           </span>
-          <span className="az-num text-[10px] text-[var(--tx4)]">{metrics.open.length} OPEN</span>
+          <span className="az-num text-[10px] text-[var(--tx4)]">{metrics.open.length} open</span>
           <button className="az-btn pri" onClick={() => router.push("/floor")}>
             Dialer
           </button>

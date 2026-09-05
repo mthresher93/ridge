@@ -13,7 +13,7 @@
   grid-template-rows: 32px minmax(0, 1fr) 20px;
   height: 100%;
   min-height: 0;
-  background: #fff;
+  background: var(--bg);
   color: var(--tx);
   border: 0;
   border-radius: 0;
@@ -26,7 +26,7 @@
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  background: #faf8f5;
+  background: var(--bg2);
   border-color: var(--br);
 }
 
@@ -59,7 +59,7 @@
 }
 
 .cad-project select {
-  background: #fff;
+  background: var(--bg);
   border: 1px solid var(--br);
   color: var(--tx);
   min-height: 26px;
@@ -93,7 +93,7 @@
   border: 1px solid var(--br);
   border-radius: 4px;
   overflow: hidden;
-  background: #fff;
+  background: var(--bg);
 }
 
 .cad-zoom button {
@@ -112,7 +112,7 @@
 }
 
 .cad-zoom button:hover {
-  background: #fff4ec;
+  background: var(--gold-dim);
   color: var(--tx);
 }
 
@@ -130,7 +130,7 @@
   display: flex;
   flex-direction: column;
   border-right: 1px solid var(--br);
-  background: #faf8f5;
+  background: var(--bg2);
   padding: 4px 0;
   gap: 1px;
 }
@@ -177,7 +177,7 @@
 
 .cad-tools button.on {
   border-left-color: #c2410c;
-  background: #fff4ec;
+  background: var(--gold-dim);
   color: #c2410c;
 }
 
@@ -339,7 +339,7 @@
   overflow: auto;
   min-height: 0;
   padding: 8px 10px 12px;
-  background: #faf8f5;
+  background: var(--bg2);
   border-left: 1px solid var(--br);
 }
 
@@ -379,12 +379,12 @@
 
 .cad-insp-block .az-input,
 .cad-insp-block .az-select {
-  background: #fff;
+  background: var(--bg);
   border-color: var(--br);
   min-height: 28px;
   font-size: 12px;
   font-family: var(--fm);
-  color: #1c1915;
+  color: var(--tx);
 }
 
 .cad-metrics {
@@ -446,12 +446,12 @@
 
 .prop-insp .prop-steps {
   border-color: var(--br);
-  background: #fff;
+  background: var(--bg);
 }
 
 .prop-insp .prop-steps button.on {
   color: #c2410c;
-  background: #fff4ec;
+  background: var(--gold-dim);
 }
 
 .prop-insp .prop-dl > div {
@@ -463,7 +463,7 @@
   position: sticky;
   bottom: 0;
   z-index: 2;
-  background: #faf8f5;
+  background: var(--bg2);
   padding-top: 8px;
   padding-bottom: 2px;
 }
@@ -472,7 +472,7 @@
   display: block;
   width: 100%;
   height: 88px;
-  background: #fff;
+  background: var(--bg);
   border: 1px solid var(--br);
 }
 
@@ -503,9 +503,9 @@
 }
 
 .prop-present-close {
-  background: #fff8f0;
-  color: #1c1915;
-  border-color: #e4ddd2;
+  background: var(--gold-dim);
+  color: var(--tx);
+  border-color: var(--br);
 }
 
 .prop-sheet {
@@ -517,6 +517,14 @@
   color: #1c1915;
   padding: 48px 56px 36px;
   box-shadow: 0 32px 90px rgba(28, 25, 21, 0.34);
+}
+
+.prop-sheet h1,
+.prop-sheet h2,
+.prop-sheet p,
+.prop-sheet dt,
+.prop-sheet dd {
+  color: inherit;
 }
 
 .prop-sheet-head {
@@ -570,7 +578,7 @@
   gap: 32px;
   margin: 32px 0 8px;
   padding: 22px 0;
-  border-color: #e4ddd2;
+  border-color: var(--br);
 }
 
 .prop-sheet-hero b {

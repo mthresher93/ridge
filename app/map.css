@@ -13,7 +13,7 @@
   grid-template-rows: 32px minmax(0, 1fr) 20px;
   height: 100%;
   min-height: 0;
-  background: #fff;
+  background: var(--bg);
   color: var(--tx);
   border: 0;
   border-radius: 0;
@@ -34,14 +34,14 @@
   align-items: center;
   gap: 8px;
   padding: 0 10px;
-  background: #faf8f5;
+  background: var(--bg2);
   border-bottom: 1px solid var(--br);
 }
 
 .map-search {
   width: min(220px, 28vw);
   min-height: 26px;
-  background: #fff;
+  background: var(--bg);
   border-color: var(--br);
   color: var(--tx);
   border-radius: 4px;
@@ -52,7 +52,7 @@
 .map-owner {
   width: 118px;
   min-height: 26px;
-  background: #fff;
+  background: var(--bg);
   border-color: var(--br);
   color: var(--tx);
   border-radius: 4px;
@@ -90,7 +90,7 @@
 }
 
 .map-filters button.on {
-  background: #fff4ec;
+  background: var(--gold-dim);
   color: #c2410c;
 }
 
@@ -252,7 +252,7 @@
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   border-left: 1px solid var(--br);
-  background: #fff;
+  background: var(--bg);
   min-height: 0;
 }
 
@@ -367,7 +367,7 @@
   min-height: 26px;
   padding: 0 9px;
   font-size: 11px;
-  background: #fff;
+  background: var(--bg);
   color: var(--tx2);
   border-color: var(--br);
   border-radius: 4px;
@@ -414,7 +414,7 @@
   justify-content: space-between;
   align-items: center;
   border: 0;
-  background: #faf8f5;
+  background: var(--bg2);
   color: var(--tx3);
   padding: 6px 12px;
   font-family: var(--fm);
@@ -431,7 +431,7 @@
 
 .map-city-head:hover {
   color: #c2410c;
-  background: #fff4ec;
+  background: var(--gold-dim);
 }
 
 .map-list-row {
@@ -451,11 +451,11 @@
 
 .map-list-row:hover,
 .map-list-row.hover {
-  background: #fff4ec;
+  background: var(--gold-dim);
 }
 
 .map-list-row.on {
-  background: #fff4ec;
+  background: var(--gold-dim);
   box-shadow: inset 2px 0 0 #c2410c;
 }
 
@@ -525,7 +525,7 @@
   font-size: 10px;
   color: var(--tx3);
   border-top: 1px solid var(--br);
-  background: #faf8f5;
+  background: var(--bg2);
 }
 
 .map-legend i {
@@ -553,7 +553,7 @@
   justify-content: space-between;
   gap: 10px;
   padding: 0 10px;
-  background: #faf8f5;
+  background: var(--bg2);
   border-top: 1px solid var(--br);
   font-family: var(--fm);
   font-size: 10px;
