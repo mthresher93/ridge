@@ -95,7 +95,7 @@ export function scriptFor(lead: Lead | null, design?: RoofDesign | null): Script
     {
       id: "open",
       label: "Opening",
-      say: `${first}, Michael with Current. You asked for a call on the ${lead.utility} bill at ${lead.property}${city}. Is this still a decent time?`,
+      say: `${first}, Michael with Lumen. You asked for a call on the ${lead.utility} bill at ${lead.property}${city}. Is this still a decent time?`,
       cue: `${attempts} · ${phonePretty(lead.phone)}`,
     },
     {
@@ -143,7 +143,7 @@ export function scriptFor(lead: Lead | null, design?: RoofDesign | null): Script
     {
       id: "vm",
       label: "Voicemail",
-      say: `${first}, Michael with Current about the ${lead.utility} bill at ${lead.property}. Nothing to buy — I have a roof number for you. Call me back or I'll try again tomorrow.`,
+      say: `${first}, Michael with Lumen about the ${lead.utility} bill at ${lead.property}. Nothing to buy — I have a roof number for you. Call me back or I'll try again tomorrow.`,
       cue: "Under 15 seconds · disposition Voicemail",
     },
   ];

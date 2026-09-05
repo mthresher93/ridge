@@ -25,7 +25,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       (item) => ({
         id: `page-${item.href}`,
         title: item.label,
-        detail: item.hint,
+        detail: "Open",
         run: () => router.push(item.href),
       }),
     );
@@ -42,7 +42,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         { id: `${lead.id}-dial`, title: `${lead.name} · Dialer`, detail: `${lead.property} · ${phonePretty(lead.phone)}`, run: () => open("/floor") },
         { id: `${lead.id}-design`, title: `${lead.name} · Design`, detail: lead.city || lead.status, run: () => open("/design") },
         { id: `${lead.id}-map`, title: `${lead.name} · Map`, detail: lead.status, run: () => open("/map") },
-        { id: `${lead.id}-record`, title: `${lead.name} · Lead`, detail: lead.status, run: () => open(`/people?id=${lead.id}`) },
+        { id: `${lead.id}-record`, title: `${lead.name} · Contact`, detail: lead.status, run: () => open(`/people?id=${lead.id}`) },
       );
       if (people.length >= 16) break;
     }
@@ -80,7 +80,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         <input
           autoFocus
           className="az-input border-0 rounded-none h-14 px-5 text-[16px]"
-          placeholder="Jump to a page or open Dialer / Design / Map for a person"
+          placeholder="Search contacts or pages"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

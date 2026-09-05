@@ -48,7 +48,7 @@ export function TodayView() {
       title="Home"
       lede={
         <>
-          Current v2 home base: live local priorities, money moves, and approval-safe actions. <em>No fake revenue, no pretend win rates.</em>
+          Priorities for today — follow-ups, appointments, and next actions.
         </>
       }
       chip="LOCAL DATA · LIVE"
@@ -61,7 +61,7 @@ export function TodayView() {
       <div className="home-grid">
         <section className="cd-glass home-flow">
           <div className="cd-mono" style={{ color: "var(--cy)", marginBottom: 8 }}>
-            Current operating flow · interactive command map
+            Lumen operating flow · interactive command map
           </div>
           <div className="home-flow-grid">
             {FLOW.map((item, index) => (
@@ -79,7 +79,7 @@ export function TodayView() {
 
         <section className="home-hero">
           <div>
-            <div className="lbl">Current&apos;s top move</div>
+            <div className="lbl">Lumen&apos;s top move</div>
             <div className="hd">
               {move.kicker} · <em>{move.title}</em>
             </div>
@@ -121,7 +121,7 @@ export function TodayView() {
 
         <aside className="current-strip">
           <div>
-            <div className="who">Current v2 · local autonomy</div>
+            <div className="who">Lumen · local autonomy</div>
             <div className="what">
               {metrics.coverage}% of open deals have a next action. Hottest stage is <em>{hottest?.label}</em> at {moneyShort(hottest?.value || 0)}.
             </div>

@@ -41,6 +41,7 @@ export type RoofFace = {
   heightFt: number;
   material: string;
   eligible?: boolean;
+  source?: "survey" | "placeholder";
 };
 
 export type ObstructionKind = "vent" | "chimney" | "skylight" | "hvac" | "tree" | "structure";
@@ -119,6 +120,21 @@ export type Proposal = {
   roofMaterial?: string;
   shadeLoss?: number;
   source?: ProposalSource;
+  address?: string;
+  city?: string;
+  panelWidthIn?: number;
+  panelHeightIn?: number;
+  panelSqFt?: number;
+  usableSqFt?: number;
+  setbackFt?: number;
+  faceCount?: number;
+  annualSunHours?: number;
+  arrayOutline?: {
+    faces: { id: string; points: Point[]; eligible?: boolean }[];
+    modules: { x: number; y: number; rotationDeg: number; portrait: boolean }[];
+    panelWidthIn: number;
+    panelHeightIn: number;
+  };
 };
 
 export type CallLog = {
@@ -207,12 +223,35 @@ export type KpiEvent = {
   detail?: string;
 };
 
+export type ScriptModeSetting = "collapsed" | "split" | "focus";
+export type Accent = "cyan" | "violet" | "amber" | "teal";
+
 export type Settings = {
   operator: string;
   dialTarget: number;
   defaultOwner: string;
   density: Density;
+  /** Optional fields added after launch — read through settingsWithDefaults(). */
+  defaultScriptMode?: ScriptModeSetting;
+  powerDelaySec?: number;
+  dialWindowStart?: string;
+  dialWindowEnd?: string;
+  accent?: Accent;
+  confirmBeforeDial?: boolean;
 };
+
+export const SETTINGS_DEFAULTS = {
+  defaultScriptMode: "collapsed" as ScriptModeSetting,
+  powerDelaySec: 2,
+  dialWindowStart: "06:30",
+  dialWindowEnd: "20:00",
+  accent: "cyan" as Accent,
+  confirmBeforeDial: false,
+};
+
+export function settingsWithDefaults(settings: Settings) {
+  return { ...SETTINGS_DEFAULTS, ...Object.fromEntries(Object.entries(settings).filter(([, v]) => v !== undefined)) } as Required<Settings>;
+}
 
 export type Workspace = {
   version: number;

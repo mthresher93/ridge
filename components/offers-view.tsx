@@ -6,7 +6,7 @@ import { Station } from "./page-intro";
 import { Cockpit } from "./cockpit";
 
 const PACKS = [
-  { name: "Current 6", size: "6.6 kW", range: "$16.4–19.8k", fit: "Bills $140–$220 · simple roof", outcome: "Flatten the bill without a reroof surprise." },
+  { name: "Lumen 6", size: "6.6 kW", range: "$16.4–19.8k", fit: "Bills $140–$220 · simple roof", outcome: "Flatten the bill without a reroof surprise." },
   { name: "Meridian 10", size: "9.8–10.4 kW", range: "$24–31k", fit: "Bills $220–$380 · south/west", outcome: "Offset the usage you already pay for." },
   { name: "Estate + storage", size: "13 kW + 10 kWh", range: "$38–52k", fit: "TOU + outage anxiety", outcome: "Keep lights and the bill under one plan." },
 ];

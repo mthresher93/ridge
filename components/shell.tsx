@@ -8,6 +8,7 @@ import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, floorWindow } from "@/lib/derive";
 import { NAV } from "@/lib/nav";
+import { settingsWithDefaults } from "@/lib/types";
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
@@ -34,22 +35,23 @@ export function Shell({ children }: { children: React.ReactNode }) {
   }, []);
 
   const metrics = useMemo(() => derive(workspace), [workspace]);
-  const floor = floorWindow(now);
+  const prefs = settingsWithDefaults(workspace.settings);
+  const floor = floorWindow(now, { start: prefs.dialWindowStart, end: prefs.dialWindowEnd });
   const density = workspace.settings.density || "comfortable";
 
   return (
-    <div className={`az-shell density-${density}`} data-mode={mode}>
+    <div className={`az-shell density-${density}`} data-mode={mode} data-accent={prefs.accent}>
       <header className="az-deck">
         <Link href="/" className="az-brand">
           <BrandMark />
           <div>
-            <div className="az-brand-name">Current</div>
-            <div className="az-brand-sub">Solar revenue</div>
+            <div className="az-brand-name">Lumen</div>
+            <div className="az-brand-sub">Solar desk</div>
           </div>
         </Link>
 
         <button className="cd-search" type="button" onClick={() => setPalette(true)}>
-          <span>Search opportunities, proof, actions…</span>
+          <span>Search contacts, calls, follow-ups…</span>
           <span className="az-chip">⌘K</span>
         </button>
 
@@ -64,7 +66,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
           <span className="cd-stat">
             <span className={`livedot ${floor.open ? "" : "off"}`} />
-            {loading ? "SYNCING" : saveStatus === "error" ? "SAVE FAILED" : "LOCAL APP · READY"}
+            {loading ? "Syncing" : saveStatus === "error" ? "Save failed" : "Ready"}
           </span>
           <span className="az-num text-[10px] text-[var(--tx4)]">{metrics.open.length} OPEN</span>
           <button className="az-btn pri" onClick={() => router.push("/floor")}>

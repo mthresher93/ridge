@@ -71,16 +71,16 @@ export function CallbacksView() {
   return (
     <Station
       n="04"
-      title="Callbacks"
+      title="Follow-up"
       lede={
         <>
-          Due work only. <em>No fake urgency.</em> Complete, call, or recast the time — Current will not invent a queue.
+          Due follow-ups only. Complete, call, or reschedule.
         </>
       }
       chip={`${rows.length} ${filter.toUpperCase()}`}
       actions={
         <button className="az-btn pri sm" type="button" onClick={add}>
-          + Callback
+          + Follow-up
         </button>
       }
     >

@@ -71,7 +71,16 @@ export function derive(workspace: Workspace, now = Date.now()) {
   };
 }
 
-export function floorWindow(now = new Date()) {
+export function floorWindow(now = new Date(), window: { start?: string; end?: string } = {}) {
+  const toMins = (value: string | undefined, fallback: number) => {
+    const match = /^(\d{1,2}):(\d{2})$/.exec(value || "");
+    return match ? Number(match[1]) * 60 + Number(match[2]) : fallback;
+  };
+  const fmt = (mins: number) => {
+    const h = Math.floor(mins / 60);
+    const m = mins % 60;
+    return `${((h + 11) % 12) + 1}:${String(m).padStart(2, "0")}${h < 12 ? "am" : "pm"}`;
+  };
   const parts = new Intl.DateTimeFormat("en-US", {
     timeZone: "America/Los_Angeles",
     hour: "numeric",
@@ -84,9 +93,9 @@ export function floorWindow(now = new Date()) {
   const weekday = parts.find((part) => part.type === "weekday")?.value || "";
   const weekend = weekday === "Sat" || weekday === "Sun";
   const mins = hour * 60 + minute;
-  const open = 6 * 60 + 30;
-  const close = 20 * 60;
-  if (weekend) return { open: false, label: "West Coast dialer closed · weekend", detail: "Next open Monday 6:30am PT" };
+  const open = toMins(window.start, 6 * 60 + 30);
+  const close = toMins(window.end, 20 * 60);
+  if (weekend) return { open: false, label: "West Coast dialer closed · weekend", detail: `Next open Monday ${fmt(open)} PT` };
   if (mins >= open && mins < close) {
     const left = close - mins;
     return {
@@ -99,11 +108,11 @@ export function floorWindow(now = new Date()) {
     const left = open - mins;
     return {
       open: false,
-      label: "West Coast dialer opens 6:30am PT",
+      label: `West Coast dialer opens ${fmt(open)} PT`,
       detail: `Opens in ${Math.floor(left / 60)}h ${left % 60}m`,
     };
   }
-  return { open: false, label: "West Coast dialer closed", detail: "Opens tomorrow 6:30am PT" };
+  return { open: false, label: "West Coast dialer closed", detail: `Opens tomorrow ${fmt(open)} PT` };
 }
 
 export function topMove(workspace: Workspace, now = Date.now()) {

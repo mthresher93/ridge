@@ -1,47 +1,53 @@
 import type { Metadata } from "next";
-import { Exo_2, Instrument_Serif, JetBrains_Mono, Orbitron } from "next/font/google";
+import { Figtree, Fraunces, IBM_Plex_Mono } from "next/font/google";
 import "./globals.css";
 import "./current.css";
 import "./dialer.css";
 import "./design.css";
 import "./map.css";
+import "./settings.css";
+import "./lumen.css";
 import { Providers } from "./providers";
 
-const sans = Exo_2({
+const sans = Figtree({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
 });
 
-const display = Orbitron({
+const display = Fraunces({
   subsets: ["latin"],
   weight: ["500", "600", "700"],
+  style: ["normal", "italic"],
   variable: "--font-display",
 });
 
-const serif = Instrument_Serif({
+const serif = Fraunces({
   subsets: ["latin"],
-  weight: ["400"],
-  style: ["normal", "italic"],
+  weight: ["400", "500"],
+  style: ["italic"],
   variable: "--font-serif",
 });
 
-const mono = JetBrains_Mono({
+const mono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "Current",
+  title: "Lumen",
   description: "Solar revenue workspace",
-  icons: { icon: "/current.svg" },
-  appleWebApp: { title: "Current", capable: true, statusBarStyle: "black-translucent" },
+  icons: {
+    icon: "/lumen.svg",
+    apple: "/lumen-mark.png",
+  },
+  appleWebApp: { title: "Lumen", capable: true, statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en" className="dark">
+    <html lang="en">
       <body className={`${sans.variable} ${display.variable} ${serif.variable} ${mono.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>

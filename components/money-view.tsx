@@ -30,10 +30,10 @@ export function MoneyView() {
   return (
     <Station
       n="11"
-      title="Money"
+      title="Revenue"
       lede={
         <>
-          Visible pipeline and sized roofs only. <em>No invented close rates, no fake revenue.</em> Weighted uses the probability you typed.
+          Pipeline and sized roofs only. Weighted value uses the probability you typed.
         </>
       }
       chip="RECORDED · LOCAL"

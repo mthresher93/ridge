@@ -26,11 +26,11 @@ export function NumbersView() {
   return (
     <Station
       n="10"
-      title="KPI"
+      title="Reports"
       fill
       lede={
         <>
-          Recorded events only. <em>Connect and set rates come from kpiEvents</em>, not a hoped-for funnel.
+          Recorded activity only — connect and set rates come from call history, not a hoped-for funnel.
         </>
       }
       chip="RECORDED · LOCAL"

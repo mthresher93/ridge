@@ -3,30 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --ink: #07090d;
-  --ink-2: #05070b;
-  --panel: #10141c;
-  --panel-2: #161b26;
-  --line: #252b38;
-  --line-2: #343b4a;
-  --text: #e8eef7;
-  --muted: #9aa6b8;
-  --faint: #6b7688;
-  --gold: #5ec8ff;
-  --gold-2: #8ad4ff;
-  --gold-dim: rgba(94, 200, 255, 0.14);
-  --up: #3dd68c;
-  --warn: #e8b84a;
-  --down: #ff5c6c;
-  --blue: #6b8cff;
-  --hover: rgba(255, 255, 255, 0.04);
-  --track: rgba(255, 255, 255, 0.08);
-  --volt: #5ec8ff;
-  --lift: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 28px rgba(0, 0, 0, 0.35);
-  --lift-2: 0 22px 48px rgba(0, 0, 0, 0.45);
-  --background: var(--ink);
-  --foreground: var(--text);
-  --bg: var(--ink);
+  --ink: #f7f4ee;
+  --ink-2: #efeae1;
+  --panel: #ffffff;
+  --panel-2: #fffdf9;
+  --line: #e4ddd2;
+  --line-2: #d3cbbd;
+  --text: #1c1915;
+  --muted: #6b6358;
+  --faint: #8a8174;
+  --gold: #c2410c;
+  --gold-2: #9a3412;
+  --gold-dim: rgba(194, 65, 12, 0.1);
+  --up: #0f7a5a;
+  --warn: #b45309;
+  --down: #b42318;
+  --blue: #1d4e89;
+  --hover: rgba(194, 65, 12, 0.06);
+  --track: rgba(28, 25, 21, 0.08);
+  --volt: #c2410c;
+  --lift: 0 10px 28px rgba(28, 25, 21, 0.06);
+  --lift-2: 0 18px 40px rgba(28, 25, 21, 0.08);
+  --background: #f7f4ee;
+  --foreground: #1c1915;
+  --bg: #f7f4ee;
 }
 
 * {
@@ -43,7 +43,7 @@ body {
   font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
-  color-scheme: dark;
+  color-scheme: light;
   --font-display: var(--font-sans);
 }
 
@@ -98,9 +98,7 @@ textarea {
   grid-template-columns: minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
-  background:
-    linear-gradient(180deg, rgba(94, 200, 255, 0.05), transparent 120px),
-    var(--ink);
+  background: var(--ink);
 }
 
 .az-shell.density-compact {

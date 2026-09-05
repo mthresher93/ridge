@@ -7,31 +7,54 @@ import { coordsFor, projectToScreen, screenToLngLat } from "@/lib/geo";
 import { leadEligibility, money, moneyShort, nowIso, phonePretty, relativeDue } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
 import { TileMap, type MapKind } from "./tile-map";
-import type { Lead } from "@/lib/types";
-import { Station } from "./page-intro";
+import type { Lead, RoofDesign } from "@/lib/types";
 
 type Filter = "all" | "callable" | "appointments" | "proposals" | "pinned" | "dnc";
 type MapViewBox = { lng: number; lat: number; zoom: number; width: number; height: number };
+type Loc = { lat: number; lng: number; pinned: boolean };
+
+const FILTERS: { id: Filter; label: string }[] = [
+  { id: "all", label: "All" },
+  { id: "callable", label: "Callable" },
+  { id: "appointments", label: "Appointments" },
+  { id: "proposals", label: "Proposal" },
+  { id: "pinned", label: "Site pin" },
+  { id: "dnc", label: "DNC" },
+];
 
 function pinTone(lead: Lead) {
   if (lead.dnc) return "dnc";
-  if (/Appointment/.test(lead.status)) return "sit";
-  if (/Proposal|Contract|PTO/.test(lead.status)) return "paper";
-  if (/Qualified/.test(lead.status)) return "ok";
   if (/Lost/.test(lead.status)) return "lost";
+  if (/Appointment/.test(lead.status)) return "sit";
+  if (/Proposal|Contract|Design|PTO/.test(lead.status)) return "paper";
+  if (/Qualified/.test(lead.status)) return "ok";
   return "lead";
 }
 
-function loc(lead: Lead, designs: Record<string, { lat?: number; lng?: number }>) {
-  const design = designs[lead.id];
-  if (design?.lat != null && design.lng != null) return { lat: design.lat, lng: design.lng, pinned: true as const };
-  const city = coordsFor(lead.city, lead.id);
-  return { lat: city.lat, lng: city.lng, pinned: false as const };
+function cityEstimate(lead: Lead) {
+  return coordsFor(lead.city, lead.id);
 }
 
-function isPinned(lead: Lead, designs: Record<string, { lat?: number; lng?: number }>) {
+function loc(lead: Lead, designs: Record<string, RoofDesign | undefined>): Loc {
   const design = designs[lead.id];
-  return design?.lat != null && design.lng != null;
+  const estimate = cityEstimate(lead);
+  if (design?.lat == null || design.lng == null) return { ...estimate, pinned: false };
+  const moved = Math.abs(design.lat - estimate.lat) > 0.00025 || Math.abs(design.lng - estimate.lng) > 0.00025;
+  return { lat: design.lat, lng: design.lng, pinned: moved };
+}
+
+function isSitePin(lead: Lead, designs: Record<string, RoofDesign | undefined>) {
+  return loc(lead, designs).pinned;
+}
+
+function designSummary(lead: Lead, design?: RoofDesign) {
+  if (!design) return null;
+  const modules = design.modules?.length || 0;
+  const faces = design.faces?.length || 0;
+  const estimate = estimateFor(lead, design);
+  if (modules) return `${estimate.systemKw} kW · ${modules} modules`;
+  if (faces) return `${faces} roof face${faces === 1 ? "" : "s"} · no modules`;
+  return `${estimate.systemKw} kW bill-plan`;
 }
 
 export function MapView() {
@@ -40,11 +63,13 @@ export function MapView() {
   const [query, setQuery] = useState("");
   const [filter, setFilter] = useState<Filter>("all");
   const [city, setCity] = useState("all");
+  const [owner, setOwner] = useState("all");
   const [kind, setKind] = useState<MapKind>("streets");
   const [zoom, setZoom] = useState(7.2);
   const [center, setCenter] = useState({ lat: 35.5, lng: -118.4 });
   const [draggingId, setDraggingId] = useState<string | null>(null);
   const [hoverId, setHoverId] = useState<string | null>(null);
+  const [hoverGroup, setHoverGroup] = useState<string[] | null>(null);
   const svgRef = useRef<SVGSVGElement | null>(null);
   const viewRef = useRef<MapViewBox | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
@@ -54,19 +79,24 @@ export function MapView() {
     return Array.from(new Set(workspace.leads.map((lead) => lead.city).filter(Boolean))).sort();
   }, [workspace.leads]);
 
+  const owners = useMemo(() => {
+    return Array.from(new Set(workspace.leads.map((lead) => lead.owner).filter(Boolean))).sort();
+  }, [workspace.leads]);
+
   const rows = useMemo(() => {
     const q = query.trim().toLowerCase();
     return workspace.leads
       .filter((lead) => {
         if (city !== "all" && lead.city !== city) return false;
+        if (owner !== "all" && lead.owner !== owner) return false;
         if (filter === "callable" && leadEligibility(lead).tone !== "ok") return false;
         if (filter === "appointments" && !/Appointment/.test(lead.status)) return false;
-        if (filter === "proposals" && !/Proposal|Contract|Design/.test(lead.status)) return false;
-        if (filter === "pinned" && !isPinned(lead, workspace.designs)) return false;
+        if (filter === "proposals" && !/Proposal|Contract|Design|PTO/.test(lead.status)) return false;
+        if (filter === "pinned" && !isSitePin(lead, workspace.designs)) return false;
         if (filter === "dnc" && !lead.dnc) return false;
         if (
           q &&
-          ![lead.name, lead.property, lead.city, lead.status, lead.utility, lead.owner, lead.nextAction]
+          ![lead.name, lead.property, lead.city, lead.status, lead.utility, lead.owner, lead.nextAction, lead.address]
             .join(" ")
             .toLowerCase()
             .includes(q)
@@ -76,7 +106,18 @@ export function MapView() {
         return true;
       })
       .sort((a, b) => a.city.localeCompare(b.city) || a.name.localeCompare(b.name));
-  }, [workspace.leads, workspace.designs, query, filter, city]);
+  }, [workspace.leads, workspace.designs, query, filter, city, owner]);
+
+  const grouped = useMemo(() => {
+    const buckets = new Map<string, Lead[]>();
+    for (const lead of rows) {
+      const key = lead.city || "Unknown";
+      const list = buckets.get(key) || [];
+      list.push(lead);
+      buckets.set(key, list);
+    }
+    return Array.from(buckets.entries());
+  }, [rows]);
 
   const counts = useMemo(() => {
     const all = workspace.leads;
@@ -84,8 +125,8 @@ export function MapView() {
       all: all.length,
       callable: all.filter((lead) => leadEligibility(lead).tone === "ok").length,
       appointments: all.filter((lead) => /Appointment/.test(lead.status)).length,
-      proposals: all.filter((lead) => /Proposal|Contract|Design/.test(lead.status)).length,
-      pinned: all.filter((lead) => isPinned(lead, workspace.designs)).length,
+      proposals: all.filter((lead) => /Proposal|Contract|Design|PTO/.test(lead.status)).length,
+      pinned: all.filter((lead) => isSitePin(lead, workspace.designs)).length,
       dnc: all.filter((lead) => lead.dnc).length,
     };
   }, [workspace.leads, workspace.designs]);
@@ -96,22 +137,38 @@ export function MapView() {
   const selectedCallback = selected
     ? workspace.callbacks.find((item) => item.leadId === selected.id && item.status === "open")
     : null;
+  const selectedAppt = selected
+    ? workspace.appointments.find((item) => item.leadId === selected.id && !/cancel|no-show/i.test(item.status || ""))
+    : null;
   const selectedDesign = selected ? workspace.designs[selected.id] : null;
-  const selectedEstimate = selected && selectedDesign ? estimateFor(selected, selectedDesign) : null;
   const eligibility = selected ? leadEligibility(selected) : null;
   const cityCount = useMemo(() => new Set(rows.map((lead) => lead.city)).size, [rows]);
 
   function fit(points = rows.map((lead) => loc(lead, workspace.designs))) {
     if (!points.length) return;
-    const lat = points.reduce((sum, point) => sum + point.lat, 0) / points.length;
-    const lng = points.reduce((sum, point) => sum + point.lng, 0) / points.length;
-    const span = Math.max(
-      Math.max(...points.map((point) => point.lat)) - Math.min(...points.map((point) => point.lat)),
-      Math.max(...points.map((point) => point.lng)) - Math.min(...points.map((point) => point.lng)),
-      0.02,
-    );
+    const lats = points.map((point) => point.lat);
+    const lngs = points.map((point) => point.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const lat = (minLat + maxLat) / 2;
+    const lng = (minLng + maxLng) / 2;
+    const view = viewRef.current;
+    const pad = 1.4;
+    const latSpan = Math.max(maxLat - minLat, 0.018) * pad;
+    const lngSpan = Math.max(maxLng - minLng, 0.018) * pad;
+    let nextZoom = 8;
+    if (view?.width && view.height) {
+      const zLng = Math.log2((view.width / 256) * (360 / lngSpan));
+      const zLat = Math.log2((view.height / 256) * ((360 * Math.cos((lat * Math.PI) / 180)) / latSpan));
+      nextZoom = Math.max(5.2, Math.min(13.4, Math.min(zLng, zLat)));
+    } else {
+      const span = Math.max(latSpan, lngSpan);
+      nextZoom = span < 0.08 ? 12.5 : span < 0.35 ? 10.2 : span < 1.1 ? 8.2 : span < 3 ? 6.8 : 5.8;
+    }
     setCenter({ lat, lng });
-    setZoom(span < 0.08 ? 12.5 : span < 0.35 ? 10.2 : span < 1.1 ? 8.2 : span < 3 ? 6.8 : 5.8);
+    setZoom(nextZoom);
   }
 
   function selectLead(leadId: string, focus = true) {
@@ -121,7 +178,7 @@ export function MapView() {
     if (!lead) return;
     const point = loc(lead, workspace.designs);
     setCenter({ lat: point.lat, lng: point.lng });
-    setZoom((current) => Math.max(current, 12.5));
+    setZoom((current) => Math.max(current, 12.2));
   }
 
   function setPin(leadId: string, lat: number, lng: number) {
@@ -170,9 +227,10 @@ export function MapView() {
   }, [loading, rows.length]);
 
   useEffect(() => {
-    if (loading || !didFit.current || !rows.length) return;
+    if (loading || !didFit.current) return;
+    if (!rows.length) return;
     fit();
-  }, [filter, city]);
+  }, [filter, city, owner, query]);
 
   useEffect(() => {
     if (!selectedLeadId || !listRef.current) return;
@@ -182,85 +240,68 @@ export function MapView() {
 
   if (loading) {
     return (
-      <Station n="08" title="Map" fill compact lede="Territory pins from recorded cities and saved designs." chip="LOCAL">
-        <div className="map-desk map-loading">
-          <div className="map-empty-state">Loading map workspace…</div>
-        </div>
-      </Station>
+      <div className="map-desk map-loading">
+        <div className="map-empty-state">Loading map…</div>
+      </div>
     );
   }
 
+  const hoverLead = hoverId ? workspace.leads.find((lead) => lead.id === hoverId) : null;
+
   return (
-    <Station
-      n="08"
-      title="Map"
-      fill
-      compact
-      lede={<>Territory · hollow pins are city estimates until a design pin is dropped</>}
-      chip={`${rows.length} PINS`}
-    >
     <div className="map-desk">
       <header className="map-top">
-        <div className="map-top-main">
-          <input
-            className="az-input map-search"
-            placeholder="Search leads, city, owner, status"
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-          />
-          <select
-            className="az-select map-city"
-            value={city}
-            onChange={(event) => {
-              setCity(event.target.value);
-            }}
-            aria-label="City territory"
-          >
-            <option value="all">All cities</option>
-            {cities.map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
-            ))}
-          </select>
-          <div className="map-filters" role="tablist" aria-label="Map filters">
-            {(
-              [
-                ["all", "All", counts.all],
-                ["callable", "Callable", counts.callable],
-                ["appointments", "Sits", counts.appointments],
-                ["proposals", "Paper", counts.proposals],
-                ["pinned", "Pinned", counts.pinned],
-                ["dnc", "DNC", counts.dnc],
-              ] as const
-            ).map(([id, label, count]) => (
-              <button
-                key={id}
-                type="button"
-                role="tab"
-                aria-selected={filter === id}
-                className={filter === id ? "on" : ""}
-                onClick={() => {
-                  setFilter(id);
-                }}
-              >
-                {label}
-                <em>{count}</em>
-              </button>
-            ))}
-          </div>
+        <input
+          className="az-input map-search"
+          placeholder="Search name, city, owner, status"
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          aria-label="Search map"
+        />
+        <select
+          className="az-select map-city"
+          value={city}
+          onChange={(event) => setCity(event.target.value)}
+          aria-label="City"
+        >
+          <option value="all">All cities</option>
+          {cities.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        <select
+          className="az-select map-owner"
+          value={owner}
+          onChange={(event) => setOwner(event.target.value)}
+          aria-label="Owner"
+        >
+          <option value="all">All owners</option>
+          {owners.map((name) => (
+            <option key={name} value={name}>
+              {name}
+            </option>
+          ))}
+        </select>
+        <div className="map-filters" role="tablist" aria-label="Map filters">
+          {FILTERS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              role="tab"
+              aria-selected={filter === item.id}
+              className={filter === item.id ? "on" : ""}
+              onClick={() => setFilter(item.id)}
+            >
+              {item.label}
+              <em>{counts[item.id]}</em>
+            </button>
+          ))}
         </div>
         <div className="map-top-actions">
-          <span className="map-result-meta az-num">
-            {rows.length} · {cityCount} {cityCount === 1 ? "city" : "cities"}
-          </span>
-          <button
-            type="button"
-            className="az-btn"
-            onClick={() => fit()}
-            disabled={!rows.length}
-          >
-            Fit results
+          <button type="button" className="az-btn" onClick={() => fit()} disabled={!rows.length}>
+            Fit
           </button>
           <button type="button" className="az-btn" onClick={() => setKind((value) => (value === "streets" ? "satellite" : "streets"))}>
             {kind === "streets" ? "Streets" : "Satellite"}
@@ -281,7 +322,7 @@ export function MapView() {
             }}
           >
             {(view) => {
-              const cell = zoom >= 11.5 ? 0 : zoom >= 9.2 ? 0.1 : 0.26;
+              const cell = zoom >= 11.4 ? 0 : zoom >= 9 ? 0.1 : 0.26;
               const groups = new Map<string, { leads: Lead[]; lat: number; lng: number }>();
               for (const lead of rows) {
                 const point = loc(lead, workspace.designs);
@@ -303,7 +344,9 @@ export function MapView() {
                   {Array.from(groups.values()).map((group) => {
                     const screen = projectToScreen(group.lng, group.lat, view);
                     if (group.leads.length > 1 && cell) {
-                      const active = group.leads.some((lead) => lead.id === selectedLeadId || lead.id === hoverId);
+                      const ids = group.leads.map((lead) => lead.id);
+                      const active = ids.some((id) => id === selectedLeadId || id === hoverId || hoverGroup?.includes(id));
+                      const cityNames = Array.from(new Set(group.leads.map((lead) => lead.city).filter(Boolean)));
                       return (
                         <g
                           key={`${group.lat}:${group.lng}`}
@@ -311,14 +354,22 @@ export function MapView() {
                           transform={`translate(${screen.x} ${screen.y})`}
                           onPointerDown={(event) => {
                             event.stopPropagation();
-                            setCenter({ lat: group.lat, lng: group.lng });
-                            setZoom((value) => Math.min(14.5, value + 2.2));
+                            fit(group.leads.map((lead) => loc(lead, workspace.designs)));
                             if (group.leads[0]) setSelectedLeadId(group.leads[0].id);
                           }}
-                          onPointerEnter={() => setHoverId(group.leads[0]?.id || null)}
-                          onPointerLeave={() => setHoverId(null)}
+                          onPointerEnter={() => {
+                            setHoverId(group.leads[0]?.id || null);
+                            setHoverGroup(ids);
+                          }}
+                          onPointerLeave={() => {
+                            setHoverId(null);
+                            setHoverGroup(null);
+                          }}
                         >
-                          <circle r={Math.min(22, 12 + group.leads.length)} />
+                          <title>
+                            {group.leads.length} in {cityNames.length === 1 ? cityNames[0] : `${cityNames.length} cities`}
+                          </title>
+                          <circle r={Math.min(24, 11 + group.leads.length * 1.4)} />
                           <text textAnchor="middle" dy="4">
                             {group.leads.length}
                           </text>
@@ -328,7 +379,7 @@ export function MapView() {
                     const lead = group.leads[0];
                     const point = loc(lead, workspace.designs);
                     const on = selectedLeadId === lead.id;
-                    const hover = hoverId === lead.id;
+                    const hover = hoverId === lead.id || Boolean(hoverGroup?.includes(lead.id));
                     return (
                       <g
                         key={lead.id}
@@ -342,9 +393,17 @@ export function MapView() {
                         onPointerEnter={() => setHoverId(lead.id)}
                         onPointerLeave={() => setHoverId(null)}
                       >
-                        <circle className="map-pin-halo" r={on || hover ? 14 : 10} />
-                        <circle className="map-pin-dot" r={on ? 7 : 5.5} />
-                        {!point.pinned ? <circle className="map-pin-ring" r={9} /> : null}
+                        <title>
+                          {lead.name} · {lead.city} · {point.pinned ? "site pin" : "city estimate"}
+                        </title>
+                        <circle className="map-pin-halo" r={on || hover ? 15 : 11} />
+                        <circle className="map-pin-dot" r={on ? 6.5 : 5} />
+                        {!point.pinned ? <circle className="map-pin-ring" r={8.5} /> : null}
+                        {on || hover ? (
+                          <text className="map-pin-name" x="12" y="-6">
+                            {lead.name}
+                          </text>
+                        ) : null}
                       </g>
                     );
                   })}
@@ -362,6 +421,7 @@ export function MapView() {
                   setQuery("");
                   setFilter("all");
                   setCity("all");
+                  setOwner("all");
                 }}
               >
                 Clear filters
@@ -384,65 +444,73 @@ export function MapView() {
                 </button>
               </div>
               <h2>{selected.name}</h2>
-              <p className="map-inspect-property">{selected.property || "Property unset"}</p>
-              <div className="map-inspect-grid">
+              <p className="map-inspect-property">
+                {selected.property || "Property unset"}
+                {selected.address ? ` · ${selected.address}` : ""}
+              </p>
+              <dl className="map-inspect-facts">
                 <div>
-                  <span>Phone</span>
-                  <b className="az-num">{phonePretty(selected.phone)}</b>
+                  <dt>Phone</dt>
+                  <dd>{phonePretty(selected.phone)}</dd>
                 </div>
                 <div>
-                  <span>Consent</span>
-                  <b>{eligibility?.label || "—"}</b>
+                  <dt>Consent</dt>
+                  <dd>{eligibility?.label || "—"}</dd>
                 </div>
                 <div>
-                  <span>Utility</span>
-                  <b>
+                  <dt>Utility</dt>
+                  <dd>
                     {selected.utility || "—"}
                     {selected.monthlyBill ? ` · ${money(selected.monthlyBill)}` : ""}
-                  </b>
+                  </dd>
                 </div>
                 <div>
-                  <span>Owner</span>
-                  <b>{selected.owner || "—"}</b>
+                  <dt>Owner</dt>
+                  <dd>{selected.owner || "—"}</dd>
                 </div>
                 <div className="span">
-                  <span>Next</span>
-                  <b>{selected.nextAction || "—"}</b>
+                  <dt>Next</dt>
+                  <dd>{selected.nextAction || "—"}</dd>
                 </div>
                 {selectedCallback ? (
                   <div className="span">
-                    <span>Follow-up</span>
-                    <b className={Date.parse(selectedCallback.dueAt) < Date.now() ? "late" : ""}>
+                    <dt>Follow-up</dt>
+                    <dd className={Date.parse(selectedCallback.dueAt) < Date.now() ? "late" : ""}>
                       {relativeDue(selectedCallback.dueAt)} · {selectedCallback.reason}
-                    </b>
+                    </dd>
                   </div>
                 ) : null}
-                {selectedOpp ? (
-                  <div>
-                    <span>Deal</span>
-                    <b className="az-num">{moneyShort(selectedOpp.value)}</b>
+                {selectedAppt ? (
+                  <div className="span">
+                    <dt>Appointment</dt>
+                    <dd>
+                      {selectedAppt.type || "Sit"}
+                      {selectedAppt.startsAt ? ` · ${relativeDue(selectedAppt.startsAt)}` : ""}
+                    </dd>
                   </div>
-                ) : (
-                  <div>
-                    <span>Est. value</span>
-                    <b className="az-num">{selected.estimatedValue ? moneyShort(selected.estimatedValue) : "—"}</b>
-                  </div>
-                )}
+                ) : null}
                 <div>
-                  <span>Design</span>
-                  <b className="az-num">
-                    {selectedEstimate ? `${selectedEstimate.systemKw} kW` : "Unsized"}
-                    {selectedDesign?.modules?.length ? ` · ${selectedDesign.modules.length} mod` : ""}
-                  </b>
+                  <dt>{selectedOpp ? "Deal" : "Est. value"}</dt>
+                  <dd className="az-num">
+                    {selectedOpp
+                      ? moneyShort(selectedOpp.value)
+                      : selected.estimatedValue
+                        ? moneyShort(selected.estimatedValue)
+                        : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Design</dt>
+                  <dd>{designSummary(selected, selectedDesign || undefined) || "No design"}</dd>
                 </div>
                 <div className="span">
-                  <span>Location</span>
-                  <b>
-                    {selectedLoc.pinned ? "Pinned site" : "City estimate"} · {selectedLoc.lat.toFixed(4)}, {selectedLoc.lng.toFixed(4)}
-                  </b>
+                  <dt>Location</dt>
+                  <dd>
+                    {selectedLoc.pinned ? "Site pin (moved from city estimate)" : "City estimate — not a street address"}
+                  </dd>
                 </div>
-              </div>
-              <p className="map-inspect-hint">Shift-drag pin (or drag at zoom 12+) to set surveyed site for Design.</p>
+              </dl>
+              <p className="map-inspect-hint">Shift-drag, or drag at zoom 12+, to set a site pin for Design.</p>
               <div className="map-inspect-actions">
                 <button type="button" className="az-btn pri" onClick={() => router.push("/floor")}>
                   Dialer
@@ -467,60 +535,88 @@ export function MapView() {
             </div>
           ) : (
             <div className="map-inspect map-inspect-empty">
-              <div className="az-kicker">Workspace</div>
-              <p>Select a pin or list row. Inspector stays compact so the map stays usable.</p>
+              <div className="az-kicker">Select</div>
+              <p>Click a marker or a row. City estimates are hollow until a site pin is set.</p>
             </div>
           )}
 
           <div className="map-list-head">
-            <span>Leads</span>
+            <span>{city === "all" ? "By city" : city}</span>
             <span className="az-num">{rows.length}</span>
           </div>
           <div className="map-list" ref={listRef}>
-            {rows.length === 0 ? (
-              <div className="map-list-empty">No contacts in this view.</div>
-            ) : null}
-            {rows.map((lead) => {
-              const point = loc(lead, workspace.designs);
-              const tone = pinTone(lead);
-              const callback = workspace.callbacks.find((item) => item.leadId === lead.id && item.status === "open");
-              return (
-                <button
-                  key={lead.id}
-                  type="button"
-                  data-lead={lead.id}
-                  className={`map-list-row ${selected?.id === lead.id ? "on" : ""} ${hoverId === lead.id ? "hover" : ""}`}
-                  onClick={() => selectLead(lead.id)}
-                  onMouseEnter={() => setHoverId(lead.id)}
-                  onMouseLeave={() => setHoverId(null)}
-                >
-                  <span className={`map-tone ${tone}`} />
-                  <span className="map-list-copy">
-                    <b>{lead.name}</b>
-                    <i>
-                      {lead.status}
-                      {callback ? ` · ${relativeDue(callback.dueAt)}` : ""}
-                    </i>
-                  </span>
-                  <span className="map-list-meta">
-                    <em>{lead.city}</em>
-                    <em className={point.pinned ? "pin" : "est"}>{point.pinned ? "pin" : "est"}</em>
-                  </span>
-                </button>
-              );
-            })}
+            {rows.length === 0 ? <div className="map-list-empty">No contacts in this view.</div> : null}
+            {grouped.map(([name, leads]) => (
+              <div key={name} className="map-city-group">
+                {city === "all" ? (
+                  <button
+                    type="button"
+                    className="map-city-head"
+                    onClick={() => {
+                      setCity(name);
+                    }}
+                  >
+                    <span>{name}</span>
+                    <em>{leads.length}</em>
+                  </button>
+                ) : null}
+                {leads.map((lead) => {
+                  const point = loc(lead, workspace.designs);
+                  const tone = pinTone(lead);
+                  const callback = workspace.callbacks.find((item) => item.leadId === lead.id && item.status === "open");
+                  const hot = hoverId === lead.id || Boolean(hoverGroup?.includes(lead.id));
+                  return (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      data-lead={lead.id}
+                      className={`map-list-row ${selected?.id === lead.id ? "on" : ""} ${hot ? "hover" : ""}`}
+                      onClick={() => selectLead(lead.id)}
+                      onMouseEnter={() => setHoverId(lead.id)}
+                      onMouseLeave={() => setHoverId(null)}
+                    >
+                      <span className={`map-tone ${tone}`} />
+                      <span className="map-list-copy">
+                        <b>{lead.name}</b>
+                        <i>
+                          {lead.status}
+                          {callback ? ` · ${relativeDue(callback.dueAt)}` : ""}
+                        </i>
+                      </span>
+                      <span className="map-list-meta">
+                        <em>{lead.owner || "—"}</em>
+                        <em className={point.pinned ? "pin" : "est"}>{point.pinned ? "site" : "est"}</em>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
           <div className="map-legend">
             <i className="lead" /> Lead
             <i className="ok" /> Qualified
-            <i className="sit" /> Sit
-            <i className="paper" /> Paper
+            <i className="sit" /> Appt
+            <i className="paper" /> Proposal
             <i className="dnc" /> DNC
             <span className="map-legend-note">Hollow = city estimate</span>
           </div>
         </aside>
       </div>
+
+      <footer className="map-status">
+        <span>
+          {rows.length} in view · {cityCount} {cityCount === 1 ? "city" : "cities"}
+          {owner !== "all" ? ` · ${owner}` : ""}
+        </span>
+        <span>
+          {selected
+            ? `${selected.name} · ${selected.city} · ${selectedLoc?.pinned ? "site pin" : "city estimate"}`
+            : hoverLead
+              ? `${hoverLead.name} · ${hoverLead.city}`
+              : "Select a location"}
+        </span>
+      </footer>
     </div>
-    </Station>
   );
 }

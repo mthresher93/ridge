@@ -110,15 +110,26 @@ export function TileMap({
       ref={ref}
       className={`tile-map kind-${kind} ${className || ""}`}
       onPointerDown={(event) => {
-        if (event.button !== 0) return;
+        if (event.button !== 0 && event.button !== 1) return;
+        if (event.button === 1) event.preventDefault();
+        const node = event.target as HTMLElement;
+        const onMap =
+          event.button === 1 ||
+          node.classList.contains("tile-map") ||
+          node.classList.contains("tile-map-img");
+        if (!onMap) return;
         (event.currentTarget as HTMLDivElement).setPointerCapture(event.pointerId);
         drag.current = { x: event.clientX, y: event.clientY, lat, lng };
       }}
+      onAuxClick={(event) => event.preventDefault()}
       onPointerMove={(event) => {
         if (!drag.current) return;
         panBy(event.clientX - drag.current.x, event.clientY - drag.current.y, drag.current);
       }}
       onPointerUp={() => {
+        drag.current = null;
+      }}
+      onPointerCancel={() => {
         drag.current = null;
       }}
     >

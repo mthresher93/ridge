@@ -1,6 +1,6 @@
 import type { Lead, RoofDesign } from "./types";
 import { coordsFor } from "./geo";
-import { defaultFace, liveMetrics, ensureSite } from "./site";
+import { liveMetrics, ensureSite } from "./site";
 
 export type SolarEstimate = {
   annualUse: number;
@@ -20,9 +20,14 @@ export type SolarEstimate = {
   heading: string;
 };
 
-const RATE = 0.16;
-const PRICE_WATT = 3.05;
-const ITC = 0.3;
+export const SOLAR_MODEL = {
+  utilityRate: 0.16,
+  pricePerWatt: 3.05,
+  itc: 0.3,
+  loanApr: 0.0699,
+  loanYears: 20,
+  inverterDerate: 0.78,
+};
 
 export function defaultDesign(lead: Lead): RoofDesign {
   const city = lead.city || "";
@@ -49,7 +54,7 @@ export function defaultDesign(lead: Lead): RoofDesign {
     panelWidthIn: 41,
     panelHeightIn: 74,
     spacingIn: 0.5,
-    faces: [defaultFace(usableSqFt, southBias, 22)],
+    faces: [],
     obstructions: [],
     modules: [],
   };
@@ -59,8 +64,8 @@ export function estimateFor(lead: Lead, design: RoofDesign): SolarEstimate {
   const site = ensureSite(design);
   const live = liveMetrics(site);
   const bill = Number(lead.monthlyBill) || 0;
-  const annualUse = bill ? Math.round((bill / RATE) * 12) : 9200;
-  const sunYield = Math.max(850, design.annualSunHours * (1 - design.shadeLoss / 100) * 0.78);
+  const annualUse = bill ? Math.round((bill / SOLAR_MODEL.utilityRate) * 12) : 9200;
+  const sunYield = Math.max(850, design.annualSunHours * (1 - design.shadeLoss / 100) * SOLAR_MODEL.inverterDerate);
   const targetKw = annualUse ? (annualUse * 0.9) / sunYield : 8;
   const roofSqFt = live.roofSqFt || design.usableSqFt;
   const roofPanelCapacity = Math.max(1, Math.floor(roofSqFt / 22));
@@ -71,13 +76,13 @@ export function estimateFor(lead: Lead, design: RoofDesign): SolarEstimate {
   const systemKw = Math.round((panelCount * design.panelWatts) / 100) / 10;
   const annualProduction = Math.round(systemKw * sunYield);
   const offset = annualUse ? Math.min(120, Math.round((annualProduction / annualUse) * 100)) : 0;
-  const grossPrice = Math.round(systemKw * 1000 * PRICE_WATT);
-  const incentive = Math.round(grossPrice * ITC);
+  const grossPrice = Math.round(systemKw * 1000 * SOLAR_MODEL.pricePerWatt);
+  const incentive = Math.round(grossPrice * SOLAR_MODEL.itc);
   const netPrice = grossPrice - incentive;
-  const annualSavings = Math.round(Math.min(annualUse, annualProduction) * RATE);
+  const annualSavings = Math.round(Math.min(annualUse, annualProduction) * SOLAR_MODEL.utilityRate);
   const payback = annualSavings ? netPrice / annualSavings : 0;
-  const months = 240;
-  const monthlyRate = 0.0699 / 12;
+  const months = SOLAR_MODEL.loanYears * 12;
+  const monthlyRate = SOLAR_MODEL.loanApr / 12;
   const monthlyPayment = Math.round(
     (netPrice * monthlyRate * (1 + monthlyRate) ** months) / ((1 + monthlyRate) ** months - 1),
   );

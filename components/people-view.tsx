@@ -69,16 +69,16 @@ export function PeopleView() {
     setSelectedLeadId(id);
   }
 
-  if (loading) return <div className="cd-body text-[var(--tx4)]">Loading leads…</div>;
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Loading contacts…</div>;
 
   return (
     <Station
       n="03"
-      title="Leads"
+      title="Contacts"
       fill
       lede={
         <>
-          Households on file. <em>Consent and DNC stay visible.</em> Current will not invent a score from a missing bill.
+          Contacts on file. <em>Consent and DNC stay visible.</em> No score is invented from a missing bill.
         </>
       }
       chip={`${leads.length} SHOWN`}

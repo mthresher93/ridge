@@ -33,10 +33,10 @@ export function StudioView() {
   return (
     <Station
       n="13"
-      title="AI Studio"
+      title="Studio"
       lede={
         <>
-          Local deterministic tools. <em>Current drafts. You approve.</em> No live model, no send, no spend.
+          Local drafts from the record. You approve. Nothing is sent out.
         </>
       }
       chip={approval === "approved" ? "APPROVED · LOCAL" : "DRAFT · REVIEW"}
