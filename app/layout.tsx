@@ -23,10 +23,10 @@ const display = Instrument_Serif({
 });
 
 export const metadata: Metadata = {
-  title: "Ridge",
-  description: "Solar sales desk",
-  icons: { icon: "/ridge.svg" },
-  appleWebApp: { title: "Ridge", capable: true, statusBarStyle: "default" },
+  title: "Meridian",
+  description: "Meridian — site to close. Solar sales desk with design CAD.",
+  icons: { icon: "/meridian.svg" },
+  appleWebApp: { title: "Meridian", capable: true, statusBarStyle: "default" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

@@ -1,11 +1,11 @@
 {
-  "name": "ridge",
+  "name": "meridian",
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "next dev -p 6793",
+    "dev": "next dev -p 7841",
     "build": "prisma generate && next build",
-    "start": "next start -p 6793",
+    "start": "next start -p 7841",
     "lint": "next lint",
     "postinstall": "prisma generate",
     "db:push": "prisma db push"

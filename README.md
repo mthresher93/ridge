@@ -1,8 +1,8 @@
-# Ridge
+# Meridian
 
-Solar sales desk — dialer, roof design, and map.
+Solar sales desk — dialer, roof design CAD, map CRM, and proposals.
 
-Private CRM for residential solar. Run it locally:
+Private workspace for residential solar teams. Run locally:
 
 ```bash
 npm install
@@ -10,6 +10,6 @@ npx prisma db push
 npm run dev
 ```
 
-Open [http://localhost:6793](http://localhost:6793).
+Open [http://localhost:7841](http://localhost:7841).
 
-GitHub: [mthresher93/ridge](https://github.com/mthresher93/ridge)
+Brand: **Meridian** · site to close.

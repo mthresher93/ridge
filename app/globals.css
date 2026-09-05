@@ -3,27 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --ink: #d6ddd4;
-  --ink-2: #101612;
-  --panel: #f4f7f2;
-  --panel-2: #e6ece4;
-  --line: #c3cec2;
-  --line-2: #a7b6a8;
-  --text: #101411;
-  --muted: #3b463e;
-  --faint: #66756c;
-  --gold: #1f7a4c;
-  --gold-2: #145c38;
-  --gold-dim: rgba(31, 122, 76, 0.14);
-  --up: #1f7a4c;
+  /* Meridian — cool graphite desk, spruce brand, volt energy, survey copper */
+  --ink: #e7eef2;
+  --ink-2: #0c1218;
+  --panel: #f4f7f9;
+  --panel-2: #e8eef2;
+  --line: #c5d0d8;
+  --line-2: #a8b6c0;
+  --text: #0e1419;
+  --muted: #3d4a54;
+  --faint: #6a7a86;
+  --gold: #1a7a58;
+  --gold-2: #125c42;
+  --gold-dim: rgba(26, 122, 88, 0.14);
+  --up: #1a7a58;
   --warn: #9a6b12;
   --down: #b42318;
-  --blue: #2f4fbf;
-  --hover: rgba(16, 20, 17, 0.05);
-  --track: rgba(16, 20, 17, 0.1);
-  --volt: #d4f25a;
-  --lift: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 20px rgba(16, 22, 18, 0.08);
-  --lift-2: 0 18px 40px rgba(16, 22, 18, 0.18);
+  --blue: #3d6fb0;
+  --hover: rgba(14, 20, 25, 0.05);
+  --track: rgba(14, 20, 25, 0.1);
+  --volt: #c6e84a;
+  --copper: #c4923c;
+  --measure: #5b9fd4;
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 20px rgba(12, 18, 24, 0.08);
+  --lift-2: 0 18px 40px rgba(12, 18, 24, 0.18);
   --background: var(--ink);
   --foreground: var(--text);
 }
@@ -149,9 +152,10 @@ textarea {
 }
 
 .az-brand-mark {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   flex-shrink: 0;
+  color: var(--volt);
 }
 
 .az-brand-name {
@@ -160,16 +164,16 @@ textarea {
   font-size: 22px;
   font-weight: 700;
   line-height: 1;
-  letter-spacing: -0.04em;
-  color: #f4faf4;
+  letter-spacing: -0.045em;
+  color: #f2f6f8;
 }
 
 .az-brand-sub {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;
-  letter-spacing: 0.16em;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: #8fa194;
+  color: #8a9aa4;
   margin-top: 5px;
 }
 
@@ -215,7 +219,7 @@ textarea {
 }
 
 .az-nav a.active .hint {
-  color: #145c38;
+  color: var(--gold-2);
 }
 
 .az-side-foot {
@@ -647,7 +651,7 @@ textarea {
   font-size: 10px;
   letter-spacing: 0.18em;
   text-transform: uppercase;
-  color: #d4f25a;
+  color: var(--volt);
 }
 
 .script-now {
@@ -677,7 +681,7 @@ textarea {
   letter-spacing: 0.14em;
   text-transform: uppercase;
   font-size: 10px;
-  color: #d4f25a;
+  color: var(--volt);
 }
 
 .script-now-say {
@@ -702,8 +706,8 @@ textarea {
 }
 
 .script-now-nav .az-btn.pri {
-  background: #1f7a4c;
-  border-color: #145c38;
+  background: var(--gold);
+  border-color: var(--gold-2);
   color: #fff6ea;
 }
 
@@ -736,7 +740,7 @@ textarea {
 .script-idx {
   font-family: var(--font-mono), ui-monospace, monospace;
   font-size: 10px;
-  color: #d4f25a;
+  color: var(--volt);
   padding-top: 2px;
 }
 
@@ -756,7 +760,7 @@ textarea {
   font-size: 10px;
   letter-spacing: 0.1em;
   text-transform: uppercase;
-  color: #d4f25a;
+  color: var(--volt);
 }
 
 .script-label i {
@@ -970,6 +974,38 @@ textarea {
   margin: 4px 0 0;
   font-size: 12px;
   color: var(--muted);
+}
+
+
+.settings-brand-card {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  background: var(--ink-2);
+  color: #f2f6f8;
+  border-radius: 4px;
+}
+.settings-brand-mark {
+  width: 36px;
+  height: 36px;
+  color: var(--volt);
+}
+.settings-brand-mark svg {
+  width: 36px;
+  height: 36px;
+}
+.settings-brand-name {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+}
+.settings-brand-sub {
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 11px;
+  color: #8a9aa4;
+  margin-top: 2px;
 }
 
 .settings-fields {
@@ -1983,14 +2019,44 @@ textarea {
   color: #f4faf4;
 }
 
+/* Solar Design desk — cool graphite instrument, not generic swamp UI.
+   Roles: volt = selection only · teal = roof planes · PV blue = modules ·
+   survey amber = dimensions · steel = measure tool · forest = brand actions. */
 .cad-desk {
+  --cad-bg: #0f1519;
+  --cad-chrome: #0a1013;
+  --cad-panel: #121a1f;
+  --cad-elev: #1a242b;
+  --cad-line: #2a3842;
+  --cad-line-2: #3d4f5b;
+  --cad-text: #e8eef2;
+  --cad-muted: #8a9aa4;
+  --cad-faint: #5b6c76;
+  --cad-volt: var(--volt);
+  --cad-volt-dim: rgba(198, 232, 74, 0.15);
+  --cad-brand: #2a8f5c;
+  --cad-brand-2: #1c6b44;
+  --cad-measure: #6eb6ff;
+  --cad-dim: #e2b46a;
+  --cad-face: rgba(42, 143, 122, 0.3);
+  --cad-face-hov: rgba(42, 143, 122, 0.46);
+  --cad-face-on: rgba(198, 232, 74, 0.2);
+  --cad-face-stroke: #7dceb8;
+  --cad-blocked: rgba(132, 68, 48, 0.42);
+  --cad-blocked-stroke: #d45a3a;
+  --cad-module: rgba(22, 58, 78, 0.9);
+  --cad-module-hov: rgba(30, 78, 102, 0.94);
+  --cad-module-on: rgba(36, 92, 118, 0.96);
+  --cad-module-stroke: #7eb9d0;
+  --cad-tree: rgba(36, 92, 64, 0.38);
+  --cad-tree-stroke: #6fba86;
   display: grid;
   grid-template-rows: 42px minmax(0, 1fr) 26px;
   height: 100%;
   min-height: 0;
-  background: #141c16;
-  color: #e8f0e8;
-  border: 1px solid #24312a;
+  background: var(--cad-bg);
+  color: var(--cad-text);
+  border: 1px solid var(--cad-line);
   border-radius: 3px;
   overflow: hidden;
 }
@@ -2001,16 +2067,21 @@ textarea {
   align-items: center;
   gap: 10px;
   padding: 0 10px;
-  background: #101612;
-  border-bottom: 1px solid #24312a;
+  background: var(--cad-chrome);
+  border-bottom: 1px solid var(--cad-line);
 }
 
 .cad-status {
   border-bottom: 0;
-  border-top: 1px solid #24312a;
+  border-top: 1px solid var(--cad-line);
   font-size: 11px;
-  color: #9eaea2;
+  color: var(--cad-muted);
   justify-content: space-between;
+}
+
+.cad-status span:first-child {
+  color: var(--cad-dim);
+  font-family: var(--font-mono), ui-monospace, monospace;
 }
 
 .cad-project {
@@ -2018,13 +2089,13 @@ textarea {
   align-items: center;
   gap: 8px;
   font-size: 11px;
-  color: #9eaea2;
+  color: var(--cad-muted);
 }
 
 .cad-project select {
-  background: #1a2420;
-  border: 1px solid #3a4a40;
-  color: #e8f0e8;
+  background: var(--cad-elev);
+  border: 1px solid var(--cad-line-2);
+  color: var(--cad-text);
   min-height: 32px;
   padding: 0 8px;
   border-radius: 3px;
@@ -2034,7 +2105,7 @@ textarea {
   flex: 1;
   min-width: 0;
   font-size: 12px;
-  color: #9eaea2;
+  color: var(--cad-muted);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -2045,40 +2116,109 @@ textarea {
   gap: 8px;
 }
 
+.cad-desk .az-btn {
+  background: var(--cad-elev);
+  border-color: var(--cad-line-2);
+  color: var(--cad-text);
+}
+
+.cad-desk .az-btn:hover {
+  background: #223038;
+  border-color: #4a5d68;
+}
+
+.cad-desk .az-btn.pri {
+  background: var(--cad-brand);
+  border-color: var(--cad-brand-2);
+  color: #f4fbf6;
+}
+
+.cad-desk .az-btn.pri:hover {
+  background: #33a36a;
+}
+
+.cad-desk .az-kicker {
+  color: var(--cad-dim);
+}
+
+.cad-desk .az-num {
+  color: var(--cad-volt);
+  font-variant-numeric: tabular-nums;
+}
+
 .cad-body {
   display: grid;
-  grid-template-columns: 48px minmax(0, 1fr) 250px;
+  grid-template-columns: 52px minmax(0, 1fr) 228px;
   min-height: 0;
 }
 
 .cad-tools {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid #24312a;
-  background: #141c16;
+  border-right: 1px solid var(--cad-line);
+  background: var(--cad-panel);
 }
 
 .cad-tools button {
   border: 0;
-  border-bottom: 1px solid #24312a;
+  border-bottom: 1px solid var(--cad-line);
   background: transparent;
-  color: #9eaea2;
-  font-size: 10px;
+  color: var(--cad-muted);
+  font-size: 9px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
-  padding: 10px 4px;
+  padding: 8px 3px 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  line-height: 1.15;
+  min-height: 44px;
+}
+
+.cad-tools button .cad-tool-label {
+  display: block;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cad-tools button kbd {
+  display: block;
+  font-family: var(--font-mono), ui-monospace, monospace;
+  font-size: 9px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cad-faint);
+  background: var(--cad-elev);
+  border: 1px solid var(--cad-line);
+  border-radius: 2px;
+  min-width: 14px;
+  text-align: center;
+  padding: 0 3px;
+  line-height: 1.4;
 }
 
 .cad-tools button.on {
-  background: rgba(212, 242, 90, 0.16);
-  color: #f4faf4;
+  background: var(--cad-volt-dim);
+  color: var(--cad-text);
+  box-shadow: inset 2px 0 0 var(--cad-volt);
+}
+
+.cad-tools button.on kbd {
+  color: #10140c;
+  background: var(--cad-volt);
+  border-color: #a8c83a;
 }
 
 .cad-canvas {
   position: relative;
   min-width: 0;
   min-height: 0;
+  background: #0b1014;
 }
 
 .cad-hint {
@@ -2086,9 +2226,12 @@ textarea {
   left: 10px;
   bottom: 10px;
   z-index: 3;
+  max-width: min(520px, calc(100% - 20px));
   font-size: 11px;
-  color: #e8f0e8;
-  background: rgba(16, 22, 18, 0.82);
+  color: var(--cad-text);
+  background: rgba(10, 16, 19, 0.88);
+  border: 1px solid var(--cad-line);
+  border-left: 2px solid var(--cad-volt);
   padding: 6px 8px;
   border-radius: 3px;
   pointer-events: none;
@@ -2096,31 +2239,58 @@ textarea {
 
 .cad-inspector {
   overflow: auto;
-  border-left: 1px solid #24312a;
-  background: #141c16;
-  padding: 10px;
+  border-left: 1px solid var(--cad-line);
+  background: var(--cad-panel);
+  padding: 8px;
   display: grid;
-  gap: 12px;
+  gap: 10px;
   align-content: start;
 }
 
 .cad-insp-block {
   display: grid;
-  gap: 8px;
+  gap: 6px;
 }
 
 .cad-insp-block label {
   display: grid;
-  gap: 4px;
+  gap: 3px;
   font-size: 11px;
-  color: #9eaea2;
+  color: var(--cad-muted);
 }
 
 .cad-insp-block .az-input,
 .cad-insp-block .az-select {
-  background: #1a2420;
-  color: #e8f0e8;
-  border-color: #3a4a40;
+  background: var(--cad-elev);
+  color: var(--cad-text);
+  border-color: var(--cad-line-2);
+  min-height: 30px;
+  padding: 4px 7px;
+  font-size: 12px;
+}
+
+.cad-insp-block .az-input:focus,
+.cad-insp-block .az-select:focus {
+  border-color: var(--cad-volt);
+  outline: 1px solid var(--cad-volt-dim);
+}
+
+.cad-field-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 6px;
+}
+
+.cad-action-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.cad-sys-strip {
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--cad-line);
+  background: linear-gradient(180deg, rgba(198, 232, 74, 0.04), transparent 70%);
 }
 
 .cad-metrics {
@@ -2130,26 +2300,174 @@ textarea {
   font-size: 12px;
 }
 
+.cad-metrics-tight {
+  gap: 6px 8px;
+}
+
+.cad-metrics-tight b {
+  font-size: 13px;
+  line-height: 1.2;
+  color: var(--cad-text);
+}
+
+.cad-val {
+  font-variant-numeric: tabular-nums;
+  font-weight: 700;
+}
+
+.cad-val.elec {
+  color: var(--cad-volt);
+}
+
+.cad-val.geo {
+  color: #7eb9d0;
+}
+
+.cad-val.est {
+  color: var(--cad-dim);
+}
+
 .cad-metrics span {
   display: block;
   font-size: 10px;
-  color: #9eaea2;
+  color: var(--cad-faint);
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
 }
 
 .cad-metrics.faint b {
   font-weight: 500;
-  color: #9eaea2;
+  color: var(--cad-muted);
+}
+
+.cad-prop-fold {
+  border-top: 1px solid var(--cad-line);
+  padding-top: 6px;
+}
+
+.cad-prop-fold > summary {
+  cursor: pointer;
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--cad-text);
+  padding: 6px 0 8px;
+}
+
+.cad-prop-fold > summary::-webkit-details-marker {
+  display: none;
+}
+
+.cad-prop-title {
+  letter-spacing: 0.06em;
+}
+
+.cad-prop-meta {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cad-muted);
+  font-size: 11px;
+}
+
+.cad-prop-fold > summary span {
+  font-weight: 500;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--cad-muted);
+  font-size: 11px;
+}
+
+.cad-prop-fold > summary .cad-prop-title {
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: inherit;
+  font-size: inherit;
+}
+
+.cad-prop-fold[open] > summary {
+  color: var(--cad-volt);
+}
+
+.cad-top-actions .az-btn:disabled {
+  opacity: 0.35;
+  cursor: default;
 }
 
 .cad-note {
   font-size: 11px;
-  color: #9eaea2;
+  color: var(--cad-muted);
   line-height: 1.4;
 }
 
 .prop-insp {
   padding-top: 4px;
 }
+
+.cad-desk .prop-flow {
+  color: var(--cad-text);
+}
+
+.cad-desk .prop-steps {
+  border-color: var(--cad-line);
+  background: var(--cad-elev);
+}
+
+.cad-desk .prop-steps button {
+  color: var(--cad-muted);
+}
+
+.cad-desk .prop-steps button.on {
+  background: var(--cad-volt-dim);
+  color: var(--cad-text);
+}
+
+.cad-desk .prop-kicker {
+  color: var(--cad-dim);
+}
+
+.cad-desk .prop-title {
+  color: var(--cad-text);
+}
+
+.cad-desk .prop-sub,
+.cad-desk .prop-caveat,
+.cad-desk .prop-stamp,
+.cad-desk .prop-notes {
+  color: var(--cad-muted);
+}
+
+.cad-desk .prop-dl > div {
+  border-bottom-color: var(--cad-line);
+}
+
+.cad-desk .prop-dl dt {
+  color: var(--cad-faint);
+}
+
+.cad-desk .prop-dl dd,
+.cad-desk .prop-em {
+  color: var(--cad-text);
+}
+
+.cad-desk .prop-present {
+  background: var(--cad-elev);
+  border: 1px solid var(--cad-line);
+}
+
+.cad-desk .az-btn.pri {
+  background: var(--cad-brand);
+  border-color: var(--cad-brand-2);
+  color: #f4fbf6;
+}
+
 
 .prop-flow {
   display: grid;
@@ -2400,8 +2718,8 @@ textarea {
 }
 
 .prop-sheet-foot .az-btn.pri {
-  background: #1f7a4c;
-  border-color: #145c38;
+  background: var(--gold);
+  border-color: var(--gold-2);
   color: #fff;
 }
 
@@ -2448,60 +2766,112 @@ textarea {
 .site-svg {
   width: 100%;
   height: 100%;
+  touch-action: none;
 }
 
 .site-svg.tool-pan {
   pointer-events: none;
 }
 
+.site-svg.tool-select {
+  cursor: default;
+}
+
+.site-svg.tool-draw,
+.site-svg.tool-vertex,
+.site-svg.tool-measure {
+  cursor: crosshair;
+}
+
+.site-svg.tool-panel {
+  cursor: copy;
+}
+
+.site-svg.tool-gear,
+.site-svg.tool-tree {
+  cursor: cell;
+}
+
+.site-svg.is-drag {
+  cursor: grabbing;
+}
+
 .roof-face {
-  fill: rgba(31, 122, 76, 0.32);
-  stroke: #d4f25a;
+  fill: var(--cad-face, rgba(42, 143, 122, 0.3));
+  stroke: var(--cad-face-stroke, #7dceb8);
   stroke-width: 2;
+  transition: fill 80ms ease, stroke 80ms ease;
+}
+
+.roof-face.hov {
+  fill: var(--cad-face-hov, rgba(42, 143, 122, 0.46));
+  stroke: #a8e0d0;
 }
 
 .roof-face.on {
-  fill: rgba(212, 242, 90, 0.28);
-  stroke: #f4faf4;
+  fill: var(--cad-face-on, rgba(198, 232, 74, 0.2));
+  stroke: var(--cad-volt, #c6e84a);
+  stroke-width: 2.25;
 }
 
 .roof-face.blocked {
-  fill: rgba(90, 70, 60, 0.35);
-  stroke: #b42318;
+  fill: var(--cad-blocked, rgba(132, 68, 48, 0.42));
+  stroke: var(--cad-blocked-stroke, #d45a3a);
   stroke-dasharray: 6 4;
 }
 
 .roof-setback {
   fill: none;
-  stroke: rgba(212, 242, 90, 0.55);
+  stroke: var(--cad-dim, #e2b46a);
   stroke-width: 1.25;
   stroke-dasharray: 4 3;
+  opacity: 0.85;
   pointer-events: none;
 }
 
 .roof-edge-on {
-  stroke: #d4f25a;
+  stroke: var(--cad-volt, #c6e84a);
   stroke-width: 3.5;
   pointer-events: none;
 }
 
+.roof-edge-hov {
+  stroke: var(--cad-measure, #6eb6ff);
+  stroke-width: 2.5;
+  pointer-events: none;
+}
+
 .roof-vert {
-  fill: #f4faf4;
-  stroke: #1f7a4c;
+  fill: var(--cad-text, #e8eef2);
+  stroke: var(--cad-face-stroke, #7dceb8);
+  stroke-width: 1.5;
+}
+
+.roof-vert.hov {
+  fill: var(--cad-measure, #6eb6ff);
+  stroke: var(--cad-text, #e8eef2);
 }
 
 .roof-vert.on {
-  fill: #1f7a4c;
+  fill: var(--cad-volt, #c6e84a);
+  stroke: #10140c;
 }
 
 .mod-cell {
-  fill: rgba(31, 80, 62, 0.82);
-  stroke: #9ec9a4;
+  fill: var(--cad-module, rgba(22, 58, 78, 0.9));
+  stroke: var(--cad-module-stroke, #7eb9d0);
   stroke-width: 1;
 }
 
+.mod-cell.hov {
+  fill: var(--cad-module-hov, rgba(30, 78, 102, 0.94));
+  stroke: var(--cad-volt, #c6e84a);
+  stroke-width: 1.5;
+}
+
 .mod-cell.on {
-  stroke: #fff;
+  fill: var(--cad-module-on, rgba(36, 92, 118, 0.96));
+  stroke: #f2f7fa;
   stroke-width: 2;
 }
 
@@ -2511,7 +2881,7 @@ textarea {
   align-items: center;
   gap: 8px;
   font-size: 12px;
-  color: #c9d6c9;
+  color: var(--cad-text, #c9d6c9);
 }
 
 .cad-check input {
@@ -2519,48 +2889,60 @@ textarea {
   min-height: 0;
 }
 
-.cad-tools button {
-  padding: 9px 3px;
-  font-size: 9px;
-}
-
 .obs-box {
-  fill: rgba(40, 40, 40, 0.7);
-  stroke: #eee;
+  fill: rgba(28, 32, 36, 0.78);
+  stroke: #c5cdd3;
 }
 
 .obs-tree {
-  fill: rgba(47, 107, 60, 0.35);
-  stroke: #7dba86;
+  fill: var(--cad-tree, rgba(36, 92, 64, 0.38));
+  stroke: var(--cad-tree-stroke, #6fba86);
+}
+
+.obs-box.hov,
+.obs-tree.hov {
+  stroke: var(--cad-measure, #6eb6ff);
 }
 
 .obs-box.on,
 .obs-tree.on {
-  stroke: #fff;
+  stroke: var(--cad-volt, #c6e84a);
+  stroke-width: 2;
 }
 
 .draft-line {
   fill: none;
-  stroke: #f4faf4;
+  stroke: var(--cad-volt, #c6e84a);
   stroke-dasharray: 6 4;
+  stroke-width: 1.75;
+  pointer-events: none;
 }
 
 .measure-line {
-  stroke: #7db7ff;
+  stroke: var(--cad-measure, #6eb6ff);
   stroke-width: 2;
+  pointer-events: none;
+}
+
+.snap-mark {
+  fill: none;
+  stroke: var(--cad-measure, #6eb6ff);
+  stroke-width: 1.5;
+  pointer-events: none;
 }
 
 .cad-label {
-  fill: #f4faf4;
+  fill: var(--cad-dim, #e2b46a);
   font-size: 11px;
   font-family: var(--font-mono), ui-monospace, monospace;
   paint-order: stroke;
-  stroke: rgba(20, 14, 10, 0.7);
+  stroke: rgba(10, 14, 18, 0.78);
   stroke-width: 3px;
+  pointer-events: none;
 }
 
 .cad-label.dim {
-  fill: #f0d2b4;
+  fill: #d8c4a8;
   font-size: 10px;
 }
 
@@ -2660,7 +3042,7 @@ textarea {
 }
 
 .map-filters button.on em {
-  color: #d4f25a;
+  color: var(--volt);
 }
 
 .map-result-meta {
@@ -2725,7 +3107,7 @@ textarea {
 }
 
 .map-pin.ok .map-pin-dot { fill: #3d8a4d; }
-.map-pin.sit .map-pin-dot { fill: #d4f25a; }
+.map-pin.sit .map-pin-dot { fill: var(--volt); }
 .map-pin.paper .map-pin-dot { fill: #4d6ad6; }
 .map-pin.dnc .map-pin-dot { fill: #b42318; }
 .map-pin.lost .map-pin-dot { fill: #7a7168; }
@@ -2758,7 +3140,7 @@ textarea {
 
 .map-cluster.on circle,
 .map-cluster:hover circle {
-  stroke: #d4f25a;
+  stroke: var(--volt);
   fill: #182018;
 }
 
@@ -2958,7 +3340,7 @@ textarea {
 }
 
 .map-tone.ok { background: #3d8a4d; }
-.map-tone.sit { background: #d4f25a; }
+.map-tone.sit { background: var(--volt); }
 .map-tone.paper { background: #4d6ad6; }
 .map-tone.dnc { background: #b42318; }
 .map-tone.lost { background: #7a7168; }
@@ -2999,7 +3381,7 @@ textarea {
 }
 
 .map-list-meta .pin {
-  color: #d4f25a;
+  color: var(--volt);
 }
 
 .map-list-meta .est {
@@ -3027,7 +3409,7 @@ textarea {
 }
 
 .map-legend i.ok { background: #3d8a4d; }
-.map-legend i.sit { background: #d4f25a; }
+.map-legend i.sit { background: var(--volt); }
 .map-legend i.paper { background: #4d6ad6; }
 .map-legend i.dnc { background: #b42318; }
 

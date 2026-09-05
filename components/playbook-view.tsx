@@ -3,7 +3,7 @@
 import { PageDesk } from "./page-desk";
 
 const OFFERS = [
-  { name: "Ridge 6", size: "6.6 kW", range: "$16.4–19.8k", fit: "Bills $140–$220 · simple roof" },
+  { name: "Meridian 6", size: "6.6 kW", range: "$16.4–19.8k", fit: "Bills $140–$220 · simple roof" },
   { name: "Meridian 10", size: "9.8–10.4 kW", range: "$24–31k", fit: "Bills $220–$380 · south/west" },
   { name: "Estate + storage", size: "13 kW + 10 kWh", range: "$38–52k", fit: "TOU + outage anxiety" },
 ];

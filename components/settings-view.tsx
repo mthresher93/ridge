@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import type { Density } from "@/lib/types";
+import { BrandMark } from "./mark";
 import { PageDesk } from "./page-desk";
 
 type SettingsTab = "profile" | "dialer" | "display" | "data";
@@ -41,7 +42,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ridge-workspace.json";
+    a.download = "meridian-workspace.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -54,7 +55,7 @@ export function SettingsView() {
         <header className="settings-head">
           <div>
             <div className="az-title">Settings</div>
-            <p className="settings-sub">Desk preferences for this workspace. Changes save to SQLite with the rest of Ridge.</p>
+            <p className="settings-sub">Desk preferences for this Meridian workspace. Changes save to SQLite.</p>
           </div>
           {savedFlash ? <span className="settings-flash">Saved</span> : null}
         </header>
@@ -82,6 +83,15 @@ export function SettingsView() {
 
             {tab === "profile" ? (
               <div className="settings-fields">
+                <div className="settings-brand-card">
+                  <div className="settings-brand-mark" aria-hidden="true">
+                    <BrandMark />
+                  </div>
+                  <div>
+                    <div className="settings-brand-name">Meridian</div>
+                    <div className="settings-brand-sub">Site to close · solar sales desk</div>
+                  </div>
+                </div>
                 <label className="settings-field">
                   <span>Operator name</span>
                   <input name="operator" className="az-input" defaultValue={workspace.settings.operator} />
@@ -168,7 +178,7 @@ export function SettingsView() {
                         type="button"
                         className="az-btn danger"
                         onClick={() => {
-                          if (confirm("Restore Ridge starter records? This replaces the current workspace.")) reset();
+                          if (confirm("Restore Meridian starter records? This replaces the current workspace.")) reset();
                         }}
                       >
                         Restore starter records
