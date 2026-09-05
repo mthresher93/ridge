@@ -481,27 +481,27 @@ export function DesignView() {
             <div className="cad-metrics cad-metrics-tight">
               <div>
                 <span>Modules</span>
-                <b className="az-num">{live.panelCount || "—"}</b>
+                <b className="cad-val elec">{live.panelCount || "—"}</b>
               </div>
               <div>
                 <span>DC</span>
-                <b className="az-num">{live.panelCount ? `${live.systemKw} kW` : "—"}</b>
+                <b className="cad-val elec">{live.panelCount ? `${live.systemKw} kW` : "—"}</b>
               </div>
               <div>
                 <span>Roof</span>
-                <b className="az-num">{live.roofSqFt} ft²</b>
+                <b className="cad-val geo">{live.roofSqFt} ft²</b>
               </div>
               <div>
                 <span>Usable</span>
-                <b className="az-num">{live.usableSqFt} ft²</b>
+                <b className="cad-val geo">{live.usableSqFt} ft²</b>
               </div>
               <div>
                 <span>Coverage</span>
-                <b className="az-num">{live.panelCount ? `${live.coverage}%` : "—"}</b>
+                <b className="cad-val est">{live.panelCount ? `${live.coverage}%` : "—"}</b>
               </div>
               <div>
                 <span>Year-1*</span>
-                <b className="az-num">{estimate.annualProduction.toLocaleString()} kWh</b>
+                <b className="cad-val est">{estimate.annualProduction.toLocaleString()} kWh</b>
               </div>
             </div>
             <p className="cad-note">
@@ -699,11 +699,11 @@ function FaceInspector({
       <div className="cad-metrics cad-metrics-tight">
         <div>
           <span>Area</span>
-          <b>{area} ft²</b>
+          <b className="cad-val geo">{area} ft²</b>
         </div>
         <div>
           <span>Azimuth</span>
-          <b>
+          <b className="cad-val geo">
             {face.azimuthDeg}° {compassLabel(face.azimuthDeg)}
           </b>
         </div>
