@@ -10,6 +10,6 @@ npx prisma db push
 npm run dev
 ```
 
-Open [http://localhost:6793](http://localhost:6793).
+Open [http://localhost:7841](http://localhost:7841).
 
 Brand: **Meridian** · site to close.
