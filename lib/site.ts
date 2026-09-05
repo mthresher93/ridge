@@ -231,6 +231,35 @@ export function syncLegacy(design: RoofDesign): RoofDesign {
   };
 }
 
+/** Snap a point to the nearest anchor within radius (site feet). */
+export function snapPoint(point: Point, anchors: Point[], radiusFt: number) {
+  let best: { point: Point; d: number } | null = null;
+  for (const anchor of anchors) {
+    const d = Math.hypot(anchor.x - point.x, anchor.y - point.y);
+    if (d <= radiusFt && (!best || d < best.d)) best = { point: anchor, d };
+  }
+  return best ? best.point : point;
+}
+
+/** All face vertices except an optional excluded vertex (during drag). */
+export function vertexAnchors(faces: RoofFace[], exclude?: { id: string; index: number }) {
+  const out: Point[] = [];
+  for (const face of faces) {
+    face.points.forEach((pt, index) => {
+      if (exclude && exclude.id === face.id && exclude.index === index) return;
+      out.push(pt);
+    });
+  }
+  return out;
+}
+
+/** Constrain movement to axis-aligned from an origin (Shift/ortho). */
+export function orthoFrom(origin: Point, point: Point): Point {
+  const dx = Math.abs(point.x - origin.x);
+  const dy = Math.abs(point.y - origin.y);
+  return dx >= dy ? { x: point.x, y: origin.y } : { x: origin.x, y: point.y };
+}
+
 /** Bounding box of faces/modules in site feet, for Fit framing. */
 export function siteBounds(design: RoofDesign) {
   const site = ensureSite(design);

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { compassLabel, estimateFor } from "@/lib/solar";
 import { money, nowIso, uid } from "@/lib/format";
@@ -20,16 +20,20 @@ import { SiteCanvas, rotateSelectedFace, type CadSel, type CadTool } from "./sit
 import type { Obstruction, Point, Proposal, RoofDesign, RoofFace } from "@/lib/types";
 import { ProposalFlow } from "./proposal-flow";
 
-const TOOLS: { id: CadTool; label: string }[] = [
-  { id: "pan", label: "Pan" },
-  { id: "select", label: "Select" },
-  { id: "draw", label: "Roof" },
-  { id: "vertex", label: "Vertex" },
-  { id: "panel", label: "Panel" },
-  { id: "gear", label: "Obstruction" },
-  { id: "tree", label: "Tree" },
-  { id: "measure", label: "Measure" },
+const TOOLS: { id: CadTool; label: string; key: string }[] = [
+  { id: "pan", label: "Pan", key: "H" },
+  { id: "select", label: "Select", key: "V" },
+  { id: "draw", label: "Roof", key: "R" },
+  { id: "vertex", label: "Vertex", key: "E" },
+  { id: "panel", label: "Panel", key: "P" },
+  { id: "gear", label: "Obst", key: "O" },
+  { id: "tree", label: "Tree", key: "T" },
+  { id: "measure", label: "Measure", key: "M" },
 ];
+
+function cloneDesign(design: RoofDesign): RoofDesign {
+  return structuredClone(design);
+}
 
 export function DesignView() {
   const { workspace, setWorkspace, loading, selectedLeadId, setSelectedLeadId, log } = useWorkspace();
@@ -41,6 +45,17 @@ export function DesignView() {
   const [kind, setKind] = useState<MapKind>("satellite");
   const [zoom, setZoom] = useState(19);
   const [center, setCenter] = useState({ lat: 35.37, lng: -119.02 });
+  const [spacePan, setSpacePan] = useState(false);
+  const [proposalOpen, setProposalOpen] = useState(false);
+  const [histTick, setHistTick] = useState(0);
+  const pastRef = useRef<RoofDesign[]>([]);
+  const futureRef = useRef<RoofDesign[]>([]);
+  const designRef = useRef<RoofDesign | null>(null);
+  const selRef = useRef<CadSel>(null);
+  const toolRef = useRef<CadTool>(tool);
+  const draftRef = useRef<Point[]>(draft);
+  const centerRef = useRef(center);
+  const leadIdRef = useRef(lead?.id);
 
   useEffect(() => {
     if (!raw) return;
@@ -50,23 +65,73 @@ export function DesignView() {
     setZoom(19);
     setSel(null);
     setDraft([]);
+    pastRef.current = [];
+    futureRef.current = [];
+    setHistTick((n) => n + 1);
   }, [lead?.id]);
 
   const design = raw;
+  designRef.current = design || null;
+  selRef.current = sel;
+  toolRef.current = tool;
+  draftRef.current = draft;
+  centerRef.current = center;
+  leadIdRef.current = lead?.id;
   const estimate = lead && design ? estimateFor(lead, design) : null;
   const live = design ? liveMetrics(design) : null;
   const face = design && (sel?.kind === "face" || sel?.kind === "vertex" || sel?.kind === "edge")
     ? (design.faces || []).find((item) => item.id === sel.id)
     : null;
+  const activeTool = spacePan ? "pan" : tool;
+  const canUndo = pastRef.current.length > 0;
+  const canRedo = futureRef.current.length > 0;
+  void histTick;
 
-  function patch(partial: Partial<RoofDesign> | ((prev: RoofDesign) => RoofDesign)) {
-    if (!lead || !design) return;
-    const next = syncLegacy(typeof partial === "function" ? partial(design) : { ...design, ...partial });
+  function writeDesign(next: RoofDesign) {
+    const leadId = leadIdRef.current;
+    if (!leadId) return;
+    const synced = syncLegacy(next);
     setWorkspace((prev) => ({
       ...prev,
-      designs: { ...prev.designs, [lead.id]: { ...next, updatedAt: nowIso() } },
+      designs: { ...prev.designs, [leadId]: { ...synced, updatedAt: nowIso() } },
       updatedAt: nowIso(),
     }));
+  }
+
+  function checkpoint() {
+    const current = designRef.current;
+    if (!current) return;
+    pastRef.current = [...pastRef.current.slice(-48), cloneDesign(current)];
+    futureRef.current = [];
+    setHistTick((n) => n + 1);
+  }
+
+  function patch(partial: Partial<RoofDesign> | ((prev: RoofDesign) => RoofDesign), opts?: { record?: boolean }) {
+    const current = designRef.current;
+    if (!leadIdRef.current || !current) return;
+    if (opts?.record !== false) checkpoint();
+    const next = typeof partial === "function" ? partial(current) : { ...current, ...partial };
+    writeDesign(next);
+  }
+
+  function undo() {
+    const current = designRef.current;
+    const prev = pastRef.current.pop();
+    if (!current || !prev) return;
+    futureRef.current = [...futureRef.current, cloneDesign(current)];
+    setHistTick((n) => n + 1);
+    writeDesign(prev);
+    setSel(null);
+  }
+
+  function redo() {
+    const current = designRef.current;
+    const next = futureRef.current.pop();
+    if (!current || !next) return;
+    pastRef.current = [...pastRef.current, cloneDesign(current)];
+    setHistTick((n) => n + 1);
+    writeDesign(next);
+    setSel(null);
   }
 
   function saveProposal() {
@@ -135,6 +200,7 @@ export function DesignView() {
       };
     });
     log("lead", lead.id, "proposal", notes);
+    setProposalOpen(true);
   }
 
   function markPresented() {
@@ -154,9 +220,11 @@ export function DesignView() {
   }
 
   function fitSite() {
-    if (!design) return;
-    const origin = { lat: design.lat || center.lat, lng: design.lng || center.lng };
-    const bounds = siteBounds(design);
+    const current = designRef.current;
+    if (!current) return;
+    const view = centerRef.current;
+    const origin = { lat: current.lat || view.lat, lng: current.lng || view.lng };
+    const bounds = siteBounds(current);
     const pad = 1.35;
     const spanFt = Math.max(bounds.maxX - bounds.minX, bounds.maxY - bounds.minY, 40) * pad;
     const mid = siteToLngLat(origin, bounds.cx, bounds.cy);
@@ -170,49 +238,164 @@ export function DesignView() {
   }
 
   function setOriginFromView() {
-    if (!lead) return;
-    patch({ lat: center.lat, lng: center.lng });
-    log("lead", lead.id, "site_origin", `Site origin set to ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+    if (!leadIdRef.current) return;
+    const view = centerRef.current;
+    patch({ lat: view.lat, lng: view.lng });
+    if (lead) log("lead", lead.id, "site_origin", `Site origin set to ${view.lat.toFixed(5)}, ${view.lng.toFixed(5)}`);
   }
 
+  function moduleIdsFromSel(selection: CadSel) {
+    if (selection?.kind !== "module") return [] as string[];
+    return selection.ids?.length ? selection.ids : [selection.id];
+  }
+
+  const actionsRef = useRef({
+    undo,
+    redo,
+    checkpoint,
+    writeDesign,
+    patch,
+    fitSite,
+    moduleIdsFromSel,
+  });
+  actionsRef.current = { undo, redo, checkpoint, writeDesign, patch, fitSite, moduleIdsFromSel };
+
   useEffect(() => {
-    const onKey = (event: KeyboardEvent) => {
+    const typing = (target: EventTarget | null) => {
+      const el = target as HTMLElement | null;
+      if (!el) return false;
+      const tag = el.tagName;
+      return tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable;
+    };
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (typing(event.target)) return;
+      const meta = event.metaKey || event.ctrlKey;
+      const currentDesign = designRef.current;
+      const currentSel = selRef.current;
+      const currentTool = toolRef.current;
+      const currentDraft = draftRef.current;
+      const api = actionsRef.current;
+
+      if (event.code === "Space" && !event.repeat) {
+        event.preventDefault();
+        setSpacePan(true);
+        return;
+      }
+
+      if (meta && event.key.toLowerCase() === "z") {
+        event.preventDefault();
+        if (event.shiftKey) api.redo();
+        else api.undo();
+        return;
+      }
+      if (meta && event.key.toLowerCase() === "y") {
+        event.preventDefault();
+        api.redo();
+        return;
+      }
+
       if (event.key === "Escape") {
         setDraft([]);
         setSel(null);
         setTool("select");
+        return;
       }
-      if (event.key === "Enter" && tool === "draw" && draft.length >= 3 && design) {
+
+      if ((event.key === "Backspace" || event.key === "Delete") && currentTool === "draw" && currentDraft.length) {
+        event.preventDefault();
+        setDraft((prev) => prev.slice(0, -1));
+        return;
+      }
+
+      if (event.key === "Enter" && currentTool === "draw" && currentDraft.length >= 3 && currentDesign) {
+        event.preventDefault();
+        api.checkpoint();
         const next: RoofFace = {
           id: uid("face"),
-          points: draft,
-          pitchDeg: design.tiltDeg,
-          azimuthDeg: design.azimuthDeg,
+          points: currentDraft,
+          pitchDeg: currentDesign.tiltDeg,
+          azimuthDeg: currentDesign.azimuthDeg,
           heightFt: 12,
-          material: design.roofMaterial,
+          material: currentDesign.roofMaterial,
           eligible: true,
         };
-        patch({ faces: [...(design.faces || []), next] });
+        api.writeDesign({ ...currentDesign, faces: [...(currentDesign.faces || []), next] });
         setDraft([]);
         setSel({ kind: "face", id: next.id });
+        setTool("select");
+        return;
       }
-      if ((event.key === "Backspace" || event.key === "Delete") && sel && design) {
-        if (sel.kind === "face") {
-          patch({
-            faces: (design.faces || []).filter((item) => item.id !== sel.id),
-            modules: (design.modules || []).filter((item) => item.faceId !== sel.id),
+
+      if ((event.key === "Backspace" || event.key === "Delete") && currentSel && currentDesign) {
+        event.preventDefault();
+        if (currentSel.kind === "face") {
+          api.patch({
+            faces: (currentDesign.faces || []).filter((item) => item.id !== currentSel.id),
+            modules: (currentDesign.modules || []).filter((item) => item.faceId !== currentSel.id),
           });
+        } else if (currentSel.kind === "module") {
+          const ids = new Set(api.moduleIdsFromSel(currentSel));
+          api.patch({ modules: (currentDesign.modules || []).filter((item) => !ids.has(item.id)) });
+        } else if (currentSel.kind === "obstruction") {
+          api.patch({ obstructions: (currentDesign.obstructions || []).filter((item) => item.id !== currentSel.id) });
         }
-        if (sel.kind === "module") patch({ modules: (design.modules || []).filter((item) => item.id !== sel.id) });
-        if (sel.kind === "obstruction") patch({ obstructions: (design.obstructions || []).filter((item) => item.id !== sel.id) });
         setSel(null);
+        return;
+      }
+
+      if (event.key.toLowerCase() === "f" && !meta) {
+        event.preventDefault();
+        api.fitSite();
+        return;
+      }
+
+      if ((event.key === "[" || event.key === "]") && currentSel?.kind === "module" && currentDesign) {
+        event.preventDefault();
+        const ids = new Set(api.moduleIdsFromSel(currentSel));
+        const delta = event.key === "]" ? 90 : -90;
+        api.patch({
+          modules: (currentDesign.modules || []).map((row) =>
+            ids.has(row.id) ? { ...row, rotationDeg: ((row.rotationDeg + delta) % 360 + 360) % 360 } : row,
+          ),
+        });
+        return;
+      }
+
+      const key = event.key.toLowerCase();
+      const toolMatch = TOOLS.find((item) => item.key.toLowerCase() === key);
+      if (toolMatch && !meta) {
+        event.preventDefault();
+        setTool(toolMatch.id);
       }
     };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [tool, draft, sel, design]);
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.code === "Space") setSpacePan(false);
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    window.addEventListener("keyup", onKeyUp);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+      window.removeEventListener("keyup", onKeyUp);
+    };
+  }, []);
 
   const address = lead ? lead.address || `${lead.property}, ${lead.city}` : "";
+  const saved = lead ? workspace.proposals?.[lead.id] : undefined;
+  const hint =
+    activeTool === "draw"
+      ? "Place vertices · Enter/double-click closes · Shift constrains ortho · snap to nearby points"
+      : activeTool === "panel"
+        ? "Click an eligible face to place a module · Shift+drag moves ortho"
+        : activeTool === "measure"
+          ? "Click two points for a length in feet"
+          : activeTool === "vertex"
+            ? "Drag vertices · Shift for ortho · snap to other corners"
+            : activeTool === "pan" || spacePan
+              ? "Drag the map · scroll to zoom · release Space to return"
+              : "Select geometry · Shift+click adds modules · Delete removes · Space pans";
 
   if (loading || !lead || !design || !estimate || !live) return <div className="text-[var(--muted)]">Loading design…</div>;
 
@@ -236,26 +419,40 @@ export function DesignView() {
         </label>
         <div className="cad-address">{address}</div>
         <div className="cad-top-actions">
+          <button type="button" className="az-btn" onClick={undo} disabled={!canUndo} title="Undo (Ctrl+Z)">
+            Undo
+          </button>
+          <button type="button" className="az-btn" onClick={redo} disabled={!canRedo} title="Redo (Ctrl+Y)">
+            Redo
+          </button>
           <button type="button" className="az-btn" onClick={() => setKind((k) => (k === "satellite" ? "streets" : "satellite"))}>
             {kind === "satellite" ? "Satellite" : "Streets"}
           </button>
-          <button type="button" className="az-btn" onClick={fitSite}>
+          <button type="button" className="az-btn" onClick={fitSite} title="Fit (F)">
             Fit
           </button>
           <button type="button" className="az-btn" onClick={setOriginFromView}>
             Set origin
           </button>
           <button type="button" className="az-btn pri" onClick={saveProposal}>
-            Save proposal v{(workspace.proposals?.[lead.id]?.version || 0) + 1}
+            Save proposal v{(saved?.version || 0) + 1}
           </button>
         </div>
       </header>
 
       <div className="cad-body">
-        <aside className="cad-tools">
+        <aside className="cad-tools" aria-label="Design tools">
           {TOOLS.map((item) => (
-            <button key={item.id} type="button" className={tool === item.id ? "on" : ""} onClick={() => setTool(item.id)} title={item.label}>
-              {item.label}
+            <button
+              key={item.id}
+              type="button"
+              className={activeTool === item.id ? "on" : ""}
+              onMouseDown={(event) => event.preventDefault()}
+              onClick={() => setTool(item.id)}
+              title={`${item.label} (${item.key})`}
+            >
+              <span className="cad-tool-label">{item.label}</span>
+              <kbd>{item.key}</kbd>
             </button>
           ))}
         </aside>
@@ -266,69 +463,52 @@ export function DesignView() {
               <SiteCanvas
                 design={design}
                 view={view}
-                tool={tool}
+                tool={activeTool}
                 sel={sel}
                 onSel={setSel}
-                onChange={(next) => patch(() => next)}
+                onChange={(next) => writeDesign(next)}
+                onGestureStart={checkpoint}
                 draft={draft}
                 onDraft={setDraft}
               />
             )}
           </TileMap>
-          <div className="cad-hint">
-            {tool === "draw"
-              ? "Click to place vertices. Enter or double-click to close the roof face."
-              : tool === "panel"
-                ? "Click inside a roof face to place a module at real 425W dimensions."
-                : tool === "measure"
-                  ? "Click two points. Length is in feet."
-                  : "Select geometry. Inspector on the right. Delete removes the selection."}
-          </div>
+          <div className="cad-hint">{hint}</div>
         </div>
 
         <aside className="cad-inspector">
-          <div className="cad-insp-block">
-            <div className="az-kicker">System</div>
-            <div className="cad-metrics">
+          <div className="cad-insp-block cad-sys-strip">
+            <div className="cad-metrics cad-metrics-tight">
               <div>
                 <span>Modules</span>
-                <b className="az-num">{live.panelCount || "—"}</b>
+                <b className="cad-val elec">{live.panelCount || "—"}</b>
               </div>
               <div>
-                <span>DC size</span>
-                <b className="az-num">{live.panelCount ? `${live.systemKw} kW` : "—"}</b>
+                <span>DC</span>
+                <b className="cad-val elec">{live.panelCount ? `${live.systemKw} kW` : "—"}</b>
               </div>
               <div>
                 <span>Roof</span>
-                <b className="az-num">{live.roofSqFt} ft²</b>
+                <b className="cad-val geo">{live.roofSqFt} ft²</b>
               </div>
               <div>
                 <span>Usable</span>
-                <b className="az-num">{live.usableSqFt} ft²</b>
-              </div>
-              <div>
-                <span>Panel area</span>
-                <b className="az-num">{live.panelCount ? `${live.panelSqFt} ft²` : "—"}</b>
+                <b className="cad-val geo">{live.usableSqFt} ft²</b>
               </div>
               <div>
                 <span>Coverage</span>
-                <b className="az-num">{live.panelCount ? `${live.coverage}%` : "—"}</b>
-              </div>
-            </div>
-            {!live.panelCount ? (
-              <p className="cad-note">No modules placed. Plan size below is bill-based planning, not a surveyed array.</p>
-            ) : null}
-            <div className="cad-metrics faint">
-              <div>
-                <span>{live.panelCount ? "Array model" : "Plan size"}</span>
-                <b>{estimate.systemKw} kW · {estimate.panelCount} mod</b>
+                <b className="cad-val est">{live.panelCount ? `${live.coverage}%` : "—"}</b>
               </div>
               <div>
-                <span>Year-1 model</span>
-                <b>{estimate.annualProduction.toLocaleString()} kWh</b>
+                <span>Year-1*</span>
+                <b className="cad-val est">{estimate.annualProduction.toLocaleString()} kWh</b>
               </div>
             </div>
-            <p className="cad-note">Year-1 uses assumed shade loss ({design.shadeLoss}%) and city sun hours — not a shade simulation.</p>
+            <p className="cad-note">
+              {live.panelCount
+                ? `Array from placed modules · *Year-1 uses ${design.shadeLoss}% assumed shade + city sun hours (not a shade sim).`
+                : `No modules — plan size ${estimate.systemKw} kW / ${estimate.panelCount} mod is bill-based, not surveyed.`}
+            </p>
           </div>
 
           {face ? (
@@ -353,9 +533,13 @@ export function DesignView() {
           {sel?.kind === "module" ? (
             <ModuleInspector
               design={design}
-              mod={(design.modules || []).find((row) => row.id === sel.id)}
-              onChange={(next) => patch({ modules: (design.modules || []).map((row) => (row.id === next.id ? next : row)) })}
-              onDelete={() => patch({ modules: (design.modules || []).filter((row) => row.id !== sel.id) })}
+              ids={moduleIdsFromSel(sel)}
+              onChange={(ids, mapFn) =>
+                patch({
+                  modules: (design.modules || []).map((row) => (ids.includes(row.id) ? mapFn(row) : row)),
+                })
+              }
+              onDelete={(ids) => patch({ modules: (design.modules || []).filter((row) => !ids.includes(row.id)) })}
             />
           ) : null}
 
@@ -369,26 +553,27 @@ export function DesignView() {
 
           {!sel ? (
             <div className="cad-insp-block">
-              <div className="az-kicker">Site</div>
-              <label>
-                Setback (ft)
-                <input
-                  className="az-input"
-                  type="number"
-                  value={design.setbackFt ?? 3}
-                  onChange={(event) => patch({ setbackFt: Number(event.target.value) || 0 })}
-                />
-              </label>
-              <label>
-                Assumed shade loss %
-                <input
-                  className="az-input"
-                  type="number"
-                  value={design.shadeLoss}
-                  onChange={(event) => patch({ shadeLoss: Number(event.target.value) })}
-                />
-              </label>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="az-kicker">Site defaults</div>
+              <div className="cad-field-grid">
+                <label>
+                  Setback ft
+                  <input
+                    className="az-input"
+                    type="number"
+                    step="0.5"
+                    value={design.setbackFt ?? 3}
+                    onChange={(event) => patch({ setbackFt: Number(event.target.value) || 0 })}
+                  />
+                </label>
+                <label>
+                  Shade %*
+                  <input
+                    className="az-input"
+                    type="number"
+                    value={design.shadeLoss}
+                    onChange={(event) => patch({ shadeLoss: Number(event.target.value) })}
+                  />
+                </label>
                 <label>
                   Module W
                   <input
@@ -399,10 +584,11 @@ export function DesignView() {
                   />
                 </label>
                 <label>
-                  Spacing in
+                  Gap in
                   <input
                     className="az-input"
                     type="number"
+                    step="0.1"
                     value={design.spacingIn ?? 0.5}
                     onChange={(event) => patch({ spacingIn: Number(event.target.value) })}
                   />
@@ -426,21 +612,27 @@ export function DesignView() {
                   />
                 </label>
               </div>
-              <p className="cad-note">Setback inset is a design offset for fill/eligibility — not an AHJ code check. Shade % is assumed.</p>
+              <p className="cad-note">Setback is a design offset for fill — not an AHJ check. Shade % is assumed.</p>
             </div>
           ) : null}
 
-          <div className="cad-insp-block prop-insp">
-            <ProposalFlow
-              lead={lead}
-              design={design}
-              estimate={estimate}
-              live={live}
-              saved={workspace.proposals?.[lead.id]}
-              onSave={saveProposal}
-              onMarkPresented={markPresented}
-            />
-          </div>
+          <details className="cad-prop-fold" open={proposalOpen} onToggle={(event) => setProposalOpen((event.target as HTMLDetailsElement).open)}>
+            <summary>
+              <span className="cad-prop-title">Proposal</span>
+              <span className="cad-prop-meta">{saved ? `v${saved.version} · ${saved.status}` : "unsaved"}</span>
+            </summary>
+            <div className="cad-insp-block prop-insp">
+              <ProposalFlow
+                lead={lead}
+                design={design}
+                estimate={estimate}
+                live={live}
+                saved={saved}
+                onSave={saveProposal}
+                onMarkPresented={markPresented}
+              />
+            </div>
+          </details>
         </aside>
       </div>
 
@@ -478,66 +670,88 @@ function FaceInspector({
   const area = Math.round(polygonArea(face.points));
   const lengths = edgeLengths(face.points);
   const edgeLen = sel?.kind === "edge" ? lengths[sel.index] : null;
+  const [edgeText, setEdgeText] = useState(edgeLen != null ? formatFeet(edgeLen) : "");
+
+  useEffect(() => {
+    if (edgeLen != null) setEdgeText(formatFeet(edgeLen));
+  }, [face.id, sel?.kind === "edge" ? sel.index : -1, edgeLen]);
+
+  function commitEdge() {
+    if (edgeLen == null || sel?.kind !== "edge") return;
+    const next = parseFeetInches(edgeText);
+    if (next == null) {
+      setEdgeText(formatFeet(edgeLen));
+      return;
+    }
+    const a = face.points[sel.index];
+    const b = face.points[(sel.index + 1) % face.points.length];
+    const cur = Math.hypot(b.x - a.x, b.y - a.y) || 1;
+    const scale = next / cur;
+    const points = face.points.map((pt, i) =>
+      i === (sel.index + 1) % face.points.length ? { x: a.x + (b.x - a.x) * scale, y: a.y + (b.y - a.y) * scale } : pt,
+    );
+    onFace({ ...face, points });
+  }
+
   return (
     <div className="cad-insp-block">
       <div className="az-kicker">Roof face</div>
-      <div className="cad-metrics">
+      <div className="cad-metrics cad-metrics-tight">
         <div>
           <span>Area</span>
-          <b>{area} ft²</b>
+          <b className="cad-val geo">{area} ft²</b>
         </div>
         <div>
           <span>Azimuth</span>
-          <b>{face.azimuthDeg}° {compassLabel(face.azimuthDeg)}</b>
+          <b className="cad-val geo">
+            {face.azimuthDeg}° {compassLabel(face.azimuthDeg)}
+          </b>
         </div>
       </div>
-      <label>
-        Pitch °
-        <input className="az-input" type="number" value={face.pitchDeg} onChange={(event) => onFace({ ...face, pitchDeg: Number(event.target.value) })} />
-      </label>
-      <label>
-        Azimuth °
-        <input className="az-input" type="number" value={face.azimuthDeg} onChange={(event) => onFace({ ...face, azimuthDeg: Number(event.target.value) })} />
-      </label>
-      <label>
-        Height
-        <input className="az-input" type="number" value={face.heightFt} onChange={(event) => onFace({ ...face, heightFt: Number(event.target.value) })} />
-      </label>
-      <label>
-        Material
-        <input className="az-input" value={face.material} onChange={(event) => onFace({ ...face, material: event.target.value })} />
-      </label>
+      <div className="cad-field-grid">
+        <label>
+          Pitch °
+          <input className="az-input" type="number" value={face.pitchDeg} onChange={(event) => onFace({ ...face, pitchDeg: Number(event.target.value) })} />
+        </label>
+        <label>
+          Azimuth °
+          <input className="az-input" type="number" value={face.azimuthDeg} onChange={(event) => onFace({ ...face, azimuthDeg: Number(event.target.value) })} />
+        </label>
+        <label>
+          Height ft
+          <input className="az-input" type="number" value={face.heightFt} onChange={(event) => onFace({ ...face, heightFt: Number(event.target.value) })} />
+        </label>
+        <label>
+          Material
+          <input className="az-input" value={face.material} onChange={(event) => onFace({ ...face, material: event.target.value })} />
+        </label>
+      </div>
       <label className="cad-check">
         <input
           type="checkbox"
           checked={face.eligible !== false}
           onChange={(event) => onFace({ ...face, eligible: event.target.checked })}
         />
-        Panel-eligible face
+        Panel-eligible
       </label>
       {edgeLen != null ? (
         <label>
           Edge length
           <input
             className="az-input"
-            defaultValue={formatFeet(edgeLen)}
-            key={`${face.id}-${sel?.kind === "edge" ? sel.index : "x"}-${edgeLen.toFixed(2)}`}
-            onBlur={(event) => {
-              const next = parseFeetInches(event.target.value);
-              if (next == null || sel?.kind !== "edge") return;
-              const a = face.points[sel.index];
-              const b = face.points[(sel.index + 1) % face.points.length];
-              const cur = Math.hypot(b.x - a.x, b.y - a.y) || 1;
-              const scale = next / cur;
-              const points = face.points.map((pt, i) =>
-                i === (sel.index + 1) % face.points.length ? { x: a.x + (b.x - a.x) * scale, y: a.y + (b.y - a.y) * scale } : pt,
-              );
-              onFace({ ...face, points });
+            value={edgeText}
+            onChange={(event) => setEdgeText(event.target.value)}
+            onBlur={commitEdge}
+            onKeyDown={(event) => {
+              if (event.key === "Enter") {
+                event.preventDefault();
+                (event.target as HTMLInputElement).blur();
+              }
             }}
           />
         </label>
       ) : null}
-      <div className="flex flex-wrap gap-2 mt-2">
+      <div className="cad-action-row">
         <button type="button" className="az-btn pri" onClick={onFill} disabled={face.eligible === false}>
           Auto-fill
         </button>
@@ -548,60 +762,67 @@ function FaceInspector({
           Copy
         </button>
       </div>
-      <p className="cad-note">Drag vertices. Select an edge to type an exact length. Auto-fill respects setback + obstructions.</p>
+      <p className="cad-note">Select an edge to type exact length (Enter). Auto-fill respects setback + obstructions.</p>
     </div>
   );
 }
 
 function ModuleInspector({
   design,
-  mod,
+  ids,
   onChange,
   onDelete,
 }: {
   design: RoofDesign;
-  mod?: import("@/lib/types").PlacedModule;
-  onChange: (mod: import("@/lib/types").PlacedModule) => void;
-  onDelete: () => void;
+  ids: string[];
+  onChange: (ids: string[], mapFn: (mod: import("@/lib/types").PlacedModule) => import("@/lib/types").PlacedModule) => void;
+  onDelete: (ids: string[]) => void;
 }) {
-  if (!mod) return null;
+  const mods = (design.modules || []).filter((row) => ids.includes(row.id));
+  if (!mods.length) return null;
+  const mod = mods[0];
+  const multi = mods.length > 1;
   const portrait = mod.portrait !== false;
   const w = portrait ? design.panelWidthIn ?? 41 : design.panelHeightIn ?? 74;
   const h = portrait ? design.panelHeightIn ?? 74 : design.panelWidthIn ?? 41;
   return (
     <div className="cad-insp-block">
-      <div className="az-kicker">Module</div>
+      <div className="az-kicker">{multi ? `${mods.length} modules` : "Module"}</div>
       <p className="cad-note">
         {w}&quot; × {h}&quot; · {design.panelWatts}W · {portrait ? "portrait" : "landscape"}
+        {multi ? " · edits apply to selection" : ""}
       </p>
-      <label>
-        Rotation °
-        <input
-          className="az-input"
-          type="number"
-          value={mod.rotationDeg}
-          onChange={(event) => onChange({ ...mod, rotationDeg: Number(event.target.value) })}
-        />
-      </label>
-      <div className="flex flex-wrap gap-2 mt-1">
-        <button type="button" className={`az-btn ${portrait ? "pri" : ""}`} onClick={() => onChange({ ...mod, portrait: true })}>
+      {!multi ? (
+        <label>
+          Rotation °
+          <input
+            className="az-input"
+            type="number"
+            value={mod.rotationDeg}
+            onChange={(event) => onChange(ids, (row) => ({ ...row, rotationDeg: Number(event.target.value) }))}
+          />
+        </label>
+      ) : null}
+      <div className="cad-action-row">
+        <button type="button" className={`az-btn ${portrait ? "pri" : ""}`} onClick={() => onChange(ids, (row) => ({ ...row, portrait: true }))}>
           Portrait
         </button>
-        <button type="button" className={`az-btn ${!portrait ? "pri" : ""}`} onClick={() => onChange({ ...mod, portrait: false })}>
+        <button type="button" className={`az-btn ${!portrait ? "pri" : ""}`} onClick={() => onChange(ids, (row) => ({ ...row, portrait: false }))}>
           Landscape
         </button>
         <button
           type="button"
           className="az-btn"
-          onClick={() => onChange({ ...mod, rotationDeg: (mod.rotationDeg + 90) % 360 })}
+          onClick={() => onChange(ids, (row) => ({ ...row, rotationDeg: (row.rotationDeg + 90) % 360 }))}
+          title="] also rotates"
         >
           Rotate 90°
         </button>
-        <button type="button" className="az-btn" onClick={onDelete}>
+        <button type="button" className="az-btn" onClick={() => onDelete(ids)}>
           Delete
         </button>
       </div>
-      <p className="cad-note">Drag on canvas to move. Dimensions are real module inches converted to site feet.</p>
+      <p className="cad-note">Drag to move · Shift constrains ortho · [ / ] rotate 90°.</p>
     </div>
   );
 }
@@ -619,17 +840,19 @@ function ObstructionInspector({
   return (
     <div className="cad-insp-block">
       <div className="az-kicker">{item.kind}</div>
-      {(["widthFt", "lengthFt", "heightFt"] as const).map((key) => (
-        <label key={key}>
-          {key.replace("Ft", " (ft)")}
-          <input
-            className="az-input"
-            type="number"
-            value={item[key]}
-            onChange={(event) => onChange({ ...item, [key]: Number(event.target.value) })}
-          />
-        </label>
-      ))}
+      <div className="cad-field-grid">
+        {(["widthFt", "lengthFt", "heightFt"] as const).map((key) => (
+          <label key={key}>
+            {key.replace("Ft", " ft")}
+            <input
+              className="az-input"
+              type="number"
+              value={item[key]}
+              onChange={(event) => onChange({ ...item, [key]: Number(event.target.value) })}
+            />
+          </label>
+        ))}
+      </div>
       <button type="button" className="az-btn" onClick={onDelete}>
         Delete
       </button>
