@@ -1,6 +1,6 @@
-# Ridge
+# Aileron
 
-Solar sales desk — dialer, roof design, and map.
+Sales command center — dialer, roof design, and map.
 
 Private CRM for residential solar. Run it locally:
 
@@ -10,6 +10,4 @@ npx prisma db push
 npm run dev
 ```
 
-Open [http://localhost:6793](http://localhost:6793).
-
-GitHub: [mthresher93/ridge](https://github.com/mthresher93/ridge)
+Open [http://localhost:6793](http://localhost:6793). The original Conduit console is at `/conduit-crm/index.html`.

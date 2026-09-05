@@ -92,7 +92,7 @@ export function scriptFor(lead: Lead | null, design?: RoofDesign | null): Script
     {
       id: "open",
       label: "Open",
-      say: `${first}, Michael with Ridge. You asked for a call on the ${lead.utility} bill at ${lead.property}. Is this still a decent time?`,
+      say: `${first}, Michael with Aileron. You asked for a call on the ${lead.utility} bill at ${lead.property}. Is this still a decent time?`,
       cue: `Phone ${phonePretty(lead.phone)}`,
     },
     {

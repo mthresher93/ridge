@@ -41,7 +41,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "ridge-workspace.json";
+    a.download = "aileron-workspace.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -54,7 +54,7 @@ export function SettingsView() {
         <header className="settings-head">
           <div>
             <div className="az-title">Settings</div>
-            <p className="settings-sub">Desk preferences for this workspace. Changes save to SQLite with the rest of Ridge.</p>
+            <p className="settings-sub">Desk preferences for this workspace. Changes save to SQLite with the rest of Aileron.</p>
           </div>
           {savedFlash ? <span className="settings-flash">Saved</span> : null}
         </header>
@@ -168,7 +168,7 @@ export function SettingsView() {
                         type="button"
                         className="az-btn danger"
                         onClick={() => {
-                          if (confirm("Restore Ridge starter records? This replaces the current workspace.")) reset();
+                          if (confirm("Restore Aileron starter records? This replaces the current workspace.")) reset();
                         }}
                       >
                         Restore starter records

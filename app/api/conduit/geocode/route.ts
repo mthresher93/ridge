@@ -16,7 +16,7 @@ function cityFallback(query: string): GeoResult[] {
       label: query.length > name.length ? query : `${name}, United States`,
       latitude: coords.lat,
       longitude: coords.lng,
-      source: "Ridge city atlas",
+      source: "Aileron city atlas",
     }));
 }
 
@@ -33,7 +33,7 @@ export async function GET(request: Request) {
     url.searchParams.set("countrycodes", "us");
     url.searchParams.set("limit", "5");
     const response = await fetch(url, {
-      headers: { "User-Agent": "RidgeCRM/0.1 (local solar desk)" },
+      headers: { "User-Agent": "AileronCRM/0.1 (local solar desk)" },
       cache: "no-store",
     });
     if (response.ok) {

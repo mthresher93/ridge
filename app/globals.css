@@ -3,27 +3,27 @@
 @tailwind utilities;
 
 :root {
-  --ink: #d6ddd4;
-  --ink-2: #101612;
-  --panel: #f4f7f2;
-  --panel-2: #e6ece4;
-  --line: #c3cec2;
-  --line-2: #a7b6a8;
-  --text: #101411;
-  --muted: #3b463e;
-  --faint: #66756c;
-  --gold: #1f7a4c;
-  --gold-2: #145c38;
-  --gold-dim: rgba(31, 122, 76, 0.14);
-  --up: #1f7a4c;
-  --warn: #9a6b12;
-  --down: #b42318;
-  --blue: #2f4fbf;
-  --hover: rgba(16, 20, 17, 0.05);
-  --track: rgba(16, 20, 17, 0.1);
-  --volt: #d4f25a;
-  --lift: 0 1px 0 rgba(255, 255, 255, 0.7) inset, 0 8px 20px rgba(16, 22, 18, 0.08);
-  --lift-2: 0 18px 40px rgba(16, 22, 18, 0.18);
+  --ink: #07090d;
+  --ink-2: #05070b;
+  --panel: #10141c;
+  --panel-2: #161b26;
+  --line: #252b38;
+  --line-2: #343b4a;
+  --text: #e8eef7;
+  --muted: #9aa6b8;
+  --faint: #6b7688;
+  --gold: #5ec8ff;
+  --gold-2: #8ad4ff;
+  --gold-dim: rgba(94, 200, 255, 0.14);
+  --up: #3dd68c;
+  --warn: #e8b84a;
+  --down: #ff5c6c;
+  --blue: #6b8cff;
+  --hover: rgba(255, 255, 255, 0.04);
+  --track: rgba(255, 255, 255, 0.08);
+  --volt: #5ec8ff;
+  --lift: 0 1px 0 rgba(255, 255, 255, 0.04) inset, 0 10px 28px rgba(0, 0, 0, 0.35);
+  --lift-2: 0 22px 48px rgba(0, 0, 0, 0.45);
   --background: var(--ink);
   --foreground: var(--text);
 }
@@ -42,6 +42,7 @@ body {
   font-size: 14px;
   line-height: 1.45;
   -webkit-font-smoothing: antialiased;
+  --font-display: var(--font-sans);
 }
 
 body {
@@ -94,7 +95,7 @@ textarea {
   grid-template-columns: 204px minmax(0, 1fr);
   height: 100vh;
   overflow: hidden;
-  background: var(--ink);
+  background: radial-gradient(900px 520px at 80% -20%, rgba(94, 200, 255, 0.08), transparent 42%), var(--ink);
 }
 
 .az-shell.density-compact {
