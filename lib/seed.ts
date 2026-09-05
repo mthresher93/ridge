@@ -18,7 +18,7 @@ function atHour(hour: number, minute = 0) {
 export function emptyWorkspace(): Workspace {
   return {
     version: 2,
-    brand: "azimuth",
+    brand: "meridian",
     leads: [],
     opportunities: [],
     callbacks: [],
@@ -492,7 +492,7 @@ export function createSeed(): Workspace {
 
   return {
     version: 1,
-    brand: "azimuth",
+    brand: "meridian",
     leads,
     opportunities,
     callbacks,
@@ -555,6 +555,7 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
   return {
     ...workspace,
     version: 2,
+    brand: "meridian",
     designs,
     proposals: workspace.proposals || {},
     callLogs: workspace.callLogs || [],
@@ -564,5 +565,5 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
 export function isWorkspace(value: unknown): value is Workspace {
   if (!value || typeof value !== "object" || Array.isArray(value)) return false;
   const record = value as Record<string, unknown>;
-  return record.brand === "azimuth" && Array.isArray(record.leads) && Array.isArray(record.opportunities);
+  return (record.brand === "meridian" || record.brand === "azimuth") && Array.isArray(record.leads) && Array.isArray(record.opportunities);
 }

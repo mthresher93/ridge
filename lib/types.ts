@@ -216,7 +216,7 @@ export type Settings = {
 
 export type Workspace = {
   version: number;
-  brand: "azimuth";
+  brand: "meridian" | "azimuth";
   leads: Lead[];
   opportunities: Opportunity[];
   callbacks: Callback[];

@@ -43,8 +43,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
         <Link href="/" className="az-brand">
           <BrandMark />
           <div>
-            <div className="az-brand-name">Ridge</div>
-            <div className="az-brand-sub">Solar sales desk</div>
+            <div className="az-brand-name">Meridian</div>
+            <div className="az-brand-sub">Site to close</div>
           </div>
         </Link>
         <nav className="az-nav">

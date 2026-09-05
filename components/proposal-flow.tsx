@@ -115,7 +115,7 @@ export function ProposalFlow({
 
   function copySummary() {
     const text = [
-      `Ridge proposal · ${view.customerName}`,
+      `Meridian proposal · ${view.customerName}`,
       view.property,
       `${view.systemKw} kW · ${view.panelCount} × ${view.panelWatts}W`,
       view.source === "modules" ? "Sized from placed modules" : "Planning size from utility bill",
@@ -341,7 +341,7 @@ function ProposalPresent({
       </button>
       <article className="prop-sheet">
         <header className="prop-sheet-head">
-          <div className="prop-sheet-brand">Ridge</div>
+          <div className="prop-sheet-brand">Meridian</div>
           <div className="prop-sheet-meta">Proposal v{view.version}</div>
         </header>
         <h1 className="prop-sheet-name">{view.customerName}</h1>
