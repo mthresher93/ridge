@@ -2,13 +2,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
-import { leadEligibility, nowIso, phonePretty, uid } from "@/lib/format";
+import { leadEligibility, nowIso, phonePretty, relativeDue, uid } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
-import { CALL_STATES, DISPOSITIONS, type DialState, type DispositionId } from "@/lib/dispositions";
+import { CALL_STATES, DISPOSITIONS, visibleCallState, type DialState, type DispositionId } from "@/lib/dispositions";
 import { completeOpenCallbacks, syncOpportunityFromWrap } from "@/lib/crm";
 import { ScriptPanel } from "./script-panel";
 import { AudioPopover } from "./audio-popover";
 import { WrapSheet } from "./wrap-sheet";
+import { Station } from "./page-intro";
 import type { Lead } from "@/lib/types";
 
 type ScriptMode = "collapsed" | "split" | "focus";
@@ -79,15 +80,17 @@ export function FloorView() {
   const canDial = eligibility?.tone === "ok";
   const remaining = queue.filter((lead) => leadEligibility(lead).tone === "ok" && lead.id !== active?.id).length;
   const live = state === "connected" || state === "hold" || state === "muted";
-  const visual: DialState = live && muted ? "muted" : state;
-  const stamp = CALL_STATES[visual];
+  const stamp = CALL_STATES[visibleCallState(state, muted, wrapDefault)];
   const history = (workspace.callLogs || []).filter((row) => row.leadId === active?.id).slice(0, 4);
   const dialTarget = workspace.settings.dialTarget || 80;
   const targetPct = Math.min(100, Math.round((session.attempts / dialTarget) * 100));
   const answerRate = session.attempts ? Math.round((session.answered / session.attempts) * 100) : 0;
   const setRate = session.attempts ? Math.round((session.appointments / session.attempts) * 100) : 0;
   const ringing = state === "dialing" || state === "ringing";
-  const stageTone = ringing ? "progress" : live ? (muted || state === "hold" ? "hold" : "live") : state === "wrap" ? "wrap" : state === "failed" ? "down" : "ready";
+  const stageTone = stamp.tone;
+  const openCallback = active ? workspace.callbacks.find((item) => item.leadId === active.id && item.status === "open") : null;
+  const nextLead = active ? nextCallable(active.id) : null;
+  const avgTalk = session.answered ? Math.round(session.talkSec / session.answered) : 0;
 
   useEffect(() => {
     if (active) setNotes(active.notes);
@@ -176,7 +179,7 @@ export function FloorView() {
     return rotated.find((lead) => leadEligibility(lead).tone === "ok") || null;
   }
 
-  function applyWrap(id: DispositionId, when?: string, advance?: boolean) {
+  function applyWrap(id: DispositionId, when?: string, advance?: boolean, nextAction?: string) {
     if (!active) return;
     const row = DISPOSITIONS.find((item) => item.id === id);
     if (!row) return;
@@ -197,7 +200,7 @@ export function FloorView() {
             ? {
                 ...lead,
                 status: "status" in row && row.status ? row.status : lead.status,
-                nextAction: row.label,
+                nextAction: nextAction?.trim() || defaultNextAction(id, when),
                 notes,
                 dnc: "dnc" in row && row.dnc ? true : lead.dnc,
                 updatedAt: nowIso(),
@@ -305,30 +308,33 @@ export function FloorView() {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  if (loading) return <div className="text-[var(--muted)]">Opening the dialer…</div>;
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Opening the dialer…</div>;
 
   return (
-    <div className="dialer-desk">
-      <header className="dialer-chrome">
-        <div className="dialer-session" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps} · Talk ${fmt(session.talkSec)} · Appointments ${setRate}%`}>
-          <SessionStat label="Dials" value={`${session.attempts}`} />
-          <SessionStat label="Answer" value={`${answerRate}%`} />
-          <SessionStat label="Appointments" value={`${session.appointments}`} />
-          <div className="dialer-pace">
-            <div className="dialer-pace-meta">
-              <span>Pace</span>
-              <b className="az-num">
-                {session.attempts}/{dialTarget}
-              </b>
-            </div>
-            <div className="dial-target-meter" title={`${targetPct}% of daily dial target`}>
-              <span style={{ width: `${targetPct}%` }} />
+    <Station
+      n="06"
+      title="Dialer"
+      fill
+      compact
+      lede={<>Simulation until a carrier is connected.</>}
+      actions={
+        <div className="dl-tools">
+          <div className="dl-stats" title={`No answer ${session.noAnswer} · Voicemail ${session.voicemail} · Follow-ups ${session.followUps}`}>
+            <Stat k="Dials" v={`${session.attempts}`} />
+            <Stat k="Answered" v={`${session.answered} · ${answerRate}%`} />
+            <Stat k="Appts" v={`${session.appointments} · ${setRate}%`} />
+            <Stat k="Talk" v={fmt(session.talkSec)} />
+            <Stat k="Avg" v={fmt(avgTalk)} />
+            <div className="dl-pace" title={`${targetPct}% of daily dial target`}>
+              <span>
+                Pace <b className="az-num">{session.attempts}/{dialTarget}</b>
+              </span>
+              <i>
+                <i style={{ width: `${targetPct}%` }} />
+              </i>
             </div>
           </div>
-          <SessionStat label="Left" value={`${remaining}`} />
-        </div>
-        <div className="dialer-tools">
-          <button type="button" className={`az-btn ${power ? "pri" : ""}`} onClick={() => setPower((v) => !v)}>
+          <button type="button" className={`az-btn sm ${power ? "pri" : ""}`} onClick={() => setPower((v) => !v)}>
             {power ? "Power · on" : "Power dial"}
           </button>
           <AudioPopover />
@@ -347,193 +353,198 @@ export function FloorView() {
             ))}
           </div>
         </div>
-      </header>
+      }
+    >
+    <div className={`dl dl-${scriptMode} tone-${stageTone}`}>
+      <aside className="dl-queue">
+        <div className="dl-queue-head">
+          <div>
+            <span className={`dl-queue-state ${power ? "on" : ""}`}>{power ? "Power · active" : "Queue · paused"}</span>
+            <b className="az-num">{remaining} left</b>
+          </div>
+          <button type="button" className={`rail-filter ${callableOnly ? "on" : ""}`} onClick={() => setCallableOnly((v) => !v)}>
+            {callableOnly ? "Callable" : "All"}
+          </button>
+        </div>
+        <div className="scroll-y flex-1">
+          {queue.map((lead) => {
+            const tone = leadEligibility(lead).tone;
+            const isNext = nextLead?.id === lead.id;
+            return (
+              <button
+                key={lead.id}
+                type="button"
+                onClick={() => pick(lead.id)}
+                className={`dialer-q-row ${active?.id === lead.id ? "on" : ""} ${isNext ? "next" : ""}`}
+                title={`${lead.name} · ${lead.city}`}
+              >
+                {scriptMode !== "collapsed" ? (
+                  <b className="dialer-q-initials">{lead.name.split(" ").map((part) => part[0]).join("")}</b>
+                ) : (
+                  <>
+                    <span className={`dialer-q-dot ${tone}`} />
+                    <span className="dialer-q-copy">
+                      <b>{lead.name}</b>
+                      <i>
+                        {lead.city || "—"} · {lead.attempts}×{isNext ? " · next" : ""}
+                      </i>
+                    </span>
+                  </>
+                )}
+              </button>
+            );
+          })}
+          {!queue.length ? <div className="dialer-empty">Queue is empty.</div> : null}
+        </div>
+      </aside>
 
-      <div className={`dialer-layout ${scriptMode}`}>
-        <aside className="dialer-rail">
-          <div className="dialer-rail-head">
-            <div>
-              <span>{power ? "Power" : "Queue"}</span>
-              <b className="az-num">{queue.length}</b>
+      <section className="dl-stage">
+        {active ? (
+          <>
+            <div className="dl-identity">
+              <div className={`dl-state ${stamp.tone}`}>
+                <i />
+                {stamp.label}
+              </div>
+              <h2 className="dl-name">{active.name}</h2>
+              <div className="dl-phone">
+                {phonePretty(active.phone)}
+                {pad ? <span className="dial-pad-echo"> · {pad}</span> : null}
+              </div>
+              <div className="dl-sub">
+                {active.property || "No property"}
+                {active.city ? ` · ${active.city}` : ""}
+                {active.attempts ? ` · attempt ${active.attempts + (ringing || live ? 0 : 1)}` : " · first attempt"}
+              </div>
             </div>
-            <button type="button" className={`rail-filter ${callableOnly ? "on" : ""}`} onClick={() => setCallableOnly((v) => !v)}>
-              {callableOnly ? "Callable" : "All"}
-            </button>
-          </div>
-          <div className="scroll-y flex-1">
-            {queue.map((lead) => {
-              const tone = leadEligibility(lead).tone;
-              return (
-                <button
-                  key={lead.id}
-                  type="button"
-                  onClick={() => pick(lead.id)}
-                  className={`dialer-q-row ${active?.id === lead.id ? "on" : ""}`}
-                  title={`${lead.name} · ${lead.city}`}
-                >
-                  {scriptMode === "focus" ? (
-                    <b className="dialer-q-initials">{lead.name.split(" ").map((part) => part[0]).join("")}</b>
-                  ) : (
-                    <>
-                      <span className={`dialer-q-dot ${tone}`} />
-                      <span className="dialer-q-copy">
-                        <b>{lead.name}</b>
-                        <i>
-                          {lead.city || "—"} · {lead.attempts}×
-                        </i>
-                      </span>
-                    </>
-                  )}
-                </button>
-              );
-            })}
-            {!queue.length ? <div className="dialer-empty">Queue is empty.</div> : null}
-          </div>
-        </aside>
 
-        <section className={`dialer-well tone-${stageTone} ${scriptMode === "focus" ? "compact" : ""}`}>
-          {active ? (
-            <>
-              <div className="call-stage">
-                <div className="call-identity">
-                  <span className={`call-state ${stamp.tone}`}>{stamp.label}</span>
-                  <h2 className="call-name">{active.name}</h2>
-                  <div className="dial-phone">
-                    {phonePretty(active.phone)}
-                    {pad ? <span className="dial-pad-echo"> · {pad}</span> : null}
-                  </div>
-                  <div className="call-sub">
-                    {active.property}
-                    {active.city ? ` · ${active.city}` : ""}
-                    {power ? ` · ${remaining} remaining` : ""}
-                  </div>
-                  {scriptMode !== "focus" && state === "ready" ? (
-                    <p className="call-goal">
-                      <span>Next</span>
-                      {active.nextAction || "Open the call and qualify bill + roof"}
-                    </p>
-                  ) : null}
-                  {scriptMode !== "focus" && (live || ringing) ? (
-                    <p className="call-live-line">
-                      {[
-                        active.utility || null,
-                        active.monthlyBill ? `$${active.monthlyBill}/mo` : null,
-                        design ? `${design.roofAge}y ${design.roofMaterial}` : null,
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </p>
-                  ) : null}
-                </div>
-
-                <div className={`call-action ${state === "wrap" ? "is-wrap" : ""}`}>
-                  <div className={`call-timer ${live || ringing ? "live" : ""}`}>
-                    <div className="az-num">{fmt(seconds)}</div>
-                    <div>
-                      {live ? "Talk" : state === "ringing" ? "Ring" : state === "dialing" ? "Dial" : state === "wrap" ? "Disposition" : "Clock"}
-                    </div>
-                  </div>
-
-                  {state !== "wrap" ? (
-                    <div className="call-controls">
-                      {state === "ready" || state === "failed" ? (
-                        <button type="button" className="dial-primary" disabled={!canDial} onClick={startCall}>
-                          {canDial ? "Dial" : "Blocked"}
-                        </button>
-                      ) : null}
-                      {ringing ? (
-                        <button type="button" className="dial-secondary" onClick={cancelRing}>
-                          Cancel
-                        </button>
-                      ) : null}
-                      {live ? (
-                        <button type="button" className="dial-primary end" onClick={hangup}>
-                          End call
-                        </button>
-                      ) : null}
-                      {live ? (
-                        <>
-                          <button type="button" className={`dial-secondary ${muted ? "on" : ""}`} onClick={() => setMuted((v) => !v)}>
-                            {muted ? "Unmute" : "Mute"}
-                          </button>
-                          <button
-                            type="button"
-                            className={`dial-secondary ${state === "hold" ? "on" : ""}`}
-                            onClick={() => setState(state === "hold" ? "connected" : "hold")}
-                          >
-                            {state === "hold" ? "Resume" : "Hold"}
-                          </button>
-                        </>
-                      ) : null}
-                      <button type="button" className={`dial-ghost ${showPad ? "on" : ""}`} onClick={() => setShowPad((v) => !v)}>
-                        Keypad
-                      </button>
-                    </div>
-                  ) : (
-                    <p className="call-wrap-hint">Disposition the call below</p>
-                  )}
-
-                  {state !== "wrap" && !canDial ? <BlockNote lead={active} /> : null}
-                  {state !== "wrap" && showPad ? (
-                    <div className="keypad">
-                      {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((key) => (
-                        <button key={key} type="button" onClick={() => setPad((value) => value + key)}>
-                          {key}
-                        </button>
-                      ))}
-                      <p>Local keypad only — no carrier DTMF. Space dials · Esc ends · M mutes.</p>
-                    </div>
-                  ) : null}
-                </div>
+            <div className="dl-controls">
+              <div className={`dl-timer ${live ? "live" : ringing ? "progress" : ""}`}>
+                <b className="az-num">{fmt(seconds)}</b>
+                <span>{live ? "talk time" : state === "ringing" ? "ringing" : state === "dialing" ? "dialing" : state === "wrap" ? "call ended" : "ready"}</span>
               </div>
 
-              {scriptMode !== "focus" && !live && !ringing ? (
-                <div className="call-meta">
-                  <Fact k="Utility" v={`${active.utility || "—"} · ${active.monthlyBill ? `$${active.monthlyBill}` : "no bill"}`} />
-                  <Fact k="Roof" v={design ? `${design.roofAge}y ${design.roofMaterial}` : "—"} />
-                  <Fact k="Array" v={estimate ? `${estimate.systemKw} kW · ${estimate.offset}%` : "Unsized"} />
-                  <Fact k="Consent" v={eligibility?.label || "—"} />
+              {state !== "wrap" ? (
+                <div className="dl-buttons">
+                  {state === "ready" || state === "failed" ? (
+                    <button type="button" className="dl-primary" disabled={!canDial} onClick={startCall}>
+                      {canDial ? "Dial" : "Blocked"}
+                      <small>Space</small>
+                    </button>
+                  ) : null}
+                  {ringing ? (
+                    <button type="button" className="dl-primary end" onClick={cancelRing}>
+                      Cancel
+                      <small>Esc</small>
+                    </button>
+                  ) : null}
+                  {live ? (
+                    <button type="button" className="dl-primary end" onClick={hangup}>
+                      End call
+                      <small>Esc</small>
+                    </button>
+                  ) : null}
+                  <div className="dl-secondary-row">
+                    {live ? (
+                      <>
+                        <button type="button" className={`dl-secondary ${muted ? "on" : ""}`} onClick={() => setMuted((v) => !v)}>
+                          {muted ? "Unmute" : "Mute"}
+                        </button>
+                        <button
+                          type="button"
+                          className={`dl-secondary ${state === "hold" ? "on" : ""}`}
+                          onClick={() => setState(state === "hold" ? "connected" : "hold")}
+                        >
+                          {state === "hold" ? "Resume" : "Hold"}
+                        </button>
+                      </>
+                    ) : null}
+                    <button type="button" className={`dl-secondary ghost ${showPad ? "on" : ""}`} onClick={() => setShowPad((v) => !v)}>
+                      Keypad
+                    </button>
+                    {!live && !ringing && nextLead ? (
+                      <button type="button" className="dl-secondary ghost" onClick={() => pick(nextLead.id)}>
+                        Skip → {nextLead.name.split(" ")[0]}
+                      </button>
+                    ) : null}
+                  </div>
+                </div>
+              ) : (
+                <p className="dl-wrap-hint">Wrap-up open — pick a disposition to continue.</p>
+              )}
+
+              {state !== "wrap" && !canDial ? <BlockNote lead={active} /> : null}
+              {state !== "wrap" && showPad ? (
+                <div className="keypad">
+                  {["1", "2", "3", "4", "5", "6", "7", "8", "9", "*", "0", "#"].map((key) => (
+                    <button key={key} type="button" onClick={() => setPad((value) => value + key)}>
+                      {key}
+                    </button>
+                  ))}
+                  <p>Local keypad only — no carrier DTMF.</p>
                 </div>
               ) : null}
+            </div>
 
-              <div className={`call-dock ${live || ringing ? "live" : ""}`}>
-                <label className="call-notes-label">
-                  Notes
-                  <textarea
-                    className={`az-area call-notes ${scriptMode === "collapsed" && !live ? "" : "slim"}`}
-                    value={notes}
-                    onChange={(event) => setNotes(event.target.value)}
-                    placeholder="Saved with disposition"
-                  />
-                </label>
-                {scriptMode === "collapsed" && !live && !ringing && history.length ? (
-                  <div className="call-history">
-                    <span className="call-history-label">Call History</span>
-                    {history.map((row) => (
-                      <div key={row.id}>
-                        <b>{row.outcome.replaceAll("_", " ")}</b>
-                        <span>{fmt(row.duration)}</span>
-                      </div>
-                    ))}
-                  </div>
-                ) : null}
+            <div className="dl-next">
+              <span>Next action</span>
+              <b>{active.nextAction || "Open the call and qualify bill + roof"}</b>
+              {openCallback ? <em>Callback due {relativeDue(openCallback.dueAt)} · {openCallback.reason}</em> : null}
+            </div>
+
+            <label className={`dl-notes ${live ? "live" : ""}`}>
+              <span>Notes · saved with disposition</span>
+              <textarea className="az-area" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="What did they say?" />
+            </label>
+          </>
+        ) : (
+          <div className="dialer-empty stage">Queue is empty.</div>
+        )}
+      </section>
+
+      {scriptMode === "collapsed" && active ? (
+        <aside className="dl-context">
+          <div className="dl-ctx-head">Lead details</div>
+          <dl className="dl-facts">
+            <Fact k="Utility" v={active.utility || "—"} />
+            <Fact k="Bill" v={active.monthlyBill ? `$${active.monthlyBill}/mo` : "unknown"} />
+            <Fact k="Roof" v={design ? `${design.roofAge}y ${design.roofMaterial}` : "not surveyed"} />
+            <Fact k="Array" v={estimate ? `${estimate.systemKw} kW · ${estimate.offset}% offset` : "unsized"} />
+            <Fact k="Consent" v={eligibility?.label || "—"} />
+            <Fact k="Stage" v={active.status} />
+            <Fact k="Owner" v={active.owner || "—"} />
+            <Fact k="Source" v={active.source || "—"} />
+            <Fact k="Value" v={active.estimatedValue ? `$${active.estimatedValue.toLocaleString()}` : "—"} />
+          </dl>
+          <div className="dl-ctx-head">Call history</div>
+          <div className="dl-history">
+            {history.length === 0 ? <p>No calls logged yet.</p> : null}
+            {history.map((row) => (
+              <div key={row.id}>
+                <b>{row.outcome.replaceAll("_", " ")}</b>
+                <span className="az-num">{fmt(row.duration)}</span>
               </div>
+            ))}
+          </div>
+          {active.notes ? (
+            <>
+              <div className="dl-ctx-head">Record note</div>
+              <p className="dl-record-note">{active.notes}</p>
             </>
-          ) : (
-            <div className="dialer-empty stage">Queue is empty.</div>
-          )}
-        </section>
+          ) : null}
+        </aside>
+      ) : null}
 
-        {scriptMode !== "collapsed" ? (
-          <ScriptPanel lead={active} design={design} beat={beat} onBeat={setBeat} large mode={scriptMode} />
-        ) : null}
-      </div>
+      {scriptMode !== "collapsed" ? (
+        <ScriptPanel lead={active} design={design} beat={beat} onBeat={setBeat} large mode={scriptMode} />
+      ) : null}
 
       {state === "wrap" && active ? (
         <>
           <div className="wrap-backdrop" aria-hidden />
           <WrapSheet
             name={active.name}
+            nextName={nextLead?.name}
             seconds={seconds}
             notes={notes}
             onNotes={setNotes}
@@ -547,30 +558,56 @@ export function FloorView() {
         </>
       ) : null}
     </div>
+    </Station>
   );
 }
 
-function SessionStat({ label, value }: { label: string; value: string }) {
+function Stat({ k, v }: { k: string; v: string }) {
   return (
-    <div className="dialer-stat">
-      <span>{label}</span>
-      <b className="az-num">{value}</b>
-    </div>
+    <span className="dl-stat">
+      <span>{k}</span>
+      <b className="az-num">{v}</b>
+    </span>
   );
 }
 
 function Fact({ k, v }: { k: string; v: string }) {
   return (
-    <div className="call-meta-item">
-      <span>{k}</span>
-      <b>{v}</b>
+    <div className="dl-fact">
+      <dt>{k}</dt>
+      <dd>{v}</dd>
     </div>
   );
 }
 
 function BlockNote({ lead }: { lead: Lead }) {
   const reason = lead.dnc ? "Internal DNC. Do not dial." : lead.consent !== "verified" ? "Consent is not verified." : "Phone is not callable.";
-  return <p className="call-block">{reason}</p>;
+  return <p className="dl-block">{reason}</p>;
+}
+
+function defaultNextAction(id: DispositionId, when?: string) {
+  const at = when ? new Date(when).toLocaleString([], { weekday: "short", hour: "numeric", minute: "2-digit" }) : "";
+  switch (id) {
+    case "appointment_set":
+      return `Confirm sit ${at} · both signers · bring bill`;
+    case "callback_scheduled":
+      return `Call back ${at}`;
+    case "qualified_lead":
+      return "Send design and book the sit";
+    case "no_answer":
+    case "busy":
+      return "Retry in the West Coast window";
+    case "voicemail":
+      return "Retry tomorrow · second voicemail max";
+    case "not_interested":
+    case "disqualified":
+    case "wrong_number":
+      return "Closed — no further calls";
+    case "dnc":
+      return "Do not call";
+    default:
+      return "Review";
+  }
 }
 
 function fmt(seconds: number) {

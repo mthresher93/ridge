@@ -5,7 +5,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { derive } from "@/lib/derive";
 import { PIPELINE_GROUPS } from "@/lib/stages";
 import { formatWhen, money, moneyShort } from "@/lib/format";
-import { PageDesk } from "./page-desk";
+import { Station } from "./page-intro";
 
 export function NumbersView() {
   const { workspace, loading } = useWorkspace();
@@ -21,15 +21,21 @@ export function NumbersView() {
   const max = Math.max(...groups.map((item) => item.value), 1);
   const calls = (workspace.callLogs || []).slice(0, 8);
 
-  if (loading) return <div className="text-[var(--muted)]">Crunching the tape…</div>;
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Crunching the tape…</div>;
 
   return (
-    <PageDesk script={false}>
-      <div className="az-fill" style={{ gridTemplateRows: "auto auto minmax(0,1fr)" }}>
-        <div className="flex items-baseline justify-between gap-3">
-          <div className="az-title">Reports</div>
-          <span className="text-[11px] text-[var(--muted)]">Recorded events only</span>
-        </div>
+    <Station
+      n="10"
+      title="KPI"
+      fill
+      lede={
+        <>
+          Recorded events only. <em>Connect and set rates come from kpiEvents</em>, not a hoped-for funnel.
+        </>
+      }
+      chip="RECORDED · LOCAL"
+    >
+      <div className="az-fill" style={{ gridTemplateRows: "auto minmax(0,1fr)", height: "100%" }}>
 
         <div className="report-kpis">
           <Kpi label="Dials" value={`${metrics.attempts}`} detail={`target ${workspace.settings.dialTarget}`} />
@@ -93,7 +99,7 @@ export function NumbersView() {
           </section>
         </div>
       </div>
-    </PageDesk>
+    </Station>
   );
 }
 

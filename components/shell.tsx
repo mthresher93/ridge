@@ -7,7 +7,6 @@ import { BrandMark } from "./mark";
 import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, floorWindow } from "@/lib/derive";
-import { formatClock, moneyShort } from "@/lib/format";
 import { NAV } from "@/lib/nav";
 
 export function Shell({ children }: { children: React.ReactNode }) {
@@ -16,6 +15,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { workspace, loading, saveStatus } = useWorkspace();
   const [now, setNow] = useState(() => new Date());
   const [palette, setPalette] = useState(false);
+  const [mode, setMode] = useState<"solo" | "enroll">("solo");
 
   useEffect(() => {
     const id = window.setInterval(() => setNow(new Date()), 1000);
@@ -38,63 +38,53 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const density = workspace.settings.density || "comfortable";
 
   return (
-    <div className={`az-shell density-${density}`}>
-      <aside className="az-side">
+    <div className={`az-shell density-${density}`} data-mode={mode}>
+      <header className="az-deck">
         <Link href="/" className="az-brand">
           <BrandMark />
           <div>
-            <div className="az-brand-name">Aileron</div>
-            <div className="az-brand-sub">Command center</div>
+            <div className="az-brand-name">Current</div>
+            <div className="az-brand-sub">Solar revenue</div>
           </div>
         </Link>
-        <nav className="az-nav">
+
+        <button className="cd-search" type="button" onClick={() => setPalette(true)}>
+          <span>Search opportunities, proof, actions…</span>
+          <span className="az-chip">⌘K</span>
+        </button>
+
+        <div className="right" style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          <div className="mode" style={{ display: "flex", gap: 3, padding: 3, border: "1px solid var(--br)", borderRadius: 8, background: "var(--bg2)" }}>
+            <button type="button" className={`mode-b ${mode === "solo" ? "on" : ""}`} onClick={() => setMode("solo")}>
+              Solo
+            </button>
+            <button type="button" className={`mode-b ${mode === "enroll" ? "on" : ""}`} onClick={() => setMode("enroll")}>
+              Field
+            </button>
+          </div>
+          <span className="cd-stat">
+            <span className={`livedot ${floor.open ? "" : "off"}`} />
+            {loading ? "SYNCING" : saveStatus === "error" ? "SAVE FAILED" : "LOCAL APP · READY"}
+          </span>
+          <span className="az-num text-[10px] text-[var(--tx4)]">{metrics.open.length} OPEN</span>
+          <button className="az-btn pri" onClick={() => router.push("/floor")}>
+            Dialer
+          </button>
+        </div>
+
+        <nav className="az-nav" aria-label="Stations">
           {NAV.map((item) => {
             const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
             return (
               <Link key={item.href} href={item.href} className={active ? "active" : ""}>
                 <span className="label">{item.label}</span>
-                <span className="hint">{item.hint}</span>
               </Link>
             );
           })}
         </nav>
-        <div className="az-side-foot">
-            <div className="text-[11px] font-mono uppercase tracking-[0.14em] text-[var(--faint)]">Open pipeline</div>
-          <div className="az-num text-[22px] tracking-tight">{loading ? "—" : moneyShort(metrics.openValue)}</div>
-          <div className="text-[12px] text-[var(--muted)] mt-1">
-            {metrics.open.length} live deals · {metrics.coverage}% covered
-          </div>
-        </div>
-      </aside>
+      </header>
 
-      <div className="az-main">
-        <header className="az-top">
-          <div className="flex items-center gap-3 min-w-0">
-            <span className={`az-dot ${floor.open ? "" : "off"}`} />
-            <div className="min-w-0">
-              <div className="text-[13px] text-[var(--text)] truncate">{floor.label}</div>
-              <div className="text-[11px] text-[var(--muted)] font-mono">{floor.detail}</div>
-            </div>
-          </div>
-          <div className="flex items-center gap-5">
-            <span className={`az-save ${saveStatus}`} title="Workspace save status">
-              {saveStatus === "saving" ? "Saving…" : saveStatus === "saved" ? "Saved" : saveStatus === "error" ? "Save failed" : ""}
-            </span>
-            <div className="hidden sm:block text-right">
-              <div className="az-num text-[12px] text-[var(--muted)]">PP {formatClock(now, "Asia/Phnom_Penh")}</div>
-              <div className="az-num text-[12px] text-[var(--gold)]">PT {formatClock(now, "America/Los_Angeles")}</div>
-            </div>
-            <button className="az-btn ghost" onClick={() => setPalette(true)}>
-              <span className="text-[var(--muted)]">Search</span>
-              <span className="az-chip">⌘K</span>
-            </button>
-            <button className="az-btn" onClick={() => router.push("/floor")}>
-              Open dialer
-            </button>
-          </div>
-        </header>
-        <div className="az-page">{children}</div>
-      </div>
+      <div className="az-page">{children}</div>
       {palette ? <CommandPalette onClose={() => setPalette(false)} /> : null}
     </div>
   );

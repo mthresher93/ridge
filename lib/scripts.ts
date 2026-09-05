@@ -88,30 +88,63 @@ export function scriptFor(lead: Lead | null, design?: RoofDesign | null): Script
     ];
   }
 
+  const city = lead.city ? ` in ${lead.city}` : "";
+  const attempts = lead.attempts ? `Attempt ${lead.attempts + 1}` : "First attempt";
+
   return [
     {
       id: "open",
-      label: "Open",
-      say: `${first}, Michael with Aileron. You asked for a call on the ${lead.utility} bill at ${lead.property}. Is this still a decent time?`,
-      cue: `Phone ${phonePretty(lead.phone)}`,
+      label: "Opening",
+      say: `${first}, Michael with Current. You asked for a call on the ${lead.utility} bill at ${lead.property}${city}. Is this still a decent time?`,
+      cue: `${attempts} · ${phonePretty(lead.phone)}`,
+    },
+    {
+      id: "permission",
+      label: "Permission",
+      say: `Two minutes. If it's not a fit I'll tell you and get off the phone. Fair?`,
+      cue: "Get a yes before anything else",
     },
     {
       id: "bill",
-      label: "Bill",
-      say: `You're at ${bill} a month. That's the number I care about — not a hypothetical savings slide.`,
+      label: "Qualify · Bill",
+      say: `You're at ${bill} a month with ${lead.utility}. Is that summer-high or the average? I care about the real number, not a savings slide.`,
       cue: "Write the bill back to them",
     },
     {
       id: "roof",
-      label: "Roof",
-      say: `Planning range is ${size} on a ${roof}. ${est ? `Offset pencils around ${est.offset}% if the heading holds.` : "I need a heading before I quote."}`,
-      cue: design ? `${design.azimuthDeg}° · ${design.tiltDeg}° tilt` : "Open Design",
+      label: "Qualify · Roof",
+      say: `Planning range is ${size} on a ${roof}. ${est ? `Offset pencils around ${est.offset}% if the heading holds.` : "I need a heading before I quote anything."}`,
+      cue: design ? `${design.azimuthDeg}° · ${design.tiltDeg}° tilt` : "Open Design to size it",
+    },
+    {
+      id: "owner",
+      label: "Qualify · Owner",
+      say: `You own the home, and who else signs with you? I need both people on the sit or I'm wasting your evening.`,
+      cue: "Owner + all signers",
+    },
+    {
+      id: "value",
+      label: "Value",
+      say: `Here's the deal: ${est ? `a ${est.systemKw} kW array` : "a properly sized array"} turns a ${bill} variable bill into a fixed payment that doesn't move when ${lead.utility} raises rates. If the design doesn't beat the bill, we stop.`,
+      cue: "Dream outcome · zero risk",
     },
     {
       id: "ask",
       label: "Ask",
-      say: lead.nextAction || `I want forty-five minutes with whoever signs. What day actually works?`,
-      cue: "Name a time. Don't offer a brochure.",
+      say: lead.nextAction || `I want forty-five minutes with whoever signs. Tuesday evening or Saturday morning — which actually works?`,
+      cue: "Name two windows. Don't offer a brochure.",
+    },
+    {
+      id: "close",
+      label: "Close",
+      say: `Locked. I'll text a confirmation to ${phonePretty(lead.phone)}. Have the last twelve months of ${lead.utility} in front of you and we'll size it live.`,
+      cue: "Confirm time · confirm bill · confirm signers",
+    },
+    {
+      id: "vm",
+      label: "Voicemail",
+      say: `${first}, Michael with Current about the ${lead.utility} bill at ${lead.property}. Nothing to buy — I have a roof number for you. Call me back or I'll try again tomorrow.`,
+      cue: "Under 15 seconds · disposition Voicemail",
     },
   ];
 }
@@ -149,6 +182,24 @@ export function objectionsFor(lead: Lead | null): ScriptBeat[] {
       label: "Bad time",
       say: `I won't force it. Give me a time that actually holds and I'll call then — not a maybe.`,
       cue: "Book the callback now",
+    },
+    {
+      id: "quotes",
+      label: "Already have quotes",
+      say: `Good — then you know the range. Bring the best one to the sit and I'll show you line by line where it beats ${bill} and where it doesn't.`,
+      cue: "Compete on the design, not the pitch",
+    },
+    {
+      id: "renter",
+      label: "Not the owner",
+      say: `Then I'm calling the wrong person and I'll stop here. Is the owner someone you'd want me to reach, or should I close this out?`,
+      cue: "Disqualify cleanly",
+    },
+    {
+      id: "scam",
+      label: "Is this a scam",
+      say: `Fair question. No payment, no contract today. You asked for a call on the ${lead?.utility || "utility"} bill; I'm confirming the numbers before anyone drives out.`,
+      cue: "Calm · reference their request",
     },
   ];
 }

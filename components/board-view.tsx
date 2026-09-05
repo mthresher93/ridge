@@ -6,7 +6,7 @@ import { PIPELINE_GROUPS } from "@/lib/stages";
 import { opportunityUrgency } from "@/lib/derive";
 import { daysBetween, money, moneyShort, nowIso, uid } from "@/lib/format";
 import { DealDrawer } from "./deal-drawer";
-import { PageDesk } from "./page-desk";
+import { Station } from "./page-intro";
 import type { Opportunity } from "@/lib/types";
 
 export function BoardView() {
@@ -67,20 +67,26 @@ export function BoardView() {
     setSelectedId(id);
   }
 
-  if (loading) return <div className="text-[var(--muted)]">Loading board…</div>;
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Loading pipeline…</div>;
 
   return (
-    <PageDesk>
-    <div className="az-fill" style={{ gridTemplateRows: "auto minmax(0,1fr)" }}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="az-title">Board</div>
-        <div className="flex items-center gap-3">
-          <span className="az-num text-[var(--muted)]">{moneyShort(openValue)}</span>
-          <button className="az-btn pri" onClick={addDeal}>
-            New deal
-          </button>
-        </div>
-      </div>
+    <Station
+      n="09"
+      title="Pipeline"
+      fill
+      lede={
+        <>
+          Drag deals through recorded stages. <em>Value is what you typed</em> — Current will not forecast a close.
+        </>
+      }
+      chip={moneyShort(openValue)}
+      actions={
+        <button className="az-btn pri sm" onClick={addDeal}>
+          New deal
+        </button>
+      }
+    >
+    <div className="az-fill" style={{ gridTemplateRows: "minmax(0,1fr)", height: "100%" }}>
 
       <div className="board">
         {PIPELINE_GROUPS.map((group) => {
@@ -142,6 +148,6 @@ export function BoardView() {
 
       {selected ? <DealDrawer opportunity={selected} onClose={() => setSelectedId(null)} /> : null}
     </div>
-    </PageDesk>
+    </Station>
   );
 }

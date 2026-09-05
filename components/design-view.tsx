@@ -19,6 +19,7 @@ import { TileMap, type MapKind } from "./tile-map";
 import { SiteCanvas, rotateSelectedFace, type CadSel, type CadTool } from "./site-canvas";
 import type { Obstruction, Point, Proposal, RoofDesign, RoofFace } from "@/lib/types";
 import { ProposalFlow } from "./proposal-flow";
+import { Station } from "./page-intro";
 
 const TOOLS: { id: CadTool; label: string }[] = [
   { id: "pan", label: "Pan" },
@@ -214,9 +215,20 @@ export function DesignView() {
 
   const address = lead ? lead.address || `${lead.property}, ${lead.city}` : "";
 
-  if (loading || !lead || !design || !estimate || !live) return <div className="text-[var(--muted)]">Loading design…</div>;
+  if (loading || !lead || !design || !estimate || !live) return <div className="cd-body text-[var(--tx4)]">Loading design…</div>;
 
   return (
+    <Station
+      n="07"
+      title="Design"
+      fill
+      lede={
+        <>
+          Roof planes in feet, 425W modules, live azimuth. <em>Size from the heading, not a brochure.</em>
+        </>
+      }
+      chip={lead.city || "ROOF"}
+    >
     <div className="cad-desk">
       <header className="cad-top">
         <label className="cad-project">
@@ -457,6 +469,7 @@ export function DesignView() {
         <span>{kind === "satellite" ? "Esri imagery" : "OSM streets"} · z{zoom.toFixed(1)}</span>
       </footer>
     </div>
+    </Station>
   );
 }
 

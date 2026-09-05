@@ -1,7 +1,5 @@
-"use client";
-
-import { PlaybookView } from "@/components/playbook-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <PlaybookView />;
+  redirect("/offers");
 }

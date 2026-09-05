@@ -7,7 +7,7 @@ import { STAGES } from "@/lib/stages";
 import { leadEligibility, leadScore, money, nowIso, phonePretty, uid } from "@/lib/format";
 import { createLinkedOpportunity } from "@/lib/crm";
 import { LeadDrawer } from "./lead-drawer";
-import { PageDesk } from "./page-desk";
+import { Station } from "./page-intro";
 import type { Lead } from "@/lib/types";
 
 export function PeopleView() {
@@ -69,17 +69,26 @@ export function PeopleView() {
     setSelectedLeadId(id);
   }
 
-  if (loading) return <div className="text-[var(--muted)]">Loading contacts…</div>;
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Loading leads…</div>;
 
   return (
-    <PageDesk>
-    <div className="az-fill" style={{ gridTemplateRows: "auto auto minmax(0,1fr)" }}>
-      <div className="flex items-center justify-between gap-3">
-        <div className="az-title">Contacts</div>
-        <button className="az-btn pri" onClick={addLead}>
-          Add contact
+    <Station
+      n="03"
+      title="Leads"
+      fill
+      lede={
+        <>
+          Households on file. <em>Consent and DNC stay visible.</em> Current will not invent a score from a missing bill.
+        </>
+      }
+      chip={`${leads.length} SHOWN`}
+      actions={
+        <button className="az-btn pri sm" onClick={addLead}>
+          Add lead
         </button>
-      </div>
+      }
+    >
+    <div className="az-fill" style={{ gridTemplateRows: "auto minmax(0,1fr)", height: "100%" }}>
 
       <div className="grid md:grid-cols-[1fr_200px_auto] gap-2 items-center">
         <input
@@ -101,7 +110,7 @@ export function PeopleView() {
         <table className="az-table min-w-[980px]">
           <thead>
             <tr>
-              <th>Contact</th>
+              <th>Lead</th>
               <th>Phone</th>
               <th>Stage</th>
               <th>Score</th>
@@ -115,9 +124,9 @@ export function PeopleView() {
             {leads.length === 0 ? (
               <tr className="cursor-default">
                 <td colSpan={8} className="py-10 text-center text-[var(--muted)]">
-                  No contacts match.{" "}
+                  No leads match.{" "}
                   <button type="button" className="text-[var(--gold-2)] underline" onClick={addLead}>
-                    Add a contact
+                    Add a lead
                   </button>
                 </td>
               </tr>
@@ -160,6 +169,6 @@ export function PeopleView() {
 
       {selected ? <LeadDrawer lead={selected} onClose={() => setSelectedId(null)} /> : null}
     </div>
-    </PageDesk>
+    </Station>
   );
 }

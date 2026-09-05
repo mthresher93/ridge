@@ -13,15 +13,39 @@ export const DISPOSITIONS = [
 
 export type DispositionId = (typeof DISPOSITIONS)[number]["id"];
 
+/**
+ * Coherent call-state system. Tones map to one color each:
+ * idle → muted text · progress → cyan pulse · live → teal · hold → amber
+ * wrap → violet · down → red · outcome → slate (terminal, informational)
+ */
 export const CALL_STATES = {
-  ready: { label: "Ready", tone: "ready" },
+  ready: { label: "Ready", tone: "idle" },
   dialing: { label: "Dialing", tone: "progress" },
   ringing: { label: "Ringing", tone: "progress" },
+  answered: { label: "Answered", tone: "live" },
   connected: { label: "Connected", tone: "live" },
   hold: { label: "On hold", tone: "hold" },
   muted: { label: "Muted", tone: "hold" },
-  wrap: { label: "Disposition", tone: "wrap" },
+  transferring: { label: "Transferring", tone: "hold" },
+  wrap: { label: "Wrap-up", tone: "wrap" },
   failed: { label: "Failed", tone: "down" },
+  no_answer: { label: "No answer", tone: "outcome" },
+  busy: { label: "Busy", tone: "outcome" },
+  voicemail: { label: "Voicemail", tone: "outcome" },
+  disconnected: { label: "Disconnected", tone: "outcome" },
 } as const;
 
-export type DialState = keyof typeof CALL_STATES;
+export type DialState = "ready" | "dialing" | "ringing" | "connected" | "hold" | "muted" | "wrap" | "failed";
+export type CallStateKey = keyof typeof CALL_STATES;
+
+/** Resolve the visible stamp: during wrap-up show the terminal outcome, not a generic label. */
+export function visibleCallState(state: DialState, muted: boolean, wrapOutcome: DispositionId): CallStateKey {
+  if (state === "wrap") {
+    if (wrapOutcome === "no_answer") return "no_answer";
+    if (wrapOutcome === "voicemail") return "voicemail";
+    if (wrapOutcome === "busy") return "busy";
+    return "disconnected";
+  }
+  if ((state === "connected" || state === "hold") && muted) return "muted";
+  return state;
+}

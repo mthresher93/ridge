@@ -5,6 +5,7 @@ import { DISPOSITIONS, type DispositionId } from "@/lib/dispositions";
 
 export function WrapSheet({
   name,
+  nextName,
   seconds,
   notes,
   onNotes,
@@ -13,15 +14,17 @@ export function WrapSheet({
   defaultDisposition = "no_answer",
 }: {
   name: string;
+  nextName?: string;
   seconds: number;
   notes: string;
   onNotes: (value: string) => void;
-  onSave: (id: DispositionId, when?: string, advance?: boolean) => void;
+  onSave: (id: DispositionId, when?: string, advance?: boolean, nextAction?: string) => void;
   onSkip: () => void;
   defaultDisposition?: DispositionId;
 }) {
   const [picked, setPicked] = useState<DispositionId>(defaultDisposition);
   const [when, setWhen] = useState(defaultWhen);
+  const [nextAction, setNextAction] = useState("");
   const needsWhen = picked === "callback_scheduled" || picked === "appointment_set";
 
   useEffect(() => {
@@ -39,7 +42,7 @@ export function WrapSheet({
       }
       if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
-        onSave(picked, when, true);
+        onSave(picked, when, true, nextAction);
         return;
       }
       const index = Number(event.key);
@@ -55,17 +58,17 @@ export function WrapSheet({
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [picked, when, onSave, onSkip]);
+  }, [picked, when, nextAction, onSave, onSkip]);
 
   return (
-    <div className="wrap-sheet" role="dialog" aria-label="Call disposition">
+    <div className="wrap-sheet" role="dialog" aria-label="Call wrap-up">
       <div className="wrap-sheet-bar">
         <div>
-          <div className="az-kicker">Disposition</div>
-          <div className="text-[15px] font-semibold text-[#e8f0e8]">
-            {name} · {fmt(seconds)}
+          <div className="az-kicker">Wrap-up</div>
+          <div className="wrap-title">
+            {name} · <span className="az-num">{fmt(seconds)}</span>
           </div>
-          <div className="text-[11px] text-[#9eaea2] mt-0.5">1–9 / 0 pick · Enter save+next · Esc skip</div>
+          <div className="wrap-hint">1–9 / 0 pick · Enter save + next · Esc skip</div>
         </div>
         <button type="button" className="az-btn ghost" onClick={onSkip}>
           Skip
@@ -73,29 +76,35 @@ export function WrapSheet({
       </div>
       <div className="wrap-grid">
         {DISPOSITIONS.map((item, index) => (
-          <button
-            key={item.id}
-            type="button"
-            className={`wrap-pick ${picked === item.id ? "on" : ""}`}
-            onClick={() => setPicked(item.id)}
-          >
+          <button key={item.id} type="button" className={`wrap-pick ${picked === item.id ? "on" : ""}`} onClick={() => setPicked(item.id)}>
             <span className="wrap-hotkey">{index === 9 ? 0 : index + 1}</span>
             {item.label}
           </button>
         ))}
       </div>
-      {needsWhen ? (
-        <label className="block text-[11px] text-[#9eaea2]">
-          {picked === "appointment_set" ? "Appointment time" : "Callback time"}
-          <input type="datetime-local" className="az-input mt-1" value={when} onChange={(event) => setWhen(event.target.value)} />
+      <div className="wrap-fields">
+        {needsWhen ? (
+          <label className="wrap-field">
+            {picked === "appointment_set" ? "Appointment time" : "Callback time"}
+            <input type="datetime-local" className="az-input" value={when} onChange={(event) => setWhen(event.target.value)} />
+          </label>
+        ) : null}
+        <label className="wrap-field grow">
+          Next action
+          <input
+            className="az-input"
+            value={nextAction}
+            onChange={(event) => setNextAction(event.target.value)}
+            placeholder="Leave blank for the default follow-up"
+          />
         </label>
-      ) : null}
+      </div>
       <textarea className="az-area" rows={3} value={notes} onChange={(event) => onNotes(event.target.value)} placeholder="Call notes" />
-      <div className="flex flex-wrap gap-2">
-        <button type="button" className="az-btn pri" onClick={() => onSave(picked, when, true)}>
-          Save + next
+      <div className="wrap-actions">
+        <button type="button" className="az-btn pri" onClick={() => onSave(picked, when, true, nextAction)}>
+          Save + next{nextName ? ` → ${nextName.split(" ")[0]}` : ""}
         </button>
-        <button type="button" className="az-btn" onClick={() => onSave(picked, when, false)}>
+        <button type="button" className="az-btn" onClick={() => onSave(picked, when, false, nextAction)}>
           Save
         </button>
       </div>

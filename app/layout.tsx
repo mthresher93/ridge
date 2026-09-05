@@ -1,31 +1,46 @@
 import type { Metadata } from "next";
-import { IBM_Plex_Mono, IBM_Plex_Sans } from "next/font/google";
+import { Exo_2, Instrument_Serif, JetBrains_Mono, Orbitron } from "next/font/google";
 import "./globals.css";
+import "./current.css";
+import "./dialer.css";
 import { Providers } from "./providers";
 
-const sans = IBM_Plex_Sans({
+const sans = Exo_2({
   subsets: ["latin"],
   weight: ["400", "500", "600", "700"],
   variable: "--font-sans",
 });
 
-const mono = IBM_Plex_Mono({
+const display = Orbitron({
   subsets: ["latin"],
-  weight: ["400", "500"],
+  weight: ["500", "600", "700"],
+  variable: "--font-display",
+});
+
+const serif = Instrument_Serif({
+  subsets: ["latin"],
+  weight: ["400"],
+  style: ["normal", "italic"],
+  variable: "--font-serif",
+});
+
+const mono = JetBrains_Mono({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
   variable: "--font-mono",
 });
 
 export const metadata: Metadata = {
-  title: "Aileron",
-  description: "Sales command center",
-  icons: { icon: "/aileron.svg" },
-  appleWebApp: { title: "Aileron", capable: true, statusBarStyle: "black-translucent" },
+  title: "Current",
+  description: "Solar revenue workspace",
+  icons: { icon: "/current.svg" },
+  appleWebApp: { title: "Current", capable: true, statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
-    <html lang="en">
-      <body className={`${sans.variable} ${mono.variable} font-sans antialiased`}>
+    <html lang="en" className="dark">
+      <body className={`${sans.variable} ${display.variable} ${serif.variable} ${mono.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>
