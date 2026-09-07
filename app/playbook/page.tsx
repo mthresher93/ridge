@@ -1,5 +1,5 @@
-import { redirect } from "next/navigation";
+import { PlaybookView } from "@/components/playbook-view";
 
 export default function Page() {
-  redirect("/copilot");
+  return <PlaybookView />;
 }

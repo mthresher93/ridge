@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { settingsWithDefaults, type Accent, type Density, type ScriptModeSetting, type Settings } from "@/lib/types";
+import { MESSAGE_HARD_WARN, MESSAGE_SOFT_CAP } from "@/lib/pacing";
 
 type SettingsTab = "account" | "dialer" | "display" | "workspace" | "ai";
 
@@ -140,6 +141,9 @@ export function SettingsView() {
             <Row label="Default owner" hint="Assigned when you add a prospect or opportunity.">
               <input className="az-input" value={draft.defaultOwner} onChange={(e) => set("defaultOwner", e.target.value)} />
             </Row>
+            <p className="st-fine">
+              Haul is a desk, not a bot. You hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough — no custom domain. Trailer matching uses training caps, not a carrier quote.
+            </p>
             <Row label="Session" hint="Sign out of this browser when a workspace password is set.">
               <button
                 type="button"
@@ -198,7 +202,7 @@ export function SettingsView() {
             </Row>
             {aiMsg ? <p className="rec-import-msg">{aiMsg}</p> : null}
             <p className="st-fine">
-              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Haul never logs into Facebook for you.
+              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Haul never logs into Facebook for you. Trailer picks still run from the Intel math if Ollama is down.
             </p>
           </section>
         ) : null}
@@ -254,7 +258,7 @@ export function SettingsView() {
               <Toggle on={draft.confirmBeforeDial} onChange={(v) => set("confirmBeforeDial", v)} />
             </Row>
             <p className="st-fine">
-              Microphone and speaker stay on the legacy dialer if you still use it. Outreach is copy-and-send. Log calls from the prospect record.
+              Outreach is copy-and-send. Soft cap {MESSAGE_SOFT_CAP} marked-sent per day, warning at {MESSAGE_HARD_WARN}. The daily outreach goal above is your personal pace, not a dialer quota. Microphone and speaker stay on the legacy dialer if you still use it. Log calls from the prospect record.
             </p>
           </section>
         ) : null}
@@ -306,8 +310,12 @@ export function SettingsView() {
               {[
                 ["Phone", phoneLink ? (phoneLink.ok ? "Connected" : "Not connected") : "Checking…", phoneLink?.detail || "Checking phone connection."],
                 ["Local save", "On", "Clients, pipeline, listings, follow-ups, and shipments stay on this computer."],
-                ["AI scoring", "Local", "Freight scores and openers are rule-based. No tokens spent unless you add a key later."],
-                ["Capture API", "On", "POST /api/prospects/capture for a future browser extension on pages you already opened."],
+                ["AI scoring", "Local", "Rules first. Optional: Ollama qwen3-coder:30b on this machine. No paid API required."],
+                ["What you need", "Local", "Nothing else to buy. Hunt opens public pages you click. No domain. No scrape APIs."],
+                ["Capture", "Manual", "Paste, CSV, or the bookmarklet on a page you already opened. POST /api/prospects/capture is for that same flow."],
+                ["Trailer math", "On", "Intel uses published deck caps (HS 40'/20k/10.6'). It will not put a sleeper on a hotshot. Confirm the photo before you quote."],
+                ["Outreach pace", "On", `Soft cap ${MESSAGE_SOFT_CAP} messages/day, warning at ${MESSAGE_HARD_WARN}. You send. Variants rotate. No Messenger bots.`],
+                ["Will not do", "Off", "No Facebook/Craigslist scraping, no CAPTCHA bypass, no invented phones, emails, or freight rates. Listing ask ≠ your rate."],
                 ["Payments", "Off", "Margin is recorded on shipments, not a processor."],
               ].map(([name, state, detail]) => (
                 <div key={name} className="st-ledger-row">
@@ -315,7 +323,7 @@ export function SettingsView() {
                     <b>{name}</b>
                     <span>{detail}</span>
                   </div>
-                  <em className={state === "On" || state === "Connected" || state === "Local" ? "ok" : ""}>{state}</em>
+                  <em className={state === "On" || state === "Connected" || state === "Local" || state === "Manual" ? "ok" : ""}>{state}</em>
                 </div>
               ))}
             </div>

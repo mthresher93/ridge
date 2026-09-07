@@ -30,7 +30,20 @@ export function AccountsView() {
         </header>
         <div className="accounts-grid">
           <section className="az-panel overflow-auto">
-            {accounts.length === 0 ? <p className="rec-empty">Win a load or mark a client Recurring Account.</p> : null}
+            {accounts.length === 0 ? (
+              <div className="empty-desk" style={{ margin: 12 }}>
+                <h2>No recurring shippers yet</h2>
+                <p>Win a load or mark a client Recurring Account after they have shipped more than once. Start with yards in Discover, not a one-shot Marketplace ad.</p>
+                <div className="empty-desk-actions">
+                  <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+                    Discover
+                  </button>
+                  <button className="az-btn sm" type="button" onClick={() => router.push("/")}>
+                    Desk
+                  </button>
+                </div>
+              </div>
+            ) : null}
             {accounts.map((lead) => {
               const ships = (workspace.shipments || []).filter((item) => item.leadId === lead.id);
               const margin = ships.reduce((sum, item) => sum + shipmentMargin(item.customerRate, item.carrierRate), 0);

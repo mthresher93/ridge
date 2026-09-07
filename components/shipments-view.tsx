@@ -127,7 +127,7 @@ export function ShipmentsView() {
               {rows.length === 0 ? (
                 <tr className="cursor-default">
                   <td colSpan={7} className="py-10 text-center text-[var(--muted)]">
-                    No shipments yet. Create one from a client who asked for a quote.
+                    No shipments yet. Quote only after you have a real customer rate — listing ask is not your rate. Intel can tell you the deck, not the dollars.
                   </td>
                 </tr>
               ) : null}

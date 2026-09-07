@@ -8,6 +8,7 @@ import { formatWhen, money, nowIso, phonePretty } from "@/lib/format";
 import { cascadeDeleteLead } from "@/lib/crm";
 import { archiveLead, contactTimeline, findDuplicateLeads, relatedFor, restoreLead } from "@/lib/contacts";
 import { companyName, generateFollowUp, generateOpeningMessage, leadLocation, shipmentMargin, summarizeProspect, CLIENT_KINDS } from "@/lib/freight";
+import { recommendEquipment } from "@/lib/equipment";
 import type { Lead, Priority, ShipmentStatus } from "@/lib/types";
 
 type Tab = "intel" | "record" | "activity";
@@ -245,7 +246,12 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
     router.push("/shipments");
   }
 
-  const opener = analysis ? generateOpeningMessage(analysis, "Casual") : generateFollowUp(live);
+  const opener = analysis ? generateOpeningMessage(analysis, "Casual", live.id) : generateFollowUp(live);
+  const fit = recommendEquipment({
+    text: [live.equipmentType, live.listingTitle, live.listingDescription].filter(Boolean).join(" "),
+    dimensions: live.dimensions,
+    weight: live.weight,
+  });
 
   return (
     <div className="az-overlay" onClick={requestClose}>
@@ -328,6 +334,14 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
                 <b>{live.freightType || "Unknown"}</b>
               </div>
               <div>
+                <span>Who they are</span>
+                <b>{live.shipperRole || analysis?.shipperRole || "Unknown"}</b>
+              </div>
+              <div>
+                <span>Trailer guess</span>
+                <b>{live.trailerHint || `${fit.trailerName} · ${fit.loadClass}`}</b>
+              </div>
+              <div>
                 <span>Recurring</span>
                 <b>{live.recurringPotential || "Low"}</b>
               </div>
@@ -338,6 +352,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
                 </b>
               </div>
             </div>
+            <p className="cd-mono">{fit.why}</p>
             {analysis ? (
               <>
                 <h3>Known</h3>

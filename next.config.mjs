@@ -15,7 +15,6 @@ const nextConfig = {
       { source: "/numbers", destination: "/analytics", permanent: false },
       { source: "/money", destination: "/analytics", permanent: false },
       { source: "/investment", destination: "/analytics", permanent: false },
-      { source: "/playbook", destination: "/copilot", permanent: false },
       { source: "/appointments", destination: "/shipments", permanent: false },
     ];
   },

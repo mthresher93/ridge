@@ -4,6 +4,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, leadLocation, outreachQueue, type ClientKind, type MessageStyle } from "@/lib/freight";
+import { recommendEquipment } from "@/lib/equipment";
+import { messagesSentOnDay, pacingNote } from "@/lib/pacing";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 
 export function OutreachView() {
@@ -25,12 +27,45 @@ export function OutreachView() {
   const lead = queue[index] || null;
   const analysis = lead ? (workspace.analyses || []).find((item) => item.leadId === lead.id) : null;
   const listing = lead ? (workspace.listings || []).find((item) => item.leadId === lead.id) : null;
+  const sentToday = messagesSentOnDay(workspace.kpiEvents || []);
+  const pace = pacingNote(sentToday);
+  const fit = lead
+    ? recommendEquipment({
+        text: [lead.equipmentType, lead.listingTitle, lead.listingDescription].filter(Boolean).join(" "),
+        dimensions: lead.dimensions,
+        weight: lead.weight,
+      })
+    : null;
   const message = lead
     ? analysis
-      ? generateOpeningMessage(analysis, style)
+      ? generateOpeningMessage(analysis, style, lead.id, sentToday)
       : style === "Follow-Up"
         ? generateFollowUp(lead, lead.nextAction)
-        : `Hey, random question about the ${(lead.equipmentType || "item").toLowerCase()}. If somebody bought it from another state, do you already have someone you normally use to transport it?`
+        : generateOpeningMessage(
+            {
+              leadId: lead.id,
+              score: lead.freightScore || 0,
+              confidence: lead.scoreConfidence || "LOW",
+              why: lead.scoreWhy || "",
+              freightType: lead.freightType || "Unknown",
+              recurringPotential: lead.recurringPotential || "Low",
+              known: [],
+              estimates: [],
+              unknown: [],
+              openerCasual: `Hey, random question about the ${(lead.equipmentType || "item").toLowerCase()}. If somebody bought it from another state, do you already have someone you normally use to transport it?`,
+              openerDirect: "",
+              openerBusiness: "",
+              openerShort: "",
+              openerFollowUp: generateFollowUp(lead),
+              analyzedAt: "",
+              shipperRole: lead.shipperRole,
+              trailerHint: lead.trailerHint,
+              loadClass: lead.loadClass,
+            },
+            style,
+            lead.id,
+            sentToday,
+          )
     : "";
 
   const go = useCallback((delta: number) => {
@@ -137,10 +172,30 @@ export function OutreachView() {
           </header>
           <section className="empty-desk">
             <h2>You send the message</h2>
-            <p>Haul copies an opener. You paste it into Facebook, email, or you dial the dealer’s published number. No bots.</p>
-            <button className="az-btn pri" type="button" onClick={() => router.push("/discover")}>
-              Go to Discover
-            </button>
+            <p>Haul copies an opener. You paste it into Facebook, email, or you dial the dealer’s published number. No bots. Soft cap about 25 sent per day.</p>
+            <div className="empty-start">
+              <article>
+                <h3>Capture first</h3>
+                <p>Open a live listing, capture it, label yard vs private.</p>
+                <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+                  Discover
+                </button>
+              </article>
+              <article>
+                <h3>Check the deck</h3>
+                <p>If you do not know HS vs RGN, run the unit through Intel before you talk equipment.</p>
+                <button className="az-btn sm" type="button" onClick={() => router.push("/playbook")}>
+                  Intel
+                </button>
+              </article>
+              <article>
+                <h3>Work the desk</h3>
+                <p>Queue lives on Desk after someone is labeled and ready to contact.</p>
+                <button className="az-btn sm" type="button" onClick={() => router.push("/")}>
+                  Desk
+                </button>
+              </article>
+            </div>
           </section>
         </div>
       </div>
@@ -154,7 +209,7 @@ export function OutreachView() {
           <div>
             <h1>Outreach</h1>
             <p>
-              {index + 1} / {queue.length} in queue · C copy · O open listing · F follow up · N next
+              {index + 1} / {queue.length} in queue · {sentToday} sent today · C copy · O open listing · F follow up · N next
             </p>
           </div>
         </header>
@@ -194,6 +249,14 @@ export function OutreachView() {
                 </b>
               </div>
               <div>
+                <span>Who they are</span>
+                <b>{lead.shipperRole || analysis?.shipperRole || "Unknown"}</b>
+              </div>
+              <div>
+                <span>Trailer guess</span>
+                <b>{lead.trailerHint || (fit ? `${fit.trailerName} · ${fit.loadClass}` : "—")}</b>
+              </div>
+              <div>
                 <span>Phone</span>
                 <b>{lead.phone ? phonePretty(lead.phone) : "Not on the page"}</b>
               </div>
@@ -209,6 +272,7 @@ export function OutreachView() {
             <p className="cd-mono">{lead.listingDescription || listing?.description || lead.notes}</p>
           </article>
           <aside className="az-panel freight-panel outreach-actions">
+            <p className={`pace-${pace.level}`}>{pace.text}</p>
             <p className="cd-mono">Copy, then you send it. Haul does not message anyone.</p>
             <label className="rec-field">
               Message style

@@ -1,5 +1,7 @@
 import type { Workspace } from "./types";
 import { companyName, funnelCounts, generateFollowUp, generateOpeningMessage, leadLocation, shipmentMargin, summarizeProspect } from "./freight";
+import { recommendEquipment } from "./equipment";
+import { searchPlaybook } from "./playbook";
 import { money } from "./format";
 
 export type CopilotAnswer = {
@@ -17,7 +19,22 @@ export function answerCopilot(workspace: Workspace, question: string): CopilotAn
   const now = Date.now();
 
   if (!query) {
-    return { answer: "Ask about follow-ups, high-score prospects, sources, margin, or a specific shipper.", matches: [] };
+    return { answer: "Ask about follow-ups, high-score yards, what trailer a unit needs, or a specific shipper.", matches: [] };
+  }
+
+  if (/trailer|hot.?shot|step deck|lowboy|rgn|what (truck|equipment|deck)|how (do I|would I) move/.test(query)) {
+    const fit = recommendEquipment({ text: question });
+    const hits = searchPlaybook(query.replace(/what|which|need|trailer|truck/gi, " ").trim() || "trailers");
+    const extra = hits[0] ? `\nIntel: ${hits[0].title} — ${hits[0].blurb}` : "";
+    const nos = fit.checks
+      .filter((item) => !item.pass)
+      .slice(0, 3)
+      .map((item) => `${item.code} no: ${item.fails[0]}`)
+      .join(" ");
+    return {
+      answer: `${fit.trailerName} · ${fit.loadClass} (${fit.confidence}). ${fit.why} ${nos} ${fit.ask[0] || ""}${extra}`,
+      matches: [],
+    };
   }
 
   if (/follow up|follow-up|today/.test(query) && /who|should|need|queue|this week/.test(query)) {

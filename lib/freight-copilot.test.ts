@@ -15,8 +15,8 @@ describe("answerCopilot", () => {
     expect(result.answer).not.toMatch(/I couldn't parse/i);
   });
 
-  it("returns source mix from seed prospects", () => {
-    const result = answerCopilot(createSeed(), "which lead sources are working");
-    expect(result.answer).toMatch(/Facebook Marketplace|Equipment Trader|Craigslist/i);
+  it("answers trailer questions from training specs, not the pipeline", () => {
+    const result = answerCopilot(emptyWorkspace(), "what trailer for a sleeper cab");
+    expect(result.answer).toMatch(/RGN|lowboy/i);
   });
 });

@@ -9,8 +9,8 @@ const PROMPTS = [
   "Who should I follow up with today?",
   "Show me all high-score heavy equipment prospects who haven’t been contacted.",
   "Which prospects look like recurring shippers?",
+  "What trailer for a sleeper cab?",
   "What were my best lead sources this month?",
-  "How much gross margin did I make this month?",
 ];
 
 export function CopilotView() {

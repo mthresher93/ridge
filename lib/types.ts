@@ -3,6 +3,7 @@ export type Priority = "Low" | "Medium" | "High" | "Critical";
 export type CallbackType = "hot" | "promising" | "standard" | "confirmation";
 export type CallbackStatus = "open" | "completed";
 export type Density = "compact" | "comfortable";
+export type ShipperRole = "Yard" | "Private" | "Auction" | "Unknown";
 
 export type Lead = {
   id: string;
@@ -53,6 +54,9 @@ export type Lead = {
   weight?: string;
   quantity?: number | null;
   label?: string;
+  shipperRole?: ShipperRole;
+  trailerHint?: string;
+  loadClass?: string;
 };
 
 export type FreightType =
@@ -199,6 +203,9 @@ export type FreightAnalysis = {
   openerShort: string;
   openerFollowUp: string;
   analyzedAt: string;
+  shipperRole?: ShipperRole;
+  trailerHint?: string;
+  loadClass?: string;
 };
 
 export type Point = { x: number; y: number };

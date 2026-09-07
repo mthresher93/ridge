@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeFreightOpportunity, extractListingData, ingestCapture, suggestClientKind } from "./freight";
+import { analyzeFreightOpportunity, detectShipperRole, extractListingData, generateOpeningMessage, ingestCapture, suggestClientKind } from "./freight";
 import { emptyWorkspace } from "./seed";
 
 function score(text: string, extra: Record<string, string> = {}) {
@@ -74,5 +74,27 @@ describe("suggestClientKind", () => {
     expect(suggestClientKind({ sellerName: "Jane", title: "Toyota forklift", source: "Manual" })).toBe("");
     expect(suggestClientKind({ source: "Facebook Marketplace", sellerName: "Mike" })).toBe("Private seller");
     expect(suggestClientKind({ source: "Auction", title: "Ritchie lot" })).toBe("Auction");
+  });
+});
+
+describe("detectShipperRole", () => {
+  it("ranks a dealer yard above a private Marketplace seller", () => {
+    expect(detectShipperRole({ sellerName: "Hill Country Lift LLC", title: "Toyota forklift" })).toBe("Yard");
+    expect(detectShipperRole({ source: "Facebook Marketplace", sellerName: "Mike", title: "Toyota forklift" })).toBe("Private");
+    const yard = score("Toyota 8FGU25 forklift 5,000 lb", { sellerName: "Hill Country Lift LLC", price: "12500" });
+    const privateSeller = score("Toyota 8FGU25 forklift 5,000 lb", { sellerName: "Mike", price: "12500" });
+    expect(yard.shipperRole).toBe("Yard");
+    expect(yard.score).toBeGreaterThan(privateSeller.score);
+    expect(yard.trailerHint).toMatch(/Hot Shot|Step Deck/i);
+  });
+});
+
+describe("generateOpeningMessage", () => {
+  it("changes wording across sends so copies are not identical", () => {
+    const analysis = score("Toyota forklift 5000 lb", { sellerName: "Westside Machinery LLC" });
+    const a = generateOpeningMessage(analysis, "Casual", "lead-1", 0);
+    const b = generateOpeningMessage(analysis, "Casual", "lead-1", 1);
+    expect(a.length).toBeGreaterThan(20);
+    expect(a).not.toBe(b);
   });
 });

@@ -5,6 +5,7 @@ export type NavGroup = { id: string; label: string; items: NavItem[] };
 export const DESK_NAV: NavItem[] = [
   { href: "/", label: "Desk" },
   { href: "/discover", label: "Discover" },
+  { href: "/playbook", label: "Intel" },
   { href: "/people", label: "Clients" },
   { href: "/outreach", label: "Outreach" },
   { href: "/callbacks", label: "Follow-ups" },

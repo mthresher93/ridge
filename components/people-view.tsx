@@ -198,7 +198,7 @@ export function PeopleView() {
               {leads.length === 0 ? (
                 <tr className="cursor-default">
                   <td colSpan={7} className="py-10 text-center text-[var(--muted)]">
-                    No clients yet. Hunt a live listing or add one.
+                    No clients yet. Hunt a live listing in Discover, or add one here.
                   </td>
                 </tr>
               ) : null}

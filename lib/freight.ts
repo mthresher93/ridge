@@ -6,10 +6,13 @@ import type {
   Listing,
   RecurringPotential,
   ScoreConfidence,
+  ShipperRole,
   Workspace,
 } from "./types";
 import { CONTACTED_STAGES, PHONE_STAGES, QUALIFIED_STAGES, QUOTE_STAGES, REPLIED_STAGES, UNCONTACTED_STAGES, WON_STAGES } from "./stages";
 import { normalizePhone, nowIso, uid } from "./format";
+import { recommendEquipment } from "./equipment";
+import { variantIndex } from "./pacing";
 
 export const LEAD_SOURCES = [
   "Facebook Marketplace",
@@ -97,8 +100,24 @@ const VEHICLE = /\b(motorcycle|motorbike|\bcar\b|pickup\s*truck|suv|van|rv|campe
 const COMMERCIAL = /\b(restaurant|walk-?in|fryer|oven|cooler|ice\s*machine|commercial|dealer|dealership|warehouse|inventory)\b/i;
 const HOUSEHOLD = /\b(sofa|couch|mattress|dresser|clothing|clothes|iphone|ipad|playstation|xbox|nintendo|lamp|tv\s*stand|coffee\s*table|stroller|crib|toy)\b/i;
 const SHIPPING = /\b(ship|shipping|delivery|freight|transport|out\s*of\s*state|nationwide|can\s*deliver)\b/i;
-const DEALER = /\b(dealer|dealership|llc|inc\.?|equipment\s*co|machinery|rental|auction)\b/i;
+const DEALER = /\b(dealer|dealership|llc|inc\.?|equipment\s*co|machinery|rental|auction|yard|branch)\b/i;
 const INTERSTATE = /\b(out\s*of\s*state|nationwide|will\s*ship|can\s*ship|buyer\s*pays\s*shipping)\b/i;
+const YARD = /\b(dealer|dealership|rental|llc|inc\.?|ltd|corp|equipment\s*co|machinery|auction|yard|inventory|forklift\s*sales)\b/i;
+
+export function detectShipperRole(input: {
+  source?: string;
+  sellerName?: string;
+  title?: string;
+  description?: string;
+}): ShipperRole {
+  const source = (input.source || "").toLowerCase();
+  const hay = [input.sellerName, input.title, input.description, source].filter(Boolean).join(" ").toLowerCase();
+  if (/\b(ritchie|ironplanet|auction|govdeals|purple wave|copart|iaa|manheim)\b/.test(hay) || source.includes("auction")) return "Auction";
+  if (/\brental/.test(hay) || YARD.test(hay)) return "Yard";
+  if (/\b(facebook marketplace|craigslist)\b/.test(source) && !YARD.test(input.sellerName || "")) return "Private";
+  if (YARD.test(hay)) return "Yard";
+  return "Unknown";
+}
 
 export function companyName(lead: Lead) {
   return (lead.company || lead.property || "").trim();
@@ -288,6 +307,22 @@ export function analyzeFreightOpportunity(extracted: ExtractedListing, listingCo
     score += 10;
     why.push("Seller reads like a business or dealer, not a one-off household sale.");
   }
+  const shipperRole = detectShipperRole({
+    source: extracted.source,
+    sellerName: extracted.sellerName,
+    title: extracted.title,
+    description: extracted.description,
+  });
+  if (shipperRole === "Yard") {
+    score += 16;
+    why.push("Looks like a yard that already ships machines — the relationship, not a one-load bid.");
+  } else if (shipperRole === "Auction") {
+    score += 10;
+    why.push("Auction clock: someone has a removal deadline after the hammer.");
+  } else if (shipperRole === "Private") {
+    score -= 4;
+    why.push("Private listing — often a one-shot unless they have a business name.");
+  }
   if (listingCount >= 5) {
     score += 14;
     why.push(`Seller has ${listingCount} listings in the workspace — recurring shipper signal.`);
@@ -314,7 +349,15 @@ export function analyzeFreightOpportunity(extracted: ExtractedListing, listingCo
 
   if (!why.length) why.push("Limited listing detail — score is a rough screen, not a freight quote.");
 
+  const fit = recommendEquipment({
+    text: blob,
+    dimensions: extracted.dimensions,
+    weight: extracted.weight,
+  });
+  if (fit.trailer !== "UNKNOWN") estimates.push(`Trailer guess: ${fit.trailerName} · ${fit.loadClass}`);
+
   const item = (extracted.equipmentType || extracted.title.split(/[|,–-]/)[0] || "item").trim().toLowerCase();
+  const openers = openingLines(item, shipperRole);
   const analysis: FreightAnalysis = {
     leadId: "",
     score,
@@ -325,22 +368,110 @@ export function analyzeFreightOpportunity(extracted: ExtractedListing, listingCo
     known,
     estimates,
     unknown,
-    openerCasual: `Hey, random question about the ${item}. If somebody bought it from another state, do you already have someone you normally use to transport it?`,
-    openerDirect: `If this ${item} needs to move out of state, I can quote it. Do you already have a transporter lined up?`,
-    openerBusiness: `When this ${item} sells, do you typically arrange freight or should I send a rate?`,
-    openerShort: `Does the ${item} need shipping, or is it pickup only?`,
-    openerFollowUp: `Circling back on the ${item} — any movement on transport yet?`,
+    openerCasual: openers.Casual[0],
+    openerDirect: openers.Direct[0],
+    openerBusiness: openers.Business[0],
+    openerShort: openers.Short[0],
+    openerFollowUp: openers.FollowUp[0],
     analyzedAt: nowIso(),
+    shipperRole,
+    trailerHint: `${fit.trailerName} · ${fit.loadClass}`,
+    loadClass: fit.loadClass,
   };
   return analysis;
 }
 
-export function generateOpeningMessage(analysis: FreightAnalysis, style: MessageStyle = "Casual") {
-  if (style === "Direct") return analysis.openerDirect;
-  if (style === "Business") return analysis.openerBusiness;
-  if (style === "Very Short") return analysis.openerShort;
-  if (style === "Follow-Up") return analysis.openerFollowUp;
-  return analysis.openerCasual;
+export function openingLines(item: string, role: ShipperRole = "Unknown") {
+  const unit = item || "unit";
+  if (role === "Yard") {
+    return {
+      Casual: [
+        `Hey — not looking to replace your guy. When a ${unit} sells and your usual transporter is booked, I can cover it. Who books outbound freight at the yard?`,
+        `Quick one on the ${unit}: do you already have someone on the routing guide for sold machines, or is it still ad hoc?`,
+        `If this ${unit} has to leave the lot this week, I haul equipment. Backup only — who should I talk to about outbound?`,
+      ],
+      Direct: [
+        `I move equipment. If this ${unit} is going to a buyer out of state, I can quote it. Who handles dispatch on your sold units?`,
+        `Need a backup truck when your regular carrier can’t cover a sold ${unit}? I can send a rate. Who books it?`,
+        `Do you arrange freight on sold ${unit} inventory, or does the buyer? I can be the backup either way.`,
+      ],
+      Business: [
+        `When this ${unit} sells, do you typically arrange freight from the yard? Happy to be a backup carrier on the routing guide.`,
+        `I work dealers who already ship. If your usual guy can’t cover this ${unit}, I can quote. Who should get that?`,
+        `Looking to be backup freight for sold ${unit} inventory — not exclusive. Who books outbound at your location?`,
+      ],
+      Short: [
+        `Does the ${unit} need shipping from the yard, or is it pickup only?`,
+        `Who books outbound freight when this ${unit} sells?`,
+        `Backup truck for the ${unit} if your guy is booked — interested?`,
+      ],
+      FollowUp: [
+        `Circling back on the ${unit} — still worth being backup if a buyer is out of town?`,
+        `Any movement on transport for the ${unit}, or still handled in-house?`,
+        `Bumping this once. If the ${unit} needs a truck, I can quote. No spam after this unless you want it.`,
+      ],
+    };
+  }
+  return {
+    Casual: [
+      `Hey, random question about the ${unit}. If somebody bought it from another state, do you already have someone you normally use to transport it?`,
+      `If this ${unit} sells to someone who can’t pick it up, do you already have a transporter, or should I send a number?`,
+      `Quick one — does the ${unit} need shipping, or is it local pickup only?`,
+    ],
+    Direct: [
+      `If this ${unit} needs to move out of state, I can quote it. Do you already have a transporter lined up?`,
+      `I haul equipment. Need a rate to move the ${unit}, or is pickup only?`,
+      `Buyer paying shipping on the ${unit}? I can quote if you don’t already have a guy.`,
+    ],
+    Business: [
+      `When this ${unit} sells, do you typically arrange freight or should I send a rate?`,
+      `I can quote transport on the ${unit} if the buyer isn’t local. Do you handle that or do they?`,
+      `If freight is on you for the ${unit}, I can send a number. Pickup only is fine too — just say.`,
+    ],
+    Short: [
+      `Does the ${unit} need shipping, or is it pickup only?`,
+      `Need a truck for the ${unit}?`,
+      `Shipping on the ${unit}, or local pickup?`,
+    ],
+    FollowUp: [
+      `Circling back on the ${unit} — any movement on transport yet?`,
+      `Just bumping this in case it got buried. If the ${unit} sells out of town, do you already have transport covered?`,
+      `Last ping on the ${unit}. If you want a transport option I’ll send it; otherwise I’ll leave you alone.`,
+    ],
+  };
+}
+
+export function generateOpeningMessage(analysis: FreightAnalysis, style: MessageStyle = "Casual", seed = "", sentToday = 0) {
+  const role = analysis.shipperRole || "Unknown";
+  const lines = openingLines(guessItemFromOpeners(analysis), role);
+  const pack =
+    style === "Direct"
+      ? lines.Direct
+      : style === "Business"
+        ? lines.Business
+        : style === "Very Short"
+          ? lines.Short
+          : style === "Follow-Up"
+            ? lines.FollowUp
+            : lines.Casual;
+  const stored =
+    style === "Direct"
+      ? analysis.openerDirect
+      : style === "Business"
+        ? analysis.openerBusiness
+        : style === "Very Short"
+          ? analysis.openerShort
+          : style === "Follow-Up"
+            ? analysis.openerFollowUp
+            : analysis.openerCasual;
+  const mixed = [stored, ...pack.filter((line) => line !== stored)];
+  return mixed[variantIndex(seed || analysis.leadId || "x", sentToday, mixed.length)] || stored;
+}
+
+function guessItemFromOpeners(analysis: FreightAnalysis) {
+  const text = analysis.openerCasual || analysis.why || "item";
+  const hit = text.match(/the ([a-z0-9][a-z0-9\s-]{2,40}?)(?:\.|,| if| sells| need)/i);
+  return (hit?.[1] || "item").trim();
 }
 
 export function generateFollowUp(lead: Lead, reason = "") {
@@ -540,6 +671,9 @@ export function applyAnalysisToLead(lead: Lead, analysis: FreightAnalysis, extra
     scoreWhy: analysis.why,
     freightType: analysis.freightType,
     recurringPotential: analysis.recurringPotential,
+    shipperRole: analysis.shipperRole || lead.shipperRole,
+    trailerHint: analysis.trailerHint || lead.trailerHint,
+    loadClass: analysis.loadClass || lead.loadClass,
     estimatedValue: lead.estimatedValue || 0,
     priority: analysis.score >= 80 ? "High" : analysis.score >= 55 ? "Medium" : "Low",
     updatedAt: nowIso(),

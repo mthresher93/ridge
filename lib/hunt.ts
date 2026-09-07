@@ -63,6 +63,15 @@ export const HUNT_BRIEF = [
   "Haul only opens public search pages you could click yourself. You copy the listing. You send the message. No scraping, no bots, no fake numbers.",
 ];
 
+export const HUNT_PRESETS = [
+  { query: "forklift", place: "Texas" },
+  { query: "skid steer", place: "Florida" },
+  { query: "mini excavator", place: "Georgia" },
+  { query: "telehandler", place: "California" },
+  { query: "CNC machine", place: "Ohio" },
+  { query: "dump truck", place: "Illinois" },
+];
+
 export const HUNT_LANES: HuntLane[] = [
   {
     id: "mt-dealers",
@@ -173,6 +182,33 @@ export const HUNT_LANES: HuntLane[] = [
     messageWhere: "Contact on the lot or the buyer after they win — you reach out.",
   },
   {
+    id: "copart",
+    name: "Copart",
+    rank: "Strong",
+    fit: "Insurance / salvage lots. Ask for the lot number. Gate appointment is usually the client.",
+    legal: "Public auction site you open. You log in as yourself if the yard requires it.",
+    how: "Search heavy equipment. Capture lot #, pickup city, and hours (typically Mon–Fri 7–4).",
+    messageWhere: "Buyer or seller on the lot. You send it.",
+  },
+  {
+    id: "iaa",
+    name: "IAA",
+    rank: "Strong",
+    fit: "Insurance Auto Auctions. Stock + buyer number required at pickup.",
+    legal: "You open IAA. No scraping.",
+    how: "Open a lot. Copy stock/buyer numbers if they are on the page.",
+    messageWhere: "Contact on the lot. You send it.",
+  },
+  {
+    id: "manheim",
+    name: "Manheim",
+    rank: "Strong",
+    fit: "Dealer auction. Open 7 days. Release form from the client.",
+    legal: "Public/dealer auction you open with your login if needed.",
+    how: "Search commercial / heavy. Ask the client for the release form before pickup.",
+    messageWhere: "Client or auction contact. You send it.",
+  },
+  {
     id: "linkedin-yards",
     name: "LinkedIn yards",
     rank: "Strong",
@@ -269,7 +305,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Strong",
     why: "When the hammer falls, someone has a removal deadline and storage fees. Speed matters more than a cheap rate.",
     talkTo: "Seller or auction contact on the lot. After they win, they need a truck off that yard.",
-    laneIds: ["ritchie", "purple-wave", "govplanet"],
+    laneIds: ["ritchie", "purple-wave", "govplanet", "copart", "iaa", "manheim"],
   },
   {
     id: "people",
@@ -327,6 +363,12 @@ export function huntSearchUrl(laneId: string, keywords = "forklift", location = 
       return `https://www.purplewave.com/search?utf8=%E2%9C%93&search[keyword]=${q(query)}`;
     case "govplanet":
       return `https://www.govplanet.com/search?keywords=${q(query)}`;
+    case "copart":
+      return `https://www.copart.com/lotSearchResults?free=true&query=${q(query)}`;
+    case "iaa":
+      return `https://www.iaai.com/Search?Keyword=${q(query)}`;
+    case "manheim":
+      return `https://www.manheim.com/`;
     case "linkedin-yards":
       return `https://www.linkedin.com/search/results/companies/?keywords=${q(`${query} dealer ${place}`)}`;
     case "linkedin-people":

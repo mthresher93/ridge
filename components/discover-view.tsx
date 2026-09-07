@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, LEAD_SOURCES, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
-import { HUNT_BRIEF, HUNT_PLAYS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import { HUNT_BRIEF, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, type HuntPackItem, type HuntRank } from "@/lib/hunt";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
 import type { SavedSearch } from "@/lib/types";
@@ -291,7 +291,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Find yards that already ship. Open public searches. Capture what you see. You send the message.</p>
+            <p>Open public searches. Capture what you see. You send the message. Haul does not scrape or invent numbers.</p>
           </div>
           <div className="freight-row-actions">
             <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
@@ -330,6 +330,21 @@ export function DiscoverView() {
                     Area
                     <input className="az-input" value={huntPlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Texas" />
                   </label>
+                </div>
+                <div className="hunt-presets">
+                  {HUNT_PRESETS.map((preset) => (
+                    <button
+                      key={`${preset.query}-${preset.place}`}
+                      type="button"
+                      className={`az-btn sm ${huntQuery === preset.query && huntPlace === preset.place ? "pri" : ""}`}
+                      onClick={() => {
+                        setHuntQuery(preset.query);
+                        setHuntPlace(preset.place);
+                      }}
+                    >
+                      {preset.query} · {preset.place}
+                    </button>
+                  ))}
                 </div>
                 <div className="hunt-actions">
                   <button className="az-btn pri sm" type="button" onClick={openTopPack}>

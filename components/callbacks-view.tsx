@@ -115,7 +115,18 @@ export function CallbacksView() {
       <div className="desk-body">
         <form className="follow-add" onSubmit={add}>
           {workspace.leads.filter((item) => !item.archivedAt).length === 0 ? (
-            <p className="rec-empty">No clients yet. Capture one, then schedule a follow-up.</p>
+            <div className="empty-desk" style={{ padding: 18 }}>
+              <h2>No follow-ups until you have a client</h2>
+              <p>Capture a listing, send a message, then schedule the next touch. Haul will not invent a callback.</p>
+              <div className="empty-desk-actions">
+                <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+                  Discover
+                </button>
+                <button className="az-btn sm" type="button" onClick={() => router.push("/")}>
+                  Desk
+                </button>
+              </div>
+            </div>
           ) : (
             <>
           <select className="az-select" value={leadId} onChange={(event) => setLeadId(event.target.value)}>

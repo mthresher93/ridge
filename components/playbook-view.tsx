@@ -1,69 +1,244 @@
 "use client";
 
-import { PageDesk } from "./page-desk";
+import { useMemo, useState } from "react";
+import { PLAYBOOK, searchPlaybook, type PlaybookBlock } from "@/lib/playbook";
+import { UNIT_PRESETS, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
 
-const OFFERS = [
-  { name: "Helm 6", size: "6.6 kW", range: "$16.4–19.8k", fit: "Bills $140–$220 · simple roof" },
-  { name: "Meridian 10", size: "9.8–10.4 kW", range: "$24–31k", fit: "Bills $220–$380 · south/west" },
-  { name: "Estate + storage", size: "13 kW + 10 kWh", range: "$38–52k", fit: "TOU + outage anxiety" },
-];
+function num(value: string) {
+  const n = Number(String(value).replace(/,/g, "").trim());
+  return Number.isFinite(n) && String(value).trim() ? n : null;
+}
 
-const PROOF = [
-  { who: "Fresno bungalow", result: "$268 → $41", note: "10.2 kW, 26 modules, 47 days to PTO" },
-  { who: "Henderson two-story", result: "Peak −62%", note: "West plane + 10 kWh. Same-night sit." },
-  { who: "Sacramento ranch", result: "$198 flattened", note: "Co-signer delay. Still signed." },
-];
-
-const TRACKS = [
-  { objection: "Wait for a rebate.", line: "The rebate is already in the price. Waiting is another year of the same bill." },
-  { objection: "The roof is old.", line: "Then we price the reroof as a line, not a surprise." },
-  { objection: "I need my spouse.", line: "Correct. We don’t close half a household. Both signers on the sit." },
-  { objection: "Solar companies are pushy.", line: "I won’t call twice tonight. Production sheet + a time. If it doesn’t pencil, I’ll say so." },
-];
+function fmt(n: number | null, suffix: string) {
+  if (n == null) return "—";
+  return suffix === "lb" ? `${n.toLocaleString()} lb` : `${n}${suffix}`;
+}
 
 export function PlaybookView() {
+  const [query, setQuery] = useState("");
+  const [topic, setTopic] = useState("trailers");
+  const [unit, setUnit] = useState("forklift");
+  const [length, setLength] = useState("12");
+  const [width, setWidth] = useState("6");
+  const [height, setHeight] = useState("8");
+  const [weight, setWeight] = useState("9000");
+  const [paste, setPaste] = useState("");
+
+  const sections = useMemo(() => searchPlaybook(query), [query]);
+  const active = sections.find((item) => item.id === topic) || sections[0] || PLAYBOOK[0];
+  const fit = recommendEquipment({
+    text: unit,
+    lengthFt: num(length),
+    widthFt: num(width),
+    heightFt: num(height),
+    weightLbs: num(weight),
+  });
+
+  function applyPreset(preset: UnitPreset) {
+    setUnit(preset.text);
+    setLength(String(preset.lengthFt));
+    setWidth(String(preset.widthFt));
+    setHeight(String(preset.heightFt));
+    setWeight(String(preset.weightLbs));
+    setPaste("");
+  }
+
   return (
-    <PageDesk>
-      <div className="az-fill" style={{ gridTemplateRows: "auto auto minmax(0,1fr)" }}>
-        <div className="az-title">Playbook</div>
-        <div className="playbook-offers">
-          {OFFERS.map((offer) => (
-            <article key={offer.name} className="playbook-offer">
-              <div className="az-kicker">{offer.size}</div>
-              <div className="text-[15px] mt-0.5">{offer.name}</div>
-              <div className="az-num text-[var(--gold-2)]">{offer.range}</div>
-              <p className="text-[11px] text-[var(--muted)] mt-1">{offer.fit}</p>
-            </article>
-          ))}
-        </div>
-        <div className="grid grid-cols-[1.1fr_.9fr] gap-2 min-h-0">
-          <section className="az-panel overflow-hidden flex flex-col min-h-0">
-            <div className="px-3 py-2 border-b border-[var(--line)] text-[12px]">When they stall</div>
-            <div className="scroll-y flex-1">
-              {TRACKS.map((item) => (
-                <div key={item.objection} className="px-3 py-2.5 border-b border-[var(--line)] last:border-0">
-                  <div className="text-[12px] text-[var(--gold-2)] italic" style={{ fontFamily: "var(--font-display), Georgia, serif" }}>
-                    “{item.objection}”
-                  </div>
-                  <div className="text-[13px] mt-1 leading-snug">{item.line}</div>
-                </div>
-              ))}
-            </div>
-          </section>
-          <section className="az-panel overflow-hidden flex flex-col min-h-0">
-            <div className="px-3 py-2 border-b border-[var(--line)] text-[12px]">Proof you can say</div>
-            <div className="scroll-y flex-1">
-              {PROOF.map((item) => (
-                <div key={item.who} className="px-3 py-2.5 border-b border-[var(--line)] last:border-0">
-                  <div className="text-[11px] text-[var(--muted)]">{item.who}</div>
-                  <div className="text-[16px]">{item.result}</div>
-                  <p className="text-[11px] text-[var(--muted)]">{item.note}</p>
-                </div>
-              ))}
-            </div>
-          </section>
+    <div className="cd-page fill">
+      <div className="az-fill crm-desk">
+        <header className="crm-desk-head">
+          <div>
+            <h1>Intel</h1>
+            <p>Match the unit to a deck with the training caps. Catalog guesses are not quotes — confirm the photo.</p>
+          </div>
+        </header>
+
+        <div className="intel-desk">
+          <aside className="intel-nav">
+            <input className="az-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search trailers, auctions, DOT…" />
+            {sections.map((item) => (
+              <button key={item.id} type="button" className={active?.id === item.id ? "on" : ""} onClick={() => setTopic(item.id)}>
+                {item.title}
+              </button>
+            ))}
+            {sections.length === 0 ? <p className="rec-empty">Nothing matches.</p> : null}
+          </aside>
+
+          <div className="intel-main">
+            <section className="az-panel freight-panel intel-fit">
+              <header>
+                <h3>What trailer?</h3>
+                <span className="az-chip">{fit.confidence}</span>
+              </header>
+              <div className="intel-presets">
+                {UNIT_PRESETS.map((preset) => (
+                  <button key={preset.id} type="button" className="az-btn sm" onClick={() => applyPreset(preset)}>
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+              <div className="intel-fit-grid">
+                <label className="rec-field intel-unit">
+                  Unit
+                  <input className="az-input" value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="sleeper cab, mini excavator…" />
+                </label>
+                <label className="rec-field">
+                  Length (ft)
+                  <input className="az-input" inputMode="decimal" value={length} onChange={(event) => setLength(event.target.value)} placeholder="26" />
+                </label>
+                <label className="rec-field">
+                  Width (ft)
+                  <input className="az-input" inputMode="decimal" value={width} onChange={(event) => setWidth(event.target.value)} placeholder="8.5" />
+                </label>
+                <label className="rec-field">
+                  Height (ft)
+                  <input className="az-input" inputMode="decimal" value={height} onChange={(event) => setHeight(event.target.value)} placeholder="10" />
+                </label>
+                <label className="rec-field">
+                  Weight (lb)
+                  <input className="az-input" inputMode="numeric" value={weight} onChange={(event) => setWeight(event.target.value)} placeholder="18000" />
+                </label>
+                <label className="rec-field intel-paste">
+                  Or paste L × W × H
+                  <input
+                    className="az-input"
+                    value={paste}
+                    onChange={(event) => {
+                      const next = event.target.value;
+                      setPaste(next);
+                      const parsed = parseDimensions(next);
+                      if (parsed.lengthFt != null) setLength(String(parsed.lengthFt));
+                      if (parsed.widthFt != null) setWidth(String(parsed.widthFt));
+                      if (parsed.heightFt != null) setHeight(String(parsed.heightFt));
+                    }}
+                    placeholder="26 x 8.5 x 10 or 312 x 102 x 120 in"
+                  />
+                </label>
+              </div>
+              <MatcherResult fit={fit} />
+            </section>
+
+            {active ? (
+              <article className="az-panel freight-panel intel-article">
+                <header>
+                  <h3>{active.title}</h3>
+                </header>
+                <p>{active.blurb}</p>
+                {active.blocks.map((block, index) => (
+                  <PlaybookBlockView key={`${active.id}-${index}`} block={block} />
+                ))}
+              </article>
+            ) : null}
+          </div>
         </div>
       </div>
-    </PageDesk>
+    </div>
+  );
+}
+
+function MatcherResult({ fit }: { fit: EquipmentFit }) {
+  return (
+    <div className="intel-result">
+      <div className="intel-result-hero">
+        <div>
+          <div className="home-kicker">Use this deck</div>
+          <h4>{fit.trailerName}</h4>
+          <p>
+            {fit.loadClass}
+            {fit.usedGuess ? " · catalog estimate" : ""}
+            {" · "}
+            {fmt(fit.lengthFt, "'")} L · {fmt(fit.widthFt, "'")} W · {fmt(fit.heightFt, "'")} H · {fmt(fit.weightLbs, "lb")}
+          </p>
+        </div>
+      </div>
+      <div className="intel-checks">
+        {fit.checks.map((item) => (
+          <div key={item.code} className={item.pass ? "pass" : "fail"}>
+            <b>
+              {item.pass ? "Fits" : "No"} · {item.code}
+            </b>
+            <span>{item.pass ? item.name : item.fails[0] || item.name}</span>
+          </div>
+        ))}
+      </div>
+      <p className="intel-why">{fit.why}</p>
+      {fit.alsoFits.length ? (
+        <p className="intel-also">
+          Also fits {fit.alsoFits.map((code) => trailerName(code)).join(", ")}. Cheapest legal deck is listed first.
+        </p>
+      ) : null}
+      <p className="intel-legal">{fit.legalNote}</p>
+      <p className="cd-mono">{fit.ask.join(" ")}</p>
+    </div>
+  );
+}
+
+function PlaybookBlockView({ block }: { block: PlaybookBlock }) {
+  if (block.type === "p") return <p>{block.text}</p>;
+  if (block.type === "list") {
+    return (
+      <ul className="intel-list">
+        {block.items.map((item) => (
+          <li key={item}>{item}</li>
+        ))}
+      </ul>
+    );
+  }
+  if (block.type === "cards") {
+    return (
+      <div className="intel-cards">
+        {block.items.map((item) => (
+          <div key={item.title}>
+            {item.meta ? <span className="az-chip gold">{item.meta}</span> : null}
+            <b>{item.title}</b>
+            <p>{item.body}</p>
+          </div>
+        ))}
+      </div>
+    );
+  }
+  if (block.headers.length > 4) {
+    return (
+      <div className="intel-spec-grid">
+        {block.rows.map((row) => (
+          <article key={row.join("|")} className="intel-spec">
+            <header>
+              <span className="az-chip gold">{row[0]}</span>
+              <b>{row[1] || row[0]}</b>
+            </header>
+            <dl>
+              {block.headers.slice(2).map((header, index) => (
+                <div key={header}>
+                  <dt>{header}</dt>
+                  <dd>{row[index + 2] || "—"}</dd>
+                </div>
+              ))}
+            </dl>
+          </article>
+        ))}
+      </div>
+    );
+  }
+  return (
+    <div className="intel-table-wrap">
+      <table className="intel-table">
+        <thead>
+          <tr>
+            {block.headers.map((header) => (
+              <th key={header}>{header}</th>
+            ))}
+          </tr>
+        </thead>
+        <tbody>
+          {block.rows.map((row) => (
+            <tr key={row.join("|")}>
+              {row.map((cell, cellIndex) => (
+                <td key={`${row[0]}-${cellIndex}`}>{cell}</td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }

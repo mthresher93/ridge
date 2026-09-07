@@ -108,8 +108,8 @@ const EXTRACT_SYSTEM = `You classify heavy-equipment and machinery listings for 
 Return JSON only. Never invent a phone, email, website, or address that is not in the listing text.
 Empty string or null if unknown.
 Fields: title, sellerName, city, state (2-letter US), askingPrice (number or null), phone, email, website, category, equipmentType, dimensions, weight, pickupLocation, destination, isDealer (boolean), skip (boolean), skipReason, score (0-100 how likely they need freight and will reply), why, freightType (Flatbed|Hotshot|Vehicle Transport|Specialized / Oversized|LTL|FTL|Dry Van|Reefer|Unknown), recurringPotential (High|Medium|Low), openerCasual, openerDirect, openerBusiness, openerShort, openerFollowUp.
-Score high for dealers, yards, auctions, rental houses, and $3k+ machines. Score low for couches, phones, clothes.
-Openers are 1-2 sentences, casual, as if messaging the seller about transport. You do not send the message.`;
+Score high for dealers, yards, auctions, rental houses, and $3k+ machines — people who already ship, not one-off sellers. Score low for couches, phones, clothes.
+Openers are 1-2 sentences. For yards, ask to be backup freight, not their exclusive. You do not send the message.`;
 
 export async function enrichCapture(payload: CapturePayload, listingCount = 1): Promise<{
   extracted: ExtractedListing;

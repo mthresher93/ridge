@@ -19,6 +19,18 @@ export function TodayView() {
     () => [...metrics.overdueCallbacks, ...metrics.dueCallbacks.filter((item) => !metrics.overdueCallbacks.includes(item))].slice(0, 6),
     [metrics.dueCallbacks, metrics.overdueCallbacks],
   );
+  const yards = useMemo(
+    () => live.filter((lead) => lead.shipperRole === "Yard" || lead.label === "Dealer" || lead.label === "Rental").length,
+    [live],
+  );
+  const auctions = useMemo(() => live.filter((lead) => lead.shipperRole === "Auction" || lead.label === "Auction").length, [live]);
+  const hotYards = useMemo(
+    () =>
+      live
+        .filter((lead) => (lead.shipperRole === "Yard" || lead.label === "Dealer") && (lead.freightScore || 0) >= 70)
+        .slice(0, 6),
+    [live],
+  );
 
   function complete(id: string) {
     setWorkspace((prev) => ({
@@ -45,7 +57,11 @@ export function TodayView() {
           <div>
             <div className="home-kicker">{deskDay}</div>
             <h1>Desk</h1>
-            <p>{live.length ? `${live.length} clients · hunt, label, you send, follow up, quote` : "Empty file. Capture a live listing to start."}</p>
+            <p>
+              {live.length
+                ? `${live.length} clients · ${yards} yards · ${auctions} auctions · hunt, label, you send, follow up, quote`
+                : "Empty file. Hunt a live listing, match the trailer in Intel, then you send."}
+            </p>
           </div>
           <div className="home-stats">
             <div>
@@ -61,24 +77,44 @@ export function TodayView() {
               <span>overdue</span>
             </div>
             <div>
-              <b>{live.length}</b>
-              <span>clients</span>
+              <b>{yards}</b>
+              <span>yards</span>
             </div>
           </div>
         </header>
 
         {live.length === 0 ? (
           <section className="empty-desk">
-            <h2>Hunt → capture → label → you send</h2>
+            <h2>Start a freight book</h2>
+            <p>Haul ranks public listings and tells you which deck the unit likely needs. You open the page, you send the message, you confirm specs before you quote.</p>
             <ol className="desk-steps">
-              <li>Open a live listing you can see.</li>
-              <li>Capture it. Haul scores. You label what they are.</li>
-              <li>Copy the opener. You hit send.</li>
-              <li>Follow up. Quote only after you have a real rate.</li>
+              <li>Discover — open dealer, rental, and auction searches. Capture what you already have on screen.</li>
+              <li>Intel — enter L × W × H and pounds. If hotshot fails, you will see why before you pick RGN.</li>
+              <li>Desk — label yards vs private. Copy the opener. You hit send. Follow up. Quote only with a real rate.</li>
             </ol>
-            <button className="az-btn pri" type="button" onClick={() => router.push("/discover")}>
-              Go to Discover
-            </button>
+            <div className="empty-start">
+              <article>
+                <h3>Hunt yards</h3>
+                <p>Dealers and rental houses already ship. One weekly yard beats a pile of Marketplace ads.</p>
+                <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+                  Open Discover
+                </button>
+              </article>
+              <article>
+                <h3>Match the trailer</h3>
+                <p>Training caps: hotshot 40' / 20k lb / 10.6'. Sleeper cabs go RGN. Catalog guesses are not quotes.</p>
+                <button className="az-btn pri sm" type="button" onClick={() => router.push("/playbook")}>
+                  Open Intel
+                </button>
+              </article>
+              <article>
+                <h3>How you send</h3>
+                <p>No bots. Soft cap ~25 messages a day. Variants rotate. Confirm a photo before you name a rate.</p>
+                <button className="az-btn sm" type="button" onClick={() => router.push("/settings")}>
+                  Open Settings
+                </button>
+              </article>
+            </div>
           </section>
         ) : (
           <>
@@ -124,7 +160,7 @@ export function TodayView() {
                     <div>
                       <b>{lead.name}</b>
                       <div className="cd-mono">
-                        {lead.label || "Unlabeled"} · {companyName(lead) || lead.source}
+                        {lead.label || "Unlabeled"} · {lead.shipperRole || "Unknown"} · {lead.trailerHint || companyName(lead) || lead.source}
                       </div>
                     </div>
                     <div className="freight-score">
@@ -166,6 +202,31 @@ export function TodayView() {
                 })}
               </section>
             </div>
+
+            {hotYards.length ? (
+              <section className="az-panel freight-panel">
+                <header>
+                  <h3>High-probability yards</h3>
+                  <button className="az-btn sm" type="button" onClick={() => router.push("/playbook")}>
+                    Intel
+                  </button>
+                </header>
+                {hotYards.map((lead) => (
+                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, `/people?id=${lead.id}`)}>
+                    <div>
+                      <b>{lead.name}</b>
+                      <div className="cd-mono">
+                        {lead.trailerHint || "Trailer unset"} · {leadLocation(lead) || "—"}
+                      </div>
+                    </div>
+                    <div className="freight-score">
+                      <b>{lead.freightScore ?? "—"}</b>
+                      <span>{lead.shipperRole || lead.label || "Yard"}</span>
+                    </div>
+                  </button>
+                ))}
+              </section>
+            ) : null}
           </>
         )}
       </div>
