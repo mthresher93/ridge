@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { money } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
-import { Station } from "./page-intro";
 
 export function InvestmentView() {
   const { workspace, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
@@ -25,16 +24,14 @@ export function InvestmentView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading paper desk…</div>;
 
   return (
-    <Station
-      n="14"
-      title="Investment"
-      lede={
-        <>
-          Paper economics from the selected roof model. <em>Not a live trade. Not a promised IRR.</em>
-        </>
-      }
-      chip="PAPER · LOCAL"
-    >
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Investment</h1>
+          <p>Paper economics from the saved roof model · not a live quote</p>
+        </div>
+      </header>
+      <div className="desk-body">
       <div className="cd-grid" style={{ gridTemplateColumns: "280px minmax(0,1fr)" }}>
         <aside className="cd-glass" style={{ padding: 14 }}>
           <div className="cd-mono" style={{ marginBottom: 8 }}>
@@ -52,7 +49,7 @@ export function InvestmentView() {
             <input className="az-input" type="number" min={1} max={25} value={horizon} onChange={(e) => setHorizon(Number(e.target.value) || 1)} />
           </label>
           <p className="cd-mono" style={{ marginTop: 14, textTransform: "none", letterSpacing: 0 }}>
-            Uses estimateFor on the saved design. If there is no roof, Current will not invent a payback.
+            Uses the saved design estimate. No roof, no payback.
           </p>
         </aside>
         <section className="cd-glass" style={{ padding: 20 }}>
@@ -116,6 +113,7 @@ export function InvestmentView() {
           )}
         </section>
       </div>
-    </Station>
+      </div>
+    </div>
   );
 }

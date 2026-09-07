@@ -1,7 +1,5 @@
-"use client";
-
-import { StudioView } from "@/components/studio-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <StudioView />;
+  redirect("/copilot");
 }

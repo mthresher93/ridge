@@ -1,7 +1,5 @@
-"use client";
-
-import { InvestmentView } from "@/components/investment-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <InvestmentView />;
+  redirect("/analytics");
 }

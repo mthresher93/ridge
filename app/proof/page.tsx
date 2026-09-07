@@ -1,7 +1,5 @@
-"use client";
-
-import { ProofView } from "@/components/proof-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <ProofView />;
+  redirect("/analytics");
 }

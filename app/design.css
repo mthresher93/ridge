@@ -10,13 +10,16 @@
 
 .cad-desk {
   display: grid;
-  grid-template-rows: 32px minmax(0, 1fr) 20px;
+  grid-template-rows: auto minmax(0, 1fr) auto;
   height: 100%;
   min-height: 0;
-  background: var(--bg);
+  padding: 14px;
+  gap: 12px;
+  background:
+    radial-gradient(800px 360px at 12% -20%, rgba(176, 137, 58, 0.08), transparent 50%),
+    var(--bg3);
   color: var(--tx);
   border: 0;
-  border-radius: 0;
   overflow: hidden;
 }
 
@@ -25,18 +28,19 @@
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 0 10px;
-  background: var(--bg2);
-  border-color: var(--br);
+  padding: 8px 14px;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift);
 }
 
 .cad-top {
-  border-bottom: 1px solid var(--br);
+  min-height: 40px;
 }
 
 .cad-status {
-  border-top: 1px solid var(--br);
-  border-bottom: 0;
+  min-height: 28px;
   justify-content: space-between;
   font-family: var(--fm);
   font-size: 10px;
@@ -62,9 +66,11 @@
   background: var(--bg);
   border: 1px solid var(--br);
   color: var(--tx);
-  min-height: 26px;
-  border-radius: 4px;
-  font-size: 12px;
+  min-height: 28px;
+  border-radius: var(--radius-sm);
+  font-family: var(--fh);
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .cad-address {
@@ -91,7 +97,7 @@
 .cad-zoom {
   display: flex;
   border: 1px solid var(--br);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   overflow: hidden;
   background: var(--bg);
 }
@@ -119,6 +125,7 @@
 .cad-body {
   display: grid;
   grid-template-columns: 44px minmax(0, 1fr) 220px;
+  gap: 8px;
   min-height: 0;
 }
 
@@ -129,10 +136,12 @@
 .cad-tools {
   display: flex;
   flex-direction: column;
-  border-right: 1px solid var(--br);
-  background: var(--bg2);
-  padding: 4px 0;
-  gap: 1px;
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  padding: 8px 6px;
+  gap: 4px;
+  box-shadow: var(--lift);
 }
 
 .cad-tools button,
@@ -144,6 +153,7 @@
   padding: 7px 2px 6px;
   border: 0;
   border-left: 2px solid transparent;
+  border-radius: var(--radius-sm);
   background: transparent;
   color: var(--tx4);
   font-size: 8px;
@@ -172,24 +182,28 @@
 
 .cad-tools button:hover {
   color: var(--tx2);
-  background: rgba(194, 65, 12, 0.05);
+  background: var(--gold-dim);
 }
 
 .cad-tools button.on {
-  border-left-color: #c2410c;
+  border-left-color: var(--action);
   background: var(--gold-dim);
-  color: #c2410c;
+  color: var(--gold-2);
 }
 
 .cad-tools button.on i {
-  color: #c2410c;
+  color: var(--gold-2);
 }
 
 .cad-canvas {
   position: relative;
   min-width: 0;
   min-height: 0;
-  background: #1c1915;
+  background: #121418;
+  border: 1px solid #1e232b;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--lift-2);
 }
 
 .cad-hint {
@@ -202,7 +216,7 @@
   color: #fff8f0;
   background: rgba(28, 25, 21, 0.72);
   border: 1px solid rgba(255, 248, 240, 0.12);
-  border-radius: 4px;
+  border-radius: var(--radius-sm);
   padding: 5px 8px;
   max-width: 360px;
 }
@@ -338,9 +352,11 @@
   gap: 10px;
   overflow: auto;
   min-height: 0;
-  padding: 8px 10px 12px;
-  background: var(--bg2);
-  border-left: 1px solid var(--br);
+  padding: 10px 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift);
 }
 
 .cad-num-row {
@@ -356,10 +372,14 @@
 .cad-insp-block {
   display: grid;
   gap: 8px;
+  padding: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
 }
 
 .cad-insp-block .az-kicker {
-  color: #c2410c;
+  color: var(--gold-2);
   font-family: var(--fm);
   letter-spacing: 0.1em;
   font-size: 9px;

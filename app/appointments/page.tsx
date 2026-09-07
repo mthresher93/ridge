@@ -1,7 +1,5 @@
-"use client";
-
-import { AppointmentsView } from "@/components/appointments-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AppointmentsView />;
+  redirect("/shipments");
 }

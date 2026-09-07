@@ -4,7 +4,6 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { NAV } from "@/lib/nav";
-import { phonePretty } from "@/lib/format";
 
 type Result = {
   id: string;
@@ -21,7 +20,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
 
   const results = useMemo(() => {
     const q = query.trim().toLowerCase();
-    const pages: Result[] = NAV.filter((item) => !q || item.label.toLowerCase().includes(q) || item.hint.toLowerCase().includes(q)).map(
+    const pages: Result[] = NAV.filter((item) => !q || item.label.toLowerCase().includes(q) || item.href.toLowerCase().includes(q)).map(
       (item) => ({
         id: `page-${item.href}`,
         title: item.label,
@@ -32,17 +31,15 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
     const people: Result[] = [];
     for (const lead of workspace.leads) {
       if (!q) break;
-      const hay = [lead.name, lead.property, lead.city, lead.phone, lead.email, lead.status].join(" ").toLowerCase();
+      const hay = [lead.name, lead.label, lead.property, lead.city, lead.phone, lead.email, lead.status].join(" ").toLowerCase();
       if (!hay.includes(q)) continue;
       const open = (href: string) => {
         setSelectedLeadId(lead.id);
         router.push(href);
       };
       people.push(
-        { id: `${lead.id}-dial`, title: `${lead.name} · Dialer`, detail: `${lead.property} · ${phonePretty(lead.phone)}`, run: () => open("/floor") },
-        { id: `${lead.id}-design`, title: `${lead.name} · Design`, detail: lead.city || lead.status, run: () => open("/design") },
-        { id: `${lead.id}-map`, title: `${lead.name} · Map`, detail: lead.status, run: () => open("/map") },
-        { id: `${lead.id}-record`, title: `${lead.name} · Contact`, detail: lead.status, run: () => open(`/people?id=${lead.id}`) },
+        { id: `${lead.id}-outreach`, title: `${lead.name} · Outreach`, detail: `${lead.property} · score ${lead.freightScore ?? "—"}`, run: () => open("/outreach") },
+        { id: `${lead.id}-record`, title: `${lead.name} · Client`, detail: lead.label ? `${lead.label} · ${lead.status}` : lead.status, run: () => open(`/people?id=${lead.id}`) },
       );
       if (people.length >= 16) break;
     }
@@ -80,7 +77,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         <input
           autoFocus
           className="az-input border-0 rounded-none h-14 px-5 text-[16px]"
-          placeholder="Search contacts or pages"
+          placeholder="Search clients or pages"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

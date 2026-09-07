@@ -51,7 +51,6 @@ body {
   background: var(--bg);
   color: var(--tx);
   font-family: var(--fb);
-  --font-display: var(--font-display), Fraunces, Georgia, serif;
 }
 
 .az-shell {

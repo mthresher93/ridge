@@ -4,13 +4,21 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
-import { formatWhen, moneyShort, nowIso, relativeDue } from "@/lib/format";
+import { companyName, leadLocation, outreachQueue } from "@/lib/freight";
+import { nowIso, relativeDue } from "@/lib/format";
 
 export function TodayView() {
   const router = useRouter();
   const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
   const metrics = useMemo(() => derive(workspace), [workspace]);
   const move = useMemo(() => topMove(workspace), [workspace]);
+  const live = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
+  const unlabeled = useMemo(() => live.filter((lead) => !lead.label).slice(0, 6), [live]);
+  const toMessage = useMemo(() => outreachQueue(live).slice(0, 6), [live]);
+  const followUps = useMemo(
+    () => [...metrics.overdueCallbacks, ...metrics.dueCallbacks.filter((item) => !metrics.overdueCallbacks.includes(item))].slice(0, 6),
+    [metrics.dueCallbacks, metrics.overdueCallbacks],
+  );
 
   function complete(id: string) {
     setWorkspace((prev) => ({
@@ -18,7 +26,7 @@ export function TodayView() {
       callbacks: prev.callbacks.map((item) => (item.id === id ? { ...item, status: "completed", completedAt: nowIso() } : item)),
       updatedAt: nowIso(),
     }));
-    log("callback", id, "completed", "Completed from Home");
+    log("callback", id, "completed", "Completed from Desk");
   }
 
   function openLead(id: string | null, href: string) {
@@ -28,118 +36,138 @@ export function TodayView() {
 
   if (loading) return <div className="cd-body text-[var(--tx4)]">Reading workspace…</div>;
 
-  const followUps = [...metrics.overdueCallbacks, ...metrics.dueCallbacks.filter((item) => !metrics.overdueCallbacks.includes(item))].slice(0, 8);
-  const sits = metrics.upcoming.slice(0, 6);
+  const deskDay = new Date().toLocaleDateString("en-US", { weekday: "long", month: "short", day: "numeric" });
 
   return (
     <div className="cd-page fill">
-      <div className="home-desk">
+      <div className="home-desk desk-home">
         <header className="home-desk-head">
           <div>
-            <h1>Today</h1>
-            <p>
-              {metrics.overdueCallbacks.length
-                ? `${metrics.overdueCallbacks.length} overdue · ${metrics.callable.length} callable`
-                : `${metrics.callable.length} callable · ${metrics.dueCallbacks.length} follow-ups`}
-            </p>
+            <div className="home-kicker">{deskDay}</div>
+            <h1>Desk</h1>
+            <p>{live.length ? `${live.length} clients · hunt, label, you send, follow up, quote` : "Empty file. Capture a live listing to start."}</p>
           </div>
           <div className="home-stats">
             <div>
-              <b className={metrics.overdueCallbacks.length ? "bad" : ""}>{metrics.overdueCallbacks.length}</b>
-              overdue
+              <b>{unlabeled.length}</b>
+              <span>unlabeled</span>
             </div>
             <div>
-              <b className={metrics.dueCallbacks.length ? "warn" : ""}>{metrics.dueCallbacks.length}</b>
-              follow-ups
+              <b>{toMessage.length}</b>
+              <span>to message</span>
             </div>
             <div>
-              <b>{metrics.todaySits.length}</b>
-              sits today
+              <b>{metrics.overdueCallbacks.length}</b>
+              <span>overdue</span>
             </div>
             <div>
-              <b>{metrics.callable.length}</b>
-              callable
-            </div>
-            <div>
-              <b>{moneyShort(metrics.openValue)}</b>
-              open pipeline
+              <b>{live.length}</b>
+              <span>clients</span>
             </div>
           </div>
         </header>
 
-        <div className="home-main">
-        <section className="home-next">
-          <div className="home-kicker">{move.kicker}</div>
-          <h2>{move.title}</h2>
-          <p>{move.reason}</p>
-          <div className="home-actions">
-            <button className="az-btn pri" type="button" onClick={() => openLead(move.leadId, "/floor")}>
-              Dialer
+        {live.length === 0 ? (
+          <section className="empty-desk">
+            <h2>Hunt → capture → label → you send</h2>
+            <ol className="desk-steps">
+              <li>Open a live listing you can see.</li>
+              <li>Capture it. Lumen scores. You label what they are.</li>
+              <li>Copy the opener. You hit send.</li>
+              <li>Follow up. Quote only after you have a real rate.</li>
+            </ol>
+            <button className="az-btn pri" type="button" onClick={() => router.push("/discover")}>
+              Go to Discover
             </button>
-            {move.href !== "/floor" ? (
-              <button className="az-btn" type="button" onClick={() => openLead(move.leadId, move.href)}>
-                {move.cta}
-              </button>
-            ) : (
-              <button className="az-btn" type="button" onClick={() => router.push("/callbacks")}>
-                Follow-up
-              </button>
-            )}
-            <button className="az-btn" type="button" onClick={() => router.push("/design")}>
-              Design
-            </button>
-          </div>
-        </section>
+          </section>
+        ) : (
+          <>
+            <section className="freight-hero" onClick={() => openLead(move.leadId, move.href)}>
+              <div className="home-kicker">{move.kicker}</div>
+              <h2>{move.title}</h2>
+              <p>{move.reason}</p>
+              <span className="az-btn pri sm">{move.cta}</span>
+            </section>
 
-        <section className="home-col">
-          <div className="home-kicker">Follow-up</div>
-          {followUps.length === 0 ? <p className="home-empty">Queue is clear.</p> : null}
-          {followUps.map((item) => {
-            const person = workspace.leads.find((row) => row.id === item.leadId);
-            const overdue = Date.parse(item.dueAt) < Date.now();
-            return (
-              <div key={item.id} className="home-row">
-                <div>
-                  <b>{person?.name}</b>
-                  <span>{item.reason}</span>
-                </div>
-                <div className="home-row-actions">
-                  <span className={`az-chip ${overdue ? "cr" : "warn"}`}>{relativeDue(item.dueAt)}</span>
-                  <button className="az-btn sm pri" type="button" onClick={() => openLead(item.leadId, "/floor")}>
-                    Call
+            <div className="desk-work-grid">
+              <section className="az-panel freight-panel">
+                <header>
+                  <h3>Needs a label</h3>
+                  <button className="az-btn sm" type="button" onClick={() => router.push("/people?filter=unlabeled")}>
+                    All
                   </button>
-                  <button className="az-btn sm" type="button" onClick={() => complete(item.id)}>
-                    Done
+                </header>
+                {unlabeled.length === 0 ? <p className="rec-empty">Every client is labeled.</p> : null}
+                {unlabeled.map((lead) => (
+                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, `/people?id=${lead.id}`)}>
+                    <div>
+                      <b>{lead.name}</b>
+                      <div className="cd-mono">
+                        {lead.source} · {leadLocation(lead) || "—"}
+                      </div>
+                    </div>
+                    <span className="az-chip">Unlabeled</span>
                   </button>
-                </div>
-              </div>
-            );
-          })}
-        </section>
-        </div>
+                ))}
+              </section>
 
-        <section className="home-side">
-          <div className="home-kicker">Appointments</div>
-          {sits.length === 0 ? <p className="home-empty">Nothing scheduled from this workspace.</p> : null}
-          {sits.map((item) => {
-            const person = workspace.leads.find((row) => row.id === item.leadId);
-            return (
-              <div key={item.id} className="home-row">
-                <div>
-                  <b>{person?.name || item.type}</b>
-                  <span>
-                    {formatWhen(item.startsAt)} · {item.status}
-                  </span>
-                </div>
-                <div className="home-row-actions">
-                  <button className="az-btn sm" type="button" onClick={() => openLead(item.leadId, "/appointments")}>
-                    Open
+              <section className="az-panel freight-panel">
+                <header>
+                  <h3>Message these</h3>
+                  <button className="az-btn sm" type="button" onClick={() => router.push("/outreach")}>
+                    Outreach
                   </button>
-                </div>
-              </div>
-            );
-          })}
-        </section>
+                </header>
+                {toMessage.length === 0 ? <p className="rec-empty">Queue is clear.</p> : null}
+                {toMessage.map((lead) => (
+                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, "/outreach")}>
+                    <div>
+                      <b>{lead.name}</b>
+                      <div className="cd-mono">
+                        {lead.label || "Unlabeled"} · {companyName(lead) || lead.source}
+                      </div>
+                    </div>
+                    <div className="freight-score">
+                      <b>{lead.freightScore ?? "—"}</b>
+                      <span>{lead.status}</span>
+                    </div>
+                  </button>
+                ))}
+              </section>
+
+              <section className="az-panel freight-panel">
+                <header>
+                  <h3>Follow-ups</h3>
+                  <button className="az-btn sm" type="button" onClick={() => router.push("/callbacks")}>
+                    All
+                  </button>
+                </header>
+                {followUps.length === 0 ? <p className="rec-empty">Nothing due.</p> : null}
+                {followUps.map((item) => {
+                  const person = workspace.leads.find((row) => row.id === item.leadId);
+                  const late = Date.parse(item.dueAt) < Date.now();
+                  return (
+                    <div key={item.id} className="work-row">
+                      <div>
+                        <b>{person?.name || "Unlinked"}</b>
+                        <div className="cd-mono">
+                          {person?.label ? `${person.label} · ` : ""}
+                          {item.reason}
+                        </div>
+                      </div>
+                      <div className="freight-row-actions">
+                        <span className={late ? "bad" : ""}>{relativeDue(item.dueAt)}</span>
+                        <button className="az-btn sm" type="button" onClick={() => complete(item.id)}>
+                          Done
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </section>
+            </div>
+          </>
+        )}
       </div>
     </div>
   );

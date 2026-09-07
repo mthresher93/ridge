@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { daysBetween, money } from "@/lib/format";
-import { Station } from "./page-intro";
-import { Cockpit } from "./cockpit";
 
 const CASES = [
   { kind: "Metric", who: "Fresno bungalow", result: "$268 → $41", note: "10.2 kW, 26 modules, 47 days to PTO", age: 34, confidence: "verified" },
@@ -42,35 +40,15 @@ export function ProofView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Reading proof…</div>;
 
   return (
-    <Station
-      n="02"
-      title="Proof"
-      lede={
-        <>
-          <em>Testimonials, metrics, wins, objection answers.</em> Every claim in an offer needs a named source. Freshness and provenance stay visible.
-        </>
-      }
-      chip={`${rows.length} ASSETS`}
-    >
-      <Cockpit
-        kicker="PROOF VAULT"
-        title="Proof readiness cockpit"
-        blurb="Which assets can support an offer, and which ones are still a claim."
-        stages={[
-          { n: "01", label: "Capture", p: "Raw notes and designs.", pct: Math.min(99, 40 + designs.length * 8), detail: "Capture is the raw material: designs, notes, and recorded bills." },
-          { n: "02", label: "Label", p: "Demo vs real client.", pct: 91, detail: "Labeling prevents fake traction. Seed cases are labeled as such." },
-          { n: "03", label: "Credibility", p: "Named, source-backed.", pct: named ? 76 : 40, detail: "Credibility improves when proof shows before/after and a household." },
-          { n: "04", label: "Attach", p: "Link to offer or deal.", pct: proposals.length ? 70 : 42, detail: "Unattached proof does not help the sit." },
-          { n: "05", label: "Approve", p: "Only publish reviewed.", pct: 84, detail: "Approval keeps claims safe before public use." },
-        ]}
-        kpis={[
-          { l: "READY", v: `${rows.filter((item) => item.age < 90).length}`, p: "Usable after labels." },
-          { l: "STALE", v: `${stale}`, p: "Older than 90 days." },
-          { l: "DESIGNS", v: `${designs.length}`, p: "Roof models on file." },
-          { l: "CLAIMS", v: "Safe", p: "No invented bills." },
-        ]}
-      />
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Proof</h1>
+          <p>{rows.length} assets · {stale} stale</p>
+        </div>
+      </header>
 
+      <div className="desk-body">
       <div className="proof-grid">
         <aside className="cd-glass proof-side">
           <div className="cd-mono">By type</div>
@@ -87,7 +65,7 @@ export function ProofView() {
             <span className="r">{stale} stale · {named} noted records</span>
           </div>
           <div className="proof-gaps">
-            <b>Current · proof gaps that stall money</b>
+            <b>Gaps that stall a sit</b>
             <p>Offers without a named bill-in / bill-out. Designs without a proposal snapshot. Objections older than 90 days.</p>
           </div>
           <div style={{ padding: "0 16px 8px" }}>
@@ -124,6 +102,7 @@ export function ProofView() {
             ))}
         </aside>
       </div>
-    </Station>
+      </div>
+    </div>
   );
 }

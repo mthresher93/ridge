@@ -7,7 +7,6 @@ import { derive } from "@/lib/derive";
 import { money, moneyShort } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
 import { PIPELINE_GROUPS } from "@/lib/stages";
-import { Station } from "./page-intro";
 
 export function MoneyView() {
   const router = useRouter();
@@ -28,16 +27,14 @@ export function MoneyView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Reading money…</div>;
 
   return (
-    <Station
-      n="11"
-      title="Revenue"
-      lede={
-        <>
-          Pipeline and sized roofs only. Weighted value uses the probability you typed.
-        </>
-      }
-      chip="RECORDED · LOCAL"
-    >
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Revenue</h1>
+          <p>Pipeline value and sized roofs · weighted from the probability you typed</p>
+        </div>
+      </header>
+      <div className="desk-body">
       <div className="metric-strip" style={{ marginBottom: 16 }}>
         <div className="ms-cell">
           <div className="ms-l">Open</div>
@@ -125,6 +122,7 @@ export function MoneyView() {
           </div>
         </section>
       </div>
-    </Station>
+      </div>
+    </div>
   );
 }

@@ -1,7 +1,5 @@
-"use client";
-
-import { OffersView } from "@/components/offers-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <OffersView />;
+  redirect("/analytics");
 }

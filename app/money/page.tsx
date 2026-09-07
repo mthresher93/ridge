@@ -1,7 +1,5 @@
-"use client";
-
-import { MoneyView } from "@/components/money-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <MoneyView />;
+  redirect("/analytics");
 }

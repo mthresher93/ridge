@@ -42,7 +42,7 @@ export function runStudio(id: StudioToolId, workspace: Workspace, lead: Lead | n
     if (!lead || !est) {
       return {
         title: "Proposal summary",
-        body: "Pick a lead with a roof model. Current will not invent production or price.",
+        body: "Pick a lead with a roof model. Production and price stay blank until a design exists.",
         gate: "Blocked — missing design.",
       };
     }
@@ -75,7 +75,7 @@ export function runStudio(id: StudioToolId, workspace: Workspace, lead: Lead | n
         sit ? `On calendar: ${sit.type} · ${sit.closer} closer · ${sit.location}` : "No sit on the book.",
         `Next action: ${lead.nextAction || "confirm both signers and the bill."}`,
       ].join("\n"),
-      gate: "Prep only. Current does not confirm the sit for you.",
+      gate: "Prep only. Confirm the sit yourself.",
     };
   }
 
@@ -93,7 +93,7 @@ export function runStudio(id: StudioToolId, workspace: Workspace, lead: Lead | n
         `CTA: 15-minute bill review. No live spend from this draft.`,
         `Honesty: ${metrics.overdueCallbacks.length} overdue callbacks beat any ad.`,
       ].join("\n"),
-      gate: "Draft only. Current will not buy media.",
+      gate: "Draft only. Does not buy media.",
     };
   }
 

@@ -26,6 +26,9 @@ export function DealDrawer({ opportunity, onClose }: { opportunity: Opportunity;
           value: Number(data.get("value")) || 0,
           probability: Math.min(100, Math.max(0, Number(data.get("probability")) || 0)),
           owner: String(data.get("owner") || ""),
+          origin: String(data.get("origin") || item.origin || ""),
+          destination: String(data.get("destination") || item.destination || ""),
+          freightType: String(data.get("freightType") || item.freightType || ""),
           nextAction: String(data.get("nextAction") || ""),
           expectedClose: String(data.get("expectedClose") || ""),
           notes: String(data.get("notes") || ""),
@@ -51,7 +54,7 @@ export function DealDrawer({ opportunity, onClose }: { opportunity: Opportunity;
             <div className="az-kicker">Deal</div>
             <h2 className="text-[24px] tracking-tight mt-1">{opportunity.name}</h2>
             <p className="text-[12px] text-[var(--muted)] mt-1">
-              {lead ? `${lead.city} · ${lead.utility}` : "Unlinked rooftop"}
+              {lead ? `${lead.label || "Unlabeled"} · ${lead.city}${lead.state ? `, ${lead.state}` : ""}` : "Unlinked client"}
             </p>
           </div>
           <button className="az-btn ghost" onClick={onClose}>
@@ -59,8 +62,8 @@ export function DealDrawer({ opportunity, onClose }: { opportunity: Opportunity;
           </button>
         </div>
         <form className="space-y-3" onSubmit={save}>
-          <Field label="Homeowner" name="name" defaultValue={opportunity.name} />
-          <Field label="Property" name="property" defaultValue={opportunity.property} />
+          <Field label="Client" name="name" defaultValue={opportunity.name} />
+          <Field label="Company" name="property" defaultValue={opportunity.property} />
           <label className="block text-[12px] text-[var(--muted)]">
             Stage
             <select name="stage" defaultValue={opportunity.stage} className="az-select mt-1">
@@ -70,14 +73,19 @@ export function DealDrawer({ opportunity, onClose }: { opportunity: Opportunity;
             </select>
           </label>
           <div className="grid grid-cols-2 gap-3">
-            <Field label="Value" name="value" type="number" defaultValue={String(opportunity.value)} />
+            <Field label="Your rate" name="value" type="number" defaultValue={opportunity.value ? String(opportunity.value) : ""} />
             <Field label="Probability %" name="probability" type="number" defaultValue={String(opportunity.probability)} />
           </div>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Origin" name="origin" defaultValue={opportunity.origin || lead?.origin || ""} />
+            <Field label="Destination" name="destination" defaultValue={opportunity.destination || lead?.destination || ""} />
+          </div>
+          <Field label="Freight type" name="freightType" defaultValue={opportunity.freightType || lead?.freightType || ""} />
           <Field label="Owner" name="owner" defaultValue={opportunity.owner} />
           <Field label="Next action" name="nextAction" defaultValue={opportunity.nextAction} />
           <Field label="Expected close" name="expectedClose" type="date" defaultValue={opportunity.expectedClose} />
           <label className="block text-[12px] text-[var(--muted)]">
-            Link lead
+            Link client
             <select
               className="az-select mt-1"
               defaultValue={opportunity.leadId || ""}

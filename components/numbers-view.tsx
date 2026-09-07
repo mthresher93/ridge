@@ -5,6 +5,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { derive } from "@/lib/derive";
 import { PIPELINE_GROUPS } from "@/lib/stages";
 import { formatWhen, money, moneyShort } from "@/lib/format";
+import { downloadText } from "@/lib/contacts";
 
 export function NumbersView() {
   const { workspace, loading } = useWorkspace();
@@ -28,8 +29,24 @@ export function NumbersView() {
         <header className="crm-desk-head">
           <div>
             <h1>Reports</h1>
-            <p>Connect and set rates come from call history, not a hoped-for funnel.</p>
+            <p>From recorded call history</p>
           </div>
+          <button
+            className="az-btn sm"
+            type="button"
+            onClick={() => {
+              const tape = (workspace.callLogs || []).map((row) =>
+                [row.at, row.outcome, row.duration, workspace.leads.find((lead) => lead.id === row.leadId)?.name || ""].join(","),
+              );
+              const stages = groups.map((item) => [item.label, item.count, item.value].join(","));
+              downloadText(
+                "lumen-reports.csv",
+                ["metric,value", `dials,${metrics.attempts}`, `connect,${metrics.connectRate}`, `set,${metrics.setRate}`, `open,${metrics.openValue}`, "", "stage,count,value", ...stages, "", "at,outcome,seconds,contact", ...tape].join("\n"),
+              );
+            }}
+          >
+            Export CSV
+          </button>
         </header>
 
         <div className="report-kpis">

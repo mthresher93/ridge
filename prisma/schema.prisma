@@ -33,3 +33,10 @@ model CallLogRecord {
   notes     String   @default("")
   at        DateTime
 }
+
+model WorkspaceBackup {
+  id        String   @id
+  payload   String
+  reason    String
+  createdAt DateTime @default(now())
+}

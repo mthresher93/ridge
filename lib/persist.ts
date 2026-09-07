@@ -2,8 +2,8 @@ import { prisma } from "./prisma";
 import type { CallLog, Proposal, RoofDesign, Workspace } from "./types";
 
 export async function persistSolar(workspace: Workspace) {
-  const designs = Object.values(workspace.designs || {});
-  const proposals = Object.values(workspace.proposals || {});
+  const designs = workspace.version >= 3 ? [] : Object.values(workspace.designs || {});
+  const proposals = workspace.version >= 3 ? [] : Object.values(workspace.proposals || {});
   const logs = (workspace.callLogs || []).slice(0, 200);
 
   const ops = [
@@ -47,6 +47,24 @@ export async function persistSolar(workspace: Workspace) {
 }
 
 export async function hydrateSolar(workspace: Workspace): Promise<Workspace> {
+  if (workspace.version >= 3) {
+    const logRows = await prisma.callLogRecord.findMany({ orderBy: { at: "desc" }, take: 200 });
+    const leadIds = new Set(workspace.leads.map((item) => item.id));
+    const fromTable: CallLog[] = logRows
+      .filter((row) => leadIds.has(row.leadId))
+      .map((row) => ({
+        id: row.id,
+        leadId: row.leadId,
+        outcome: row.outcome,
+        duration: row.duration,
+        notes: row.notes,
+        at: row.at.toISOString(),
+      }));
+    const seen = new Set(fromTable.map((item) => item.id));
+    const mergedLogs = [...fromTable, ...(workspace.callLogs || []).filter((item) => !seen.has(item.id))];
+    return { ...workspace, callLogs: mergedLogs };
+  }
+
   const [designRows, proposalRows, logRows] = await Promise.all([
     prisma.roofDesignRecord.findMany(),
     prisma.proposalRecord.findMany(),

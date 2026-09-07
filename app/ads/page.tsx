@@ -1,7 +1,5 @@
-"use client";
-
-import { AdsView } from "@/components/ads-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AdsView />;
+  redirect("/discover");
 }

@@ -1,7 +1,5 @@
-"use client";
-
-import { DesignView } from "@/components/design-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <DesignView />;
+  redirect("/discover");
 }

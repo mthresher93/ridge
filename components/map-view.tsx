@@ -87,6 +87,7 @@ export function MapView() {
     const q = query.trim().toLowerCase();
     return workspace.leads
       .filter((lead) => {
+        if (lead.archivedAt) return false;
         if (city !== "all" && lead.city !== city) return false;
         if (owner !== "all" && lead.owner !== owner) return false;
         if (filter === "callable" && leadEligibility(lead).tone !== "ok") return false;
@@ -238,6 +239,13 @@ export function MapView() {
     node?.scrollIntoView({ block: "nearest" });
   }, [selectedLeadId, rows]);
 
+  const didPick = useRef(false);
+  useEffect(() => {
+    if (loading || didPick.current || selectedLeadId || !rows[0]) return;
+    didPick.current = true;
+    setSelectedLeadId(rows[0].id);
+  }, [loading, selectedLeadId, rows, setSelectedLeadId]);
+
   if (loading) {
     return (
       <div className="map-desk map-loading">
@@ -310,6 +318,179 @@ export function MapView() {
       </header>
 
       <div className="map-body">
+        <aside className="map-side">
+          {selected && selectedLoc ? (
+            <div className="map-inspect">
+              <div className="map-inspect-head">
+                <div className="map-inspect-status">
+                  <span className={`map-tone ${pinTone(selected)}`} />
+                  <span className="az-kicker">{selected.status}</span>
+                  <span className="map-inspect-city">{selected.city}</span>
+                </div>
+                <button type="button" className="map-inspect-clear" onClick={() => setSelectedLeadId(null)} aria-label="Clear selection">
+                  ×
+                </button>
+              </div>
+              <h2>{selected.name}</h2>
+              <p className="map-inspect-property">
+                {selected.property || "Property unset"}
+                {selected.address ? ` · ${selected.address}` : ""}
+              </p>
+              <dl className="map-inspect-facts">
+                <div>
+                  <dt>Phone</dt>
+                  <dd>{phonePretty(selected.phone)}</dd>
+                </div>
+                <div>
+                  <dt>Consent</dt>
+                  <dd>{eligibility?.label || "—"}</dd>
+                </div>
+                <div>
+                  <dt>Utility</dt>
+                  <dd>
+                    {selected.utility || "—"}
+                    {selected.monthlyBill ? ` · ${money(selected.monthlyBill)}` : ""}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Owner</dt>
+                  <dd>{selected.owner || "—"}</dd>
+                </div>
+                <div className="span">
+                  <dt>Next</dt>
+                  <dd>{selected.nextAction || "—"}</dd>
+                </div>
+                {selectedCallback ? (
+                  <div className="span">
+                    <dt>Follow-up</dt>
+                    <dd className={Date.parse(selectedCallback.dueAt) < Date.now() ? "late" : ""}>
+                      {relativeDue(selectedCallback.dueAt)} · {selectedCallback.reason}
+                    </dd>
+                  </div>
+                ) : null}
+                {selectedAppt ? (
+                  <div className="span">
+                    <dt>Appointment</dt>
+                    <dd>
+                      {selectedAppt.type || "Sit"}
+                      {selectedAppt.startsAt ? ` · ${relativeDue(selectedAppt.startsAt)}` : ""}
+                    </dd>
+                  </div>
+                ) : null}
+                <div>
+                  <dt>{selectedOpp ? "Deal" : "Est. value"}</dt>
+                  <dd className="az-num">
+                    {selectedOpp
+                      ? moneyShort(selectedOpp.value)
+                      : selected.estimatedValue
+                        ? moneyShort(selected.estimatedValue)
+                        : "—"}
+                  </dd>
+                </div>
+                <div>
+                  <dt>Design</dt>
+                  <dd>{designSummary(selected, selectedDesign || undefined) || "No design"}</dd>
+                </div>
+                <div className="span">
+                  <dt>Location</dt>
+                  <dd>
+                    {selectedLoc.pinned ? "Site pin (moved from city estimate)" : "City estimate — not a street address"}
+                  </dd>
+                </div>
+              </dl>
+              <p className="map-inspect-hint">Shift-drag, or drag at zoom 12+, to set a site pin for Design.</p>
+              <div className="map-inspect-actions">
+                <button type="button" className="az-btn pri" onClick={() => router.push("/floor")}>
+                  Dialer
+                </button>
+                <button type="button" className="az-btn" onClick={() => router.push("/design")}>
+                  Design
+                </button>
+                <button type="button" className="az-btn" onClick={() => router.push(`/people?id=${selected.id}`)}>
+                  Record
+                </button>
+                <button
+                  type="button"
+                  className="az-btn ghost"
+                  onClick={() => {
+                    setPin(selected.id, center.lat, center.lng);
+                    log("lead", selected.id, "pin_set", `Pin set to map center ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
+                  }}
+                >
+                  Pin center
+                </button>
+              </div>
+            </div>
+          ) : (
+            <div className="map-inspect map-inspect-empty">
+              <div className="az-kicker">Household</div>
+              <p>Pick a row. The map follows. Hollow pins are city estimates until a site pin is set.</p>
+            </div>
+          )}
+
+          <div className="map-list-head">
+            <span>{city === "all" ? "By city" : city}</span>
+            <span className="az-num">{rows.length}</span>
+          </div>
+          <div className="map-list" ref={listRef}>
+            {rows.length === 0 ? <div className="map-list-empty">No contacts in this view.</div> : null}
+            {grouped.map(([name, leads]) => (
+              <div key={name} className="map-city-group">
+                {city === "all" ? (
+                  <button
+                    type="button"
+                    className="map-city-head"
+                    onClick={() => {
+                      setCity(name);
+                    }}
+                  >
+                    <span>{name}</span>
+                    <em>{leads.length}</em>
+                  </button>
+                ) : null}
+                {leads.map((lead) => {
+                  const point = loc(lead, workspace.designs);
+                  const tone = pinTone(lead);
+                  const callback = workspace.callbacks.find((item) => item.leadId === lead.id && item.status === "open");
+                  const hot = hoverId === lead.id || Boolean(hoverGroup?.includes(lead.id));
+                  return (
+                    <button
+                      key={lead.id}
+                      type="button"
+                      data-lead={lead.id}
+                      className={`map-list-row ${selected?.id === lead.id ? "on" : ""} ${hot ? "hover" : ""}`}
+                      onClick={() => selectLead(lead.id)}
+                      onMouseEnter={() => setHoverId(lead.id)}
+                      onMouseLeave={() => setHoverId(null)}
+                    >
+                      <span className={`map-tone ${tone}`} />
+                      <span className="map-list-copy">
+                        <b>{lead.name}</b>
+                        <i>
+                          {lead.status}
+                          {callback ? ` · ${relativeDue(callback.dueAt)}` : ""}
+                        </i>
+                      </span>
+                      <span className="map-list-meta">
+                        <em>{lead.owner || "—"}</em>
+                        <em className={point.pinned ? "pin" : "est"}>{point.pinned ? "site" : "est"}</em>
+                      </span>
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+          <div className="map-legend">
+            <i className="lead" /> Lead
+            <i className="ok" /> Qualified
+            <i className="sit" /> Appt
+            <i className="paper" /> Proposal
+            <i className="dnc" /> DNC
+            <span className="map-legend-note">Hollow = city estimate</span>
+          </div>
+        </aside>
+
         <div className="map-canvas-wrap">
           <TileMap
             lat={center.lat}
@@ -429,179 +610,6 @@ export function MapView() {
             </div>
           ) : null}
         </div>
-
-        <aside className="map-side">
-          {selected && selectedLoc ? (
-            <div className="map-inspect">
-              <div className="map-inspect-head">
-                <div className="map-inspect-status">
-                  <span className={`map-tone ${pinTone(selected)}`} />
-                  <span className="az-kicker">{selected.status}</span>
-                  <span className="map-inspect-city">{selected.city}</span>
-                </div>
-                <button type="button" className="map-inspect-clear" onClick={() => setSelectedLeadId(null)} aria-label="Clear selection">
-                  ×
-                </button>
-              </div>
-              <h2>{selected.name}</h2>
-              <p className="map-inspect-property">
-                {selected.property || "Property unset"}
-                {selected.address ? ` · ${selected.address}` : ""}
-              </p>
-              <dl className="map-inspect-facts">
-                <div>
-                  <dt>Phone</dt>
-                  <dd>{phonePretty(selected.phone)}</dd>
-                </div>
-                <div>
-                  <dt>Consent</dt>
-                  <dd>{eligibility?.label || "—"}</dd>
-                </div>
-                <div>
-                  <dt>Utility</dt>
-                  <dd>
-                    {selected.utility || "—"}
-                    {selected.monthlyBill ? ` · ${money(selected.monthlyBill)}` : ""}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Owner</dt>
-                  <dd>{selected.owner || "—"}</dd>
-                </div>
-                <div className="span">
-                  <dt>Next</dt>
-                  <dd>{selected.nextAction || "—"}</dd>
-                </div>
-                {selectedCallback ? (
-                  <div className="span">
-                    <dt>Follow-up</dt>
-                    <dd className={Date.parse(selectedCallback.dueAt) < Date.now() ? "late" : ""}>
-                      {relativeDue(selectedCallback.dueAt)} · {selectedCallback.reason}
-                    </dd>
-                  </div>
-                ) : null}
-                {selectedAppt ? (
-                  <div className="span">
-                    <dt>Appointment</dt>
-                    <dd>
-                      {selectedAppt.type || "Sit"}
-                      {selectedAppt.startsAt ? ` · ${relativeDue(selectedAppt.startsAt)}` : ""}
-                    </dd>
-                  </div>
-                ) : null}
-                <div>
-                  <dt>{selectedOpp ? "Deal" : "Est. value"}</dt>
-                  <dd className="az-num">
-                    {selectedOpp
-                      ? moneyShort(selectedOpp.value)
-                      : selected.estimatedValue
-                        ? moneyShort(selected.estimatedValue)
-                        : "—"}
-                  </dd>
-                </div>
-                <div>
-                  <dt>Design</dt>
-                  <dd>{designSummary(selected, selectedDesign || undefined) || "No design"}</dd>
-                </div>
-                <div className="span">
-                  <dt>Location</dt>
-                  <dd>
-                    {selectedLoc.pinned ? "Site pin (moved from city estimate)" : "City estimate — not a street address"}
-                  </dd>
-                </div>
-              </dl>
-              <p className="map-inspect-hint">Shift-drag, or drag at zoom 12+, to set a site pin for Design.</p>
-              <div className="map-inspect-actions">
-                <button type="button" className="az-btn pri" onClick={() => router.push("/floor")}>
-                  Dialer
-                </button>
-                <button type="button" className="az-btn" onClick={() => router.push("/design")}>
-                  Design
-                </button>
-                <button type="button" className="az-btn" onClick={() => router.push(`/people?id=${selected.id}`)}>
-                  Record
-                </button>
-                <button
-                  type="button"
-                  className="az-btn ghost"
-                  onClick={() => {
-                    setPin(selected.id, center.lat, center.lng);
-                    log("lead", selected.id, "pin_set", `Pin set to map center ${center.lat.toFixed(5)}, ${center.lng.toFixed(5)}`);
-                  }}
-                >
-                  Pin center
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="map-inspect map-inspect-empty">
-              <div className="az-kicker">Select</div>
-              <p>Click a marker or a row. City estimates are hollow until a site pin is set.</p>
-            </div>
-          )}
-
-          <div className="map-list-head">
-            <span>{city === "all" ? "By city" : city}</span>
-            <span className="az-num">{rows.length}</span>
-          </div>
-          <div className="map-list" ref={listRef}>
-            {rows.length === 0 ? <div className="map-list-empty">No contacts in this view.</div> : null}
-            {grouped.map(([name, leads]) => (
-              <div key={name} className="map-city-group">
-                {city === "all" ? (
-                  <button
-                    type="button"
-                    className="map-city-head"
-                    onClick={() => {
-                      setCity(name);
-                    }}
-                  >
-                    <span>{name}</span>
-                    <em>{leads.length}</em>
-                  </button>
-                ) : null}
-                {leads.map((lead) => {
-                  const point = loc(lead, workspace.designs);
-                  const tone = pinTone(lead);
-                  const callback = workspace.callbacks.find((item) => item.leadId === lead.id && item.status === "open");
-                  const hot = hoverId === lead.id || Boolean(hoverGroup?.includes(lead.id));
-                  return (
-                    <button
-                      key={lead.id}
-                      type="button"
-                      data-lead={lead.id}
-                      className={`map-list-row ${selected?.id === lead.id ? "on" : ""} ${hot ? "hover" : ""}`}
-                      onClick={() => selectLead(lead.id)}
-                      onMouseEnter={() => setHoverId(lead.id)}
-                      onMouseLeave={() => setHoverId(null)}
-                    >
-                      <span className={`map-tone ${tone}`} />
-                      <span className="map-list-copy">
-                        <b>{lead.name}</b>
-                        <i>
-                          {lead.status}
-                          {callback ? ` · ${relativeDue(callback.dueAt)}` : ""}
-                        </i>
-                      </span>
-                      <span className="map-list-meta">
-                        <em>{lead.owner || "—"}</em>
-                        <em className={point.pinned ? "pin" : "est"}>{point.pinned ? "site" : "est"}</em>
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            ))}
-          </div>
-          <div className="map-legend">
-            <i className="lead" /> Lead
-            <i className="ok" /> Qualified
-            <i className="sit" /> Appt
-            <i className="paper" /> Proposal
-            <i className="dnc" /> DNC
-            <span className="map-legend-note">Hollow = city estimate</span>
-          </div>
-        </aside>
       </div>
 
       <footer className="map-status">

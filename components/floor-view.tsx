@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
-import { leadEligibility, normalizePhone, nowIso, phonePretty, relativeDue, uid } from "@/lib/format";
+import { leadEligibility, normalizePhone, nowIso, relativeDue, uid } from "@/lib/format";
 import { estimateFor } from "@/lib/solar";
 import { CALL_STATES, DISPOSITIONS, visibleCallState, type DialState, type DispositionId } from "@/lib/dispositions";
 import { completeOpenCallbacks, syncOpportunityFromWrap } from "@/lib/crm";
@@ -61,7 +61,7 @@ export function FloorView() {
   const queue = useMemo(() => {
     const due = new Map(workspace.callbacks.filter((item) => item.status === "open").map((item) => [item.leadId, item.dueAt]));
     return workspace.leads
-      .filter((lead) => !lead.dnc)
+      .filter((lead) => !lead.archivedAt && !lead.dnc)
       .filter((lead) => (callableOnly ? leadEligibility(lead).tone === "ok" : true))
       .sort((a, b) => {
         const dueA = due.get(a.id);
@@ -435,34 +435,41 @@ export function FloorView() {
       <section className={`dl-stage ${live ? "is-live" : ringing ? "is-ring" : state === "wrap" ? "is-wrap" : ""}`}>
         {active ? (
           <>
-            <div className="dl-console">
-              <div className="dl-hero">
-                <div className="dl-hero-top">
-                  <div className={`dl-state ${stamp.tone}`}>
-                    <i />
-                    {stamp.label}
-                  </div>
-                  <div className={`dl-timer ${live ? "live" : ringing ? "progress" : ""}`}>
-                    <b className="az-num">{fmt(seconds)}</b>
-                    {live || ringing || state === "wrap" ? (
-                      <span>{live ? "talk" : ringing ? "ring" : "ended"}</span>
-                    ) : null}
-                  </div>
+            <div className="dl-hero">
+              <div className="dl-hero-top">
+                <div className={`dl-state ${stamp.tone}`}>
+                  <i />
+                  {stamp.label}
                 </div>
-                <h2 className="dl-name">{active.name}</h2>
-                <div className="dl-phone" aria-live="polite">
-                  {formatDialDigits(digits) || phonePretty(active.phone)}
+                <div className={`dl-timer ${live ? "live" : ringing ? "progress" : ""}`}>
+                  <b className="az-num">{fmt(seconds)}</b>
+                  {live || ringing || state === "wrap" ? (
+                    <span>{live ? "talk" : ringing ? "ring" : "ended"}</span>
+                  ) : null}
                 </div>
-                <div className="dl-sub">
-                  {active.property || "No property"}
-                  {active.city ? ` · ${active.city}` : ""}
-                  {` · attempt ${active.attempts || 1}`}
-                </div>
-                {state !== "wrap" && !canDial ? <BlockNote lead={active} /> : null}
-                {state !== "wrap" ? (
+              </div>
+              <h2 className="dl-name">{active.name}</h2>
+              <div className="dl-sub">
+                {active.property || "No property"}
+                {active.city ? ` · ${active.city}` : ""}
+                {` · attempt ${active.attempts || 1}`}
+              </div>
+              {state !== "wrap" && !canDial ? <BlockNote lead={active} /> : null}
+            </div>
+
+            {state !== "wrap" ? (
+              <div className="dl-desk">
+                <div className="dl-phone-desk">
+                  <DialPad
+                    digits={digits}
+                    live={live || ringing}
+                    onDigit={(key) => setDigits((value) => (value + key).slice(0, 16))}
+                    onBackspace={() => setDigits((value) => value.slice(0, -1))}
+                    onClear={() => setDigits(phoneDigits(active.phone))}
+                  />
                   <div className="dl-buttons">
                     {state === "ready" || state === "failed" ? (
-                      <button type="button" className="dl-primary" disabled={!canDial} onClick={startCall}>
+                      <button type="button" className="dl-primary" disabled={!canDial || digits.replace(/\D/g, "").length < 7} onClick={startCall}>
                         {canDial ? "Dial" : "Blocked"}
                         <small>Space</small>
                       </button>
@@ -495,13 +502,7 @@ export function FloorView() {
                         </>
                       ) : null}
                       {!live && !ringing && lastDialed ? (
-                        <button
-                          type="button"
-                          className="dl-secondary ghost"
-                          onClick={() => {
-                            setDigits(lastDialed);
-                          }}
-                        >
+                        <button type="button" className="dl-secondary ghost" onClick={() => setDigits(lastDialed)}>
                           Redial
                         </button>
                       ) : null}
@@ -509,7 +510,7 @@ export function FloorView() {
                         type="button"
                         className="dl-secondary ghost"
                         onClick={() => {
-                          void navigator.clipboard?.writeText(active.phone);
+                          void navigator.clipboard?.writeText(digits || active.phone);
                         }}
                       >
                         Copy
@@ -521,33 +522,22 @@ export function FloorView() {
                       ) : null}
                     </div>
                   </div>
-                ) : null}
+                </div>
+
+                <div className="dl-side">
+                  {!live && !ringing ? (
+                    <div className="dl-next">
+                      <span>Next action</span>
+                      <b>{active.nextAction || "Open the call and qualify bill + roof"}</b>
+                      {openCallback ? <em>Callback {relativeDue(openCallback.dueAt)}</em> : null}
+                    </div>
+                  ) : null}
+                  <label className={`dl-notes ${live ? "live" : ""}`}>
+                    <span>Notes</span>
+                    <textarea className="az-area" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="What did they say?" />
+                  </label>
+                </div>
               </div>
-
-              {state !== "wrap" ? (
-                <DialPad
-                  digits={digits}
-                  live={live || ringing}
-                  onDigit={(key) => setDigits((value) => (value + key).slice(0, 16))}
-                  onBackspace={() => setDigits((value) => value.slice(0, -1))}
-                  onClear={() => setDigits("")}
-                />
-              ) : null}
-            </div>
-
-            {state !== "wrap" && !live && !ringing ? (
-              <div className="dl-next">
-                <span>Next action</span>
-                <b>{active.nextAction || "Open the call and qualify bill + roof"}</b>
-                {openCallback ? <em>Callback {relativeDue(openCallback.dueAt)}</em> : null}
-              </div>
-            ) : null}
-
-            {state !== "wrap" ? (
-              <label className={`dl-notes ${live ? "live" : ""}`}>
-                <span>Notes</span>
-                <textarea className="az-area" value={notes} onChange={(event) => setNotes(event.target.value)} placeholder="What did they say?" />
-              </label>
             ) : null}
           </>
         ) : (
@@ -699,27 +689,27 @@ function DialPad({
   onClear: () => void;
 }) {
   return (
-    <div className="dl-pad" aria-label="Dial keypad">
-      <div className="dl-pad-readout" aria-hidden>
-        {digits || "Enter number"}
+    <div className="dl-pad" aria-label="Dial pad">
+      <div className="dl-pad-readout" aria-live="polite">
+        {formatDialDigits(digits) || "Enter number"}
       </div>
       <div className="dl-pad-grid">
         {PAD_KEYS.map((item) => (
           <button key={item.key} type="button" onClick={() => onDigit(item.key)}>
             <b>{item.key}</b>
-            {item.letters ? <i>{item.letters}</i> : null}
+            {item.letters ? <i>{item.letters}</i> : <i>&nbsp;</i>}
           </button>
         ))}
       </div>
       <div className="dl-pad-tools">
-        <button type="button" onClick={onBackspace} disabled={!digits}>
+        <button type="button" onClick={onBackspace} disabled={!digits} aria-label="Delete last digit">
           Delete
         </button>
-        <button type="button" onClick={onClear} disabled={!digits}>
-          Clear
+        <button type="button" onClick={onClear} disabled={!digits} aria-label="Reset to record number">
+          Reset
         </button>
       </div>
-      <p>{live ? "Digits stay on this desk — no carrier DTMF." : "Type or tap. A 10-digit match opens that record."}</p>
+      <p>{live ? "Local digits only — no carrier DTMF." : "Tap or type. A 10-digit match opens that record."}</p>
     </div>
   );
 }

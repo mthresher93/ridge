@@ -4,7 +4,6 @@ import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { nowIso } from "@/lib/format";
 import { runStudio, STUDIO_TOOLS, type StudioToolId } from "@/lib/studio";
-import { Station } from "./page-intro";
 
 export function StudioView() {
   const { workspace, setWorkspace, log, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
@@ -31,16 +30,14 @@ export function StudioView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Opening studio…</div>;
 
   return (
-    <Station
-      n="13"
-      title="Studio"
-      lede={
-        <>
-          Local drafts from the record. You approve. Nothing is sent out.
-        </>
-      }
-      chip={approval === "approved" ? "APPROVED · LOCAL" : "DRAFT · REVIEW"}
-    >
+    <div className="cd-page fill">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Studio</h1>
+          <p>{approval === "approved" ? "Approved · attach locally" : "Draft · review before attach"}</p>
+        </div>
+      </header>
+      <div className="desk-body fill">
       <div className="studio-grid">
         <aside>
           {STUDIO_TOOLS.map((item) => (
@@ -91,6 +88,7 @@ export function StudioView() {
           </p>
         </section>
       </div>
-    </Station>
+      </div>
+    </div>
   );
 }

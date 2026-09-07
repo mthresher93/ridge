@@ -2,8 +2,6 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Station } from "./page-intro";
-import { Cockpit } from "./cockpit";
 
 const PACKS = [
   { name: "Lumen 6", size: "6.6 kW", range: "$16.4–19.8k", fit: "Bills $140–$220 · simple roof", outcome: "Flatten the bill without a reroof surprise." },
@@ -39,45 +37,23 @@ export function OffersView() {
   ];
 
   return (
-    <Station
-      n="01"
-      title="Offers"
-      lede={
-        <>
-          Hormozi&apos;s value equation as a live tool. <em>Maximize the dream, shorten time, cut effort, reverse risk.</em> Current critiques as you type.
-        </>
-      }
-      chip="LOCAL BUILDER"
-      actions={
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Offers</h1>
+          <p>Score the package before you write more copy.</p>
+        </div>
         <button className="az-btn pri sm" type="button" onClick={() => router.push("/proof")}>
           Attach proof
         </button>
-      }
-    >
-      <Cockpit
-        kicker="OFFER SYSTEM"
-        title="Offer decision cockpit"
-        blurb="Judge whether an offer is sellable before you build more collateral."
-        stages={[
-          { n: "01", label: "Outcome", p: "Is the result urgent?", pct: dream * 10, detail: "Outcome checks whether the buyer wants the end result enough to pay." },
-          { n: "02", label: "Proof", p: "Can we show evidence?", pct: likely, detail: "Proof turns the offer from theory into something pitchable." },
-          { n: "03", label: "Friction", p: "How hard is delivery?", pct: effort === "low" ? 82 : effort === "med" ? 64 : 42, detail: "Friction shows whether delivery becomes custom chaos." },
-          { n: "04", label: "Risk", p: "Are objections handled?", pct: guarantee.trim() ? 86 : 28, detail: "Risk reversal covers guarantees, exclusions, and scope." },
-          { n: "05", label: "Package", p: "Is price/scope concrete?", pct: 80, detail: "Package means a buyer can see what they get, when, and for how much." },
-        ]}
-        kpis={[
-          { l: "SELL", v: `${Math.round(score * 10)}%`, p: score >= 8 ? "Ready to draft." : "Needs a guarantee or proof." },
-          { l: "GAP", v: guarantee.trim() ? "Proof" : "Risk", p: guarantee.trim() ? "Attach a named case." : "Write the walk-away." },
-          { l: "PACK", v: active.name, p: active.fit },
-          { l: "GATE", v: "Manual", p: "No external send." },
-        ]}
-      />
+      </header>
 
+      <div className="desk-body">
       <div className="offers-grid">
         <div>
           <div className="cd-glass" style={{ padding: "16px 18px", marginBottom: 14, display: "grid", gridTemplateColumns: "1fr auto", gap: 14 }}>
             <div>
-              <div className="cd-mono">Currently editing</div>
+              <div className="cd-mono">Editing</div>
               <div style={{ fontFamily: "var(--fh)", fontSize: 18, letterSpacing: "0.06em", marginTop: 4 }}>
                 {active.name} · <em style={{ fontFamily: "var(--fs)", fontStyle: "italic", color: "var(--cy)", fontSize: 22 }}>{active.size}</em>
               </div>
@@ -121,7 +97,7 @@ export function OffersView() {
               <div>
                 <div className="cd-mono">Computed value score</div>
                 <div style={{ color: "var(--tx2)", fontSize: 12, marginTop: 3 }}>
-                  Current says: <em style={{ fontFamily: "var(--fs)", fontStyle: "italic", color: "var(--cy)" }}>{guarantee.trim() ? "risk is written" : "strong on speed, weak on risk reversal"}</em>.
+                  {guarantee.trim() ? "Risk reversal is written." : "Strong on speed, weak on risk reversal."}
                 </div>
               </div>
               <div className="big">{score.toFixed(1)} / 10</div>
@@ -181,7 +157,7 @@ export function OffersView() {
             Offer critic
           </div>
           <div style={{ fontFamily: "var(--fh)", letterSpacing: "0.12em", textTransform: "uppercase", margin: "6px 0 12px" }}>
-            Current&apos;s verdict
+            Verdict
           </div>
           <div className="critic-score">
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "baseline" }}>
@@ -207,6 +183,7 @@ export function OffersView() {
           </p>
         </aside>
       </div>
-    </Station>
+      </div>
+    </div>
   );
 }

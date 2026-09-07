@@ -2,26 +2,28 @@
 
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { BrandMark } from "./mark";
 import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
-import { derive, floorWindow } from "@/lib/derive";
-import { NAV } from "@/lib/nav";
+import { DESK_NAV, MORE_NAV } from "@/lib/nav";
 import { settingsWithDefaults } from "@/lib/types";
+
+function isActive(pathname: string, href: string) {
+  return href === "/" ? pathname === "/" : pathname.startsWith(href);
+}
 
 export function Shell({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
   const router = useRouter();
-  const { workspace, loading, saveStatus } = useWorkspace();
-  const [now, setNow] = useState(() => new Date());
+  const { workspace, loading, loadError, saveStatus, reload, retrySave } = useWorkspace();
   const [palette, setPalette] = useState(false);
-  const [mode, setMode] = useState<"solo" | "enroll">("solo");
+  const moreActive = MORE_NAV.some((item) => isActive(pathname, item.href));
+  const [moreOpen, setMoreOpen] = useState(moreActive);
 
   useEffect(() => {
-    const id = window.setInterval(() => setNow(new Date()), 1000);
-    return () => window.clearInterval(id);
-  }, []);
+    if (moreActive) setMoreOpen(true);
+  }, [moreActive]);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -34,59 +36,89 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const metrics = useMemo(() => derive(workspace), [workspace]);
   const prefs = settingsWithDefaults(workspace.settings);
-  const floor = floorWindow(now, { start: prefs.dialWindowStart, end: prefs.dialWindowEnd });
   const density = workspace.settings.density || "comfortable";
 
   return (
-    <div className={`az-shell density-${density}`} data-mode={mode} data-accent={prefs.accent}>
-      <header className="az-deck">
+    <div className={`az-shell density-${density}`} data-accent={prefs.accent}>
+      <aside className="az-rail">
         <Link href="/" className="az-brand">
           <BrandMark />
           <div>
             <div className="az-brand-name">Lumen</div>
-            <div className="az-brand-sub">Solar desk</div>
+            <div className="az-brand-sub">Freight OS</div>
           </div>
         </Link>
 
-        <button className="cd-search" type="button" onClick={() => setPalette(true)}>
-          <span>Search contacts, calls, follow-ups…</span>
-          <span className="az-chip">⌘K</span>
-        </button>
-
-        <div className="az-deck-right">
-          <div className="mode">
-            <button type="button" className={`mode-b ${mode === "solo" ? "on" : ""}`} onClick={() => setMode("solo")}>
-              Solo
+        <nav className="az-rail-nav" aria-label="Workspace">
+          <div className="az-rail-group">
+            {DESK_NAV.map((item) => (
+              <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
+                {item.label}
+              </Link>
+            ))}
+          </div>
+          <div className="az-rail-more">
+            <button
+              type="button"
+              className={`az-rail-more-btn${moreActive ? " active" : ""}`}
+              aria-expanded={moreOpen}
+              onClick={() => setMoreOpen((open) => !open)}
+            >
+              More
             </button>
-            <button type="button" className={`mode-b ${mode === "enroll" ? "on" : ""}`} onClick={() => setMode("enroll")}>
-              Field
+            {moreOpen
+              ? MORE_NAV.map((item) => (
+                  <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
+                    {item.label}
+                  </Link>
+                ))
+              : null}
+          </div>
+        </nav>
+
+        <Link href="/settings" className={`az-rail-settings${isActive(pathname, "/settings") ? " active" : ""}`}>
+          Settings
+        </Link>
+      </aside>
+
+      <div className="az-main">
+        <header className="az-top">
+          <button className="cd-search" type="button" onClick={() => setPalette(true)}>
+            <span>Search clients…</span>
+            <kbd>⌘K</kbd>
+          </button>
+          <div className="az-top-right">
+            <span className="cd-stat">
+              <span className={`livedot ${loadError ? "off" : ""}`} />
+              {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : saveStatus === "saving" ? "Saving" : "Ready"}
+            </span>
+            {saveStatus === "error" ? (
+              <button className="az-btn sm" type="button" onClick={() => retrySave()}>
+                Retry
+              </button>
+            ) : null}
+            <span className="az-num az-top-open">{workspace.leads.filter((lead) => !lead.archivedAt).length} clients</span>
+            <button className="az-btn pri" type="button" onClick={() => router.push("/discover")}>
+              Capture
             </button>
           </div>
-          <span className="cd-stat">
-            <span className={`livedot ${floor.open ? "" : "off"}`} />
-            {loading ? "Syncing" : saveStatus === "error" ? "Save failed" : "Ready"}
-          </span>
-          <span className="az-num text-[10px] text-[var(--tx4)]">{metrics.open.length} open</span>
-          <button className="az-btn pri" onClick={() => router.push("/floor")}>
-            Dialer
-          </button>
-        </div>
-
-        <nav className="az-nav" aria-label="Stations">
-          {NAV.map((item) => {
-            const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
-            return (
-              <Link key={item.href} href={item.href} className={active ? "active" : ""}>
-                <span className="label">{item.label}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </header>
-
-      <div className="az-page">{children}</div>
+        </header>
+        {loadError ? (
+          <div className="az-sync-banner">
+            <span>Could not load the workspace. {loadError}</span>
+            <button className="az-btn sm" type="button" onClick={() => void reload()}>
+              Reload
+            </button>
+          </div>
+        ) : null}
+        {saveStatus === "conflict" ? (
+          <div className="az-sync-banner">
+            <span>Another save landed first. Reloaded the saved copy.</span>
+          </div>
+        ) : null}
+        <div className="az-page">{children}</div>
+      </div>
       {palette ? <CommandPalette onClose={() => setPalette(false)} /> : null}
     </div>
   );

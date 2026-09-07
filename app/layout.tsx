@@ -37,7 +37,7 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: "Lumen",
-  description: "Solar revenue workspace",
+  description: "Freight prospecting operating system",
   icons: {
     icon: "/lumen.svg",
     apple: "/lumen-mark.png",

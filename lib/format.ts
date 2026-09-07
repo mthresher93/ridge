@@ -88,24 +88,15 @@ export function daysBetween(iso: string, now = Date.now()) {
 }
 
 export function leadScore(lead: Lead) {
-  let score = 0;
-  if (lead.phone) score += 20;
-  if (lead.email) score += 15;
-  if (lead.property) score += 10;
-  if (lead.consent === "verified") score += 20;
-  if (lead.monthlyBill && lead.monthlyBill >= 200) score += 15;
-  if (lead.nextAction) score += 10;
-  if (lead.homeowner === "Yes") score += 10;
-  if (lead.dnc) score = 0;
-  return Math.min(100, score);
+  return lead.freightScore ?? 0;
 }
 
 export function leadEligibility(lead: Lead): { tone: "ok" | "warn" | "bad"; label: string } {
-  if (lead.dnc) return { tone: "bad", label: "DNC" };
-  if (lead.consent === "missing") return { tone: "bad", label: "No consent" };
-  if (lead.consent !== "verified") return { tone: "warn", label: "Consent pending" };
-  if (!validPhone(lead.phone)) return { tone: "warn", label: "No valid phone" };
-  return { tone: "ok", label: "Callable" };
+  if (lead.archivedAt) return { tone: "bad", label: "Archived" };
+  if (lead.dnc) return { tone: "bad", label: "Do not contact" };
+  if (lead.phone) return { tone: "ok", label: "Phone on file" };
+  if (lead.email) return { tone: "warn", label: "Email only" };
+  return { tone: "warn", label: "No contact yet" };
 }
 
 export function uid(prefix: string) {

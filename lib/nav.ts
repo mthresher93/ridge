@@ -1,19 +1,26 @@
-export const NAV = [
-  { href: "/", label: "Home", hint: "00" },
-  { href: "/offers", label: "Offers", hint: "01" },
-  { href: "/proof", label: "Proof", hint: "02" },
-  { href: "/people", label: "Contacts", hint: "03" },
-  { href: "/callbacks", label: "Follow-up", hint: "04" },
-  { href: "/appointments", label: "Appointments", hint: "05" },
-  { href: "/floor", label: "Dialer", hint: "06" },
-  { href: "/design", label: "Design", hint: "07" },
-  { href: "/map", label: "Map", hint: "08" },
-  { href: "/board", label: "Pipeline", hint: "09" },
-  { href: "/numbers", label: "Reports", hint: "10" },
-  { href: "/money", label: "Revenue", hint: "11" },
-  { href: "/analytics", label: "Analytics", hint: "12" },
-  { href: "/studio", label: "Studio", hint: "13" },
-  { href: "/investment", label: "Investment", hint: "14" },
-  { href: "/ads", label: "Ads", hint: "15" },
-  { href: "/settings", label: "Settings", hint: "16" },
+export type NavItem = { href: string; label: string };
+
+export type NavGroup = { id: string; label: string; items: NavItem[] };
+
+export const DESK_NAV: NavItem[] = [
+  { href: "/", label: "Desk" },
+  { href: "/discover", label: "Discover" },
+  { href: "/people", label: "Clients" },
+  { href: "/outreach", label: "Outreach" },
+  { href: "/callbacks", label: "Follow-ups" },
+  { href: "/board", label: "Pipeline" },
+  { href: "/shipments", label: "Shipments" },
 ];
+
+export const MORE_NAV: NavItem[] = [
+  { href: "/accounts", label: "Accounts" },
+  { href: "/analytics", label: "Analytics" },
+  { href: "/copilot", label: "AI Copilot" },
+];
+
+export const NAV_GROUPS: NavGroup[] = [
+  { id: "desk", label: "Desk", items: DESK_NAV },
+  { id: "more", label: "More", items: MORE_NAV },
+];
+
+export const NAV: NavItem[] = [...DESK_NAV, ...MORE_NAV, { href: "/settings", label: "Settings" }];

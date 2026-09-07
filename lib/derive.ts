@@ -1,9 +1,10 @@
 import type { Opportunity, Urgency, Workspace } from "./types";
-import { CLOSED_STAGES } from "./stages";
+import { CLOSED_STAGES, WON_STAGES } from "./stages";
 import { daysBetween } from "./format";
+import { funnelCounts, outreachQueue, shipmentMargin } from "./freight";
 
 export function isOpen(stage: string) {
-  return !CLOSED_STAGES.has(stage) && stage !== "PTO";
+  return !CLOSED_STAGES.has(stage);
 }
 
 export function opportunityUrgency(opp: Opportunity, now = Date.now()): Urgency {
@@ -22,16 +23,17 @@ export function derive(workspace: Workspace, now = Date.now()) {
     (sum, opp) => sum + ((Number(opp.value) || 0) * (Number(opp.probability) || 0)) / 100,
     0,
   );
-  const won = workspace.opportunities.filter((opp) => opp.stage === "Closed Won" || opp.stage === "PTO");
+  const won = workspace.opportunities.filter((opp) => WON_STAGES.has(opp.stage));
   const wonValue = won.reduce((sum, opp) => sum + (Number(opp.value) || 0), 0);
 
+  const archived = new Set(workspace.leads.filter((lead) => lead.archivedAt).map((lead) => lead.id));
   const dueCallbacks = workspace.callbacks.filter(
-    (item) => item.status === "open" && Date.parse(item.dueAt) <= now + 86400000,
+    (item) => item.status === "open" && !archived.has(item.leadId) && Date.parse(item.dueAt) <= now + 86400000,
   );
   const overdueCallbacks = workspace.callbacks.filter(
-    (item) => item.status === "open" && Date.parse(item.dueAt) < now,
+    (item) => item.status === "open" && !archived.has(item.leadId) && Date.parse(item.dueAt) < now,
   );
-  const callable = workspace.leads.filter((lead) => !lead.dnc && lead.consent === "verified" && lead.phone);
+  const callable = workspace.leads.filter((lead) => !lead.archivedAt && !lead.dnc && (lead.status === "Discovered" || lead.status === "Ready to Contact"));
 
   const upcoming = workspace.appointments
     .filter((item) => !["cancelled", "completed", "no-show"].includes(item.status) && Date.parse(item.startsAt) >= now - 3600000)
@@ -46,9 +48,27 @@ export function derive(workspace: Workspace, now = Date.now()) {
   const stalled = open.filter((opp) => opportunityUrgency(opp, now) === "critical");
   const attention = open.filter((opp) => opportunityUrgency(opp, now) === "attention");
 
-  const attempts = workspace.kpiEvents.filter((event) => event.type === "dial_attempt").length;
-  const connected = workspace.kpiEvents.filter((event) => event.type === "connected_call").length;
-  const sets = workspace.kpiEvents.filter((event) => event.type === "appointment_set").length;
+  const attempts = workspace.kpiEvents.filter((event) => event.type === "dial_attempt" || event.type === "call" || event.type === "message_sent").length;
+  const connected = workspace.kpiEvents.filter((event) => event.type === "connected_call" || event.type === "reply").length;
+  const sets = workspace.kpiEvents.filter((event) => event.type === "appointment_set" || event.type === "quote_requested").length;
+  const funnel = funnelCounts(workspace);
+  const shipments = workspace.shipments || [];
+  const margin = shipments.filter((item) => item.status !== "Canceled").reduce((sum, item) => sum + shipmentMargin(item.customerRate, item.carrierRate), 0);
+  const messages = workspace.kpiEvents.filter((event) => event.type === "message_sent").length;
+  const replies = workspace.kpiEvents.filter((event) => event.type === "reply").length;
+  const quotes = (workspace.quotes || []).length;
+  const loads = shipments.filter((item) => !["Quote", "Canceled"].includes(item.status)).length;
+  const topProspects = [...workspace.leads]
+    .filter((lead) => !lead.archivedAt)
+    .sort((a, b) => (b.freightScore || 0) - (a.freightScore || 0))
+    .slice(0, 8);
+  const quoteRequests = workspace.leads.filter((lead) => !lead.archivedAt && /Quote/.test(lead.status));
+  const interested = workspace.leads.filter((lead) => !lead.archivedAt && (lead.status === "Replied" || lead.status === "Qualified" || lead.status === "Contact Info Obtained"));
+  const hotNew = [...workspace.leads]
+    .filter((lead) => !lead.archivedAt && (lead.status === "Discovered" || lead.status === "Ready to Contact"))
+    .sort((a, b) => (b.freightScore || 0) - (a.freightScore || 0))
+    .slice(0, 6);
+  const attentionShipments = shipments.filter((item) => ["Carrier Needed", "Problem", "Quote"].includes(item.status));
 
   return {
     open,
@@ -68,6 +88,17 @@ export function derive(workspace: Workspace, now = Date.now()) {
     connectRate: attempts ? Math.round((connected / attempts) * 100) : 0,
     setRate: attempts ? Math.round((sets / attempts) * 100) : 0,
     coverage: open.length ? Math.round((open.filter((opp) => opp.nextAction).length / open.length) * 100) : 0,
+    funnel,
+    margin,
+    messages,
+    replies,
+    quotes,
+    loads,
+    topProspects,
+    quoteRequests,
+    interested,
+    hotNew,
+    attentionShipments,
   };
 }
 
@@ -116,43 +147,83 @@ export function floorWindow(now = new Date(), window: { start?: string; end?: st
 }
 
 export function topMove(workspace: Workspace, now = Date.now()) {
-  const { overdueCallbacks, dueCallbacks, stalled, todaySits } = derive(workspace, now);
+  const { overdueCallbacks, dueCallbacks, stalled } = derive(workspace, now);
   const overdue = overdueCallbacks[0];
   if (overdue) {
     const lead = workspace.leads.find((item) => item.id === overdue.leadId);
     return {
-      kicker: "Overdue callback",
-      title: lead?.name || "Unknown lead",
+      kicker: "Overdue follow-up",
+      title: lead?.name || "Unknown client",
       reason: overdue.reason,
-      href: "/floor",
-      cta: "Open the dialer",
+      href: "/callbacks",
+      cta: "Open follow-ups",
       leadId: overdue.leadId,
     };
   }
-  const sit = todaySits[0];
-  if (sit) {
-    const lead = workspace.leads.find((item) => item.id === sit.leadId);
+
+  const unlabeled = workspace.leads.find((lead) => !lead.archivedAt && !lead.label);
+  if (unlabeled) {
     return {
-      kicker: "Sit today",
-      title: lead?.name || "Unlinked appointment",
-      reason: `${sit.type} · ${sit.closer} closer`,
-      href: "/floor",
-      cta: "Prep the sit",
-      leadId: sit.leadId,
+      kicker: "Label this client",
+      title: unlabeled.name,
+      reason: "You decide if they are a dealer, private seller, auction, rental, or shipper. Lumen will not guess.",
+      href: `/people?id=${unlabeled.id}`,
+      cta: "Open and label",
+      leadId: unlabeled.id,
     };
   }
+
+  const nextMessage = outreachQueue(workspace.leads)[0];
+  if (nextMessage) {
+    return {
+      kicker: "Send a message",
+      title: nextMessage.name,
+      reason: nextMessage.scoreWhy || "Copy the opener. You hit send on the listing or the dealer’s published number.",
+      href: "/outreach",
+      cta: "Open outreach",
+      leadId: nextMessage.id,
+    };
+  }
+
   const due = dueCallbacks[0];
   if (due) {
     const lead = workspace.leads.find((item) => item.id === due.leadId);
     return {
       kicker: "Due now",
-      title: lead?.name || "Unknown lead",
+      title: lead?.name || "Unknown client",
       reason: due.reason,
-      href: "/people",
-      cta: "Open the record",
+      href: "/callbacks",
+      cta: "Work the queue",
       leadId: due.leadId,
     };
   }
+
+  const waitingQuote = workspace.leads.find(
+    (lead) => !lead.archivedAt && ["Replied", "Qualified", "Contact Info Obtained"].includes(lead.status),
+  );
+  if (waitingQuote) {
+    return {
+      kicker: "They engaged",
+      title: waitingQuote.name,
+      reason: "Quote only after you have a real rate. Leave money blank until then.",
+      href: `/people?id=${waitingQuote.id}`,
+      cta: "Open client",
+      leadId: waitingQuote.id,
+    };
+  }
+
+  const needRate = workspace.opportunities.find((item) => /Quote/.test(item.stage) && !item.value);
+  if (needRate) {
+    return {
+      kicker: "Rate unset",
+      title: needRate.name,
+      reason: "A quote is open with no customer rate. Enter the number they agreed to, or leave it blank.",
+      href: "/board",
+      cta: "Open pipeline",
+      leadId: needRate.leadId,
+    };
+  }
+
   const stall = stalled[0];
   if (stall) {
     return {
@@ -164,12 +235,13 @@ export function topMove(workspace: Workspace, now = Date.now()) {
       leadId: stall.leadId,
     };
   }
+
   return {
-    kicker: "Clear deck",
-    title: "No overdue work",
-    reason: "Pipeline is covered. Take the next inbound or raise the dial target.",
-    href: "/people",
-    cta: "Work the list",
+    kicker: "Hunt",
+    title: "No clients waiting",
+    reason: "Open a live listing, capture it, label it, then you send the message.",
+    href: "/discover",
+    cta: "Go to Discover",
     leadId: null as string | null,
   };
 }

@@ -4,17 +4,18 @@ import { useEffect, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { settingsWithDefaults, type Accent, type Density, type ScriptModeSetting, type Settings } from "@/lib/types";
 
-type SettingsTab = "account" | "dialer" | "display" | "workspace";
+type SettingsTab = "account" | "dialer" | "display" | "workspace" | "ai";
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "account", label: "Account" },
-  { id: "dialer", label: "Dialer" },
+  { id: "ai", label: "AI" },
+  { id: "dialer", label: "Calling" },
   { id: "display", label: "Display" },
   { id: "workspace", label: "Workspace" },
 ];
 
 const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
-  { id: "cyan", label: "Ember", swatch: "#e24a12" },
+  { id: "cyan", label: "Brass", swatch: "#b0893a" },
   { id: "violet", label: "Violet", swatch: "#7c4dff" },
   { id: "amber", label: "Amber", swatch: "#ffab00" },
   { id: "teal", label: "Teal", swatch: "#00bfa5" },
@@ -23,16 +24,37 @@ const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
 type Draft = Required<Settings>;
 
 export function SettingsView() {
-  const { workspace, setWorkspace, reset } = useWorkspace();
+  const { workspace, setWorkspace, reset, reload } = useWorkspace();
   const [tab, setTab] = useState<SettingsTab>("account");
   const [draft, setDraft] = useState<Draft>(() => settingsWithDefaults(workspace.settings));
   const [savedFlash, setSavedFlash] = useState(false);
   const [showRestore, setShowRestore] = useState(false);
   const [phoneLink, setPhoneLink] = useState<{ ok: boolean; detail: string } | null>(null);
+  const [backupInfo, setBackupInfo] = useState<{ count: number; latestAt: string | null } | null>(null);
+  const [backupBusy, setBackupBusy] = useState(false);
+  const [backupMsg, setBackupMsg] = useState("");
+  const [aiStatus, setAiStatus] = useState<{ ready?: boolean; provider?: string; ollama?: { detail?: string }; openrouter?: { detail?: string }; pull?: string; bookmarklet?: string } | null>(null);
+  const [aiMsg, setAiMsg] = useState("");
 
   useEffect(() => {
     setDraft(settingsWithDefaults(workspace.settings));
   }, [workspace.settings]);
+
+  useEffect(() => {
+    if (tab !== "ai") return;
+    fetch("/api/ai/status")
+      .then((res) => res.json())
+      .then((json) => setAiStatus(json))
+      .catch(() => setAiStatus({ ready: false, provider: "rules" }));
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab !== "workspace") return;
+    fetch("/api/workspace/backups")
+      .then((res) => res.json())
+      .then((json) => setBackupInfo({ count: Number(json.count) || 0, latestAt: json.latestAt || null }))
+      .catch(() => setBackupInfo({ count: 0, latestAt: null }));
+  }, [tab, workspace.updatedAt]);
 
   useEffect(() => {
     if (tab !== "workspace" || phoneLink) return;
@@ -73,8 +95,8 @@ export function SettingsView() {
   const counts = {
     contacts: workspace.leads.length,
     calls: (workspace.callLogs || []).length,
-    projects: Object.keys(workspace.designs || {}).length,
-    proposals: Object.keys(workspace.proposals || {}).length,
+    listings: (workspace.listings || []).length,
+    shipments: (workspace.shipments || []).length,
   };
 
   return (
@@ -112,18 +134,78 @@ export function SettingsView() {
       <form className="settings-body" onSubmit={save}>
         {tab === "account" ? (
           <section className="st-list">
-            <Row label="Your name" hint="Used on call notes, appointments, and follow-ups.">
+            <Row label="Your name" hint="Used on notes, follow-ups, and call logs.">
               <input className="az-input" value={draft.operator} onChange={(e) => set("operator", e.target.value)} />
             </Row>
-            <Row label="Default owner" hint="Assigned when you add a contact or a deal.">
+            <Row label="Default owner" hint="Assigned when you add a prospect or opportunity.">
               <input className="az-input" value={draft.defaultOwner} onChange={(e) => set("defaultOwner", e.target.value)} />
             </Row>
+            <Row label="Session" hint="Sign out of this browser when a workspace password is set.">
+              <button
+                type="button"
+                className="az-btn"
+                onClick={async () => {
+                  await fetch("/api/auth/logout", { method: "POST" });
+                  window.location.assign("/login");
+                }}
+              >
+                Sign out
+              </button>
+            </Row>
+          </section>
+        ) : null}
+
+        {tab === "ai" ? (
+          <section className="st-list">
+            <Row label="Classifier" hint={aiStatus?.ready ? "Used when you paste or bookmarklet-capture a listing." : "Local rules run until Ollama or OpenRouter is up."}>
+              <em className={aiStatus?.ready ? "ok" : ""}>{aiStatus?.provider || "checking"}</em>
+            </Row>
+            <p className="st-fine">{aiStatus?.ollama?.detail || "Checking Ollama…"}</p>
+            <p className="st-fine">{aiStatus?.openrouter?.detail}</p>
+            <Row label="Install Qwen" hint="Free, local, one user. qwen3-coder:30b is already on this machine.">
+              <button
+                type="button"
+                className="az-btn"
+                onClick={async () => {
+                  const cmd = aiStatus?.pull || "ollama pull qwen3-coder:30b";
+                  try {
+                    await navigator.clipboard.writeText(cmd);
+                    setAiMsg(`Copied: ${cmd}`);
+                  } catch {
+                    setAiMsg(cmd);
+                  }
+                }}
+              >
+                Copy ollama pull
+              </button>
+            </Row>
+            <Row label="Capture bookmarklet" hint="Save as a bookmark. Open a listing you are allowed to view, click the bookmark, it posts into Discover.">
+              <button
+                type="button"
+                className="az-btn"
+                onClick={async () => {
+                  if (!aiStatus?.bookmarklet) return;
+                  try {
+                    await navigator.clipboard.writeText(aiStatus.bookmarklet);
+                    setAiMsg("Bookmarklet copied. Paste it into a bookmark URL.");
+                  } catch {
+                    setAiMsg("Clipboard blocked.");
+                  }
+                }}
+              >
+                Copy bookmarklet
+              </button>
+            </Row>
+            {aiMsg ? <p className="rec-import-msg">{aiMsg}</p> : null}
+            <p className="st-fine">
+              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Lumen never logs into Facebook for you.
+            </p>
           </section>
         ) : null}
 
         {tab === "dialer" ? (
           <section className="st-list">
-            <Row label="Daily dial goal" hint="Shown on the Dialer pace bar.">
+            <Row label="Daily outreach goal" hint="Personal pace target, not a dialer quota.">
               <input
                 className="az-input st-narrow"
                 type="number"
@@ -172,14 +254,14 @@ export function SettingsView() {
               <Toggle on={draft.confirmBeforeDial} onChange={(v) => set("confirmBeforeDial", v)} />
             </Row>
             <p className="st-fine">
-              Microphone and speaker are under Audio on the Dialer. Contacts without verified consent or on the DNC list stay blocked.
+              Microphone and speaker stay on the legacy dialer if you still use it. Outreach is copy-and-send. Log calls from the prospect record.
             </p>
           </section>
         ) : null}
 
         {tab === "display" ? (
           <section className="st-list">
-            <Row label="Density" hint="Compact tightens lists on Dialer, Pipeline, Contacts, and Design.">
+            <Row label="Density" hint="Compact tightens lists on Clients, Pipeline, and Outreach.">
               <div className="st-seg" role="radiogroup">
                 {(["comfortable", "compact"] as Density[]).map((d) => (
                   <button
@@ -218,17 +300,15 @@ export function SettingsView() {
         {tab === "workspace" ? (
           <section className="st-list">
             <p className="st-fine">
-              {counts.contacts} contacts · {counts.calls} calls · {counts.projects} projects · {counts.proposals} proposals
+              {counts.contacts} prospects · {counts.listings} listings · {counts.shipments} shipments · {counts.calls} logged calls
             </p>
             <div className="st-ledger">
               {[
                 ["Phone", phoneLink ? (phoneLink.ok ? "Connected" : "Not connected") : "Checking…", phoneLink?.detail || "Checking phone connection."],
-                ["Local save", "On", "Contacts, pipeline, projects, and call history stay on this computer."],
-                ["Maps", "On", "Street and satellite tiles in Design and Map."],
-                ["Address lookup", "On", "City list first, then OpenStreetMap."],
-                ["Studio", "Local", "Drafts from the record only. Nothing is sent out."],
-                ["Ads", "Off", "Campaigns stay drafts. No spend."],
-                ["Payments", "Off", "Revenue is recorded pipeline, not a processor."],
+                ["Local save", "On", "Clients, pipeline, listings, follow-ups, and shipments stay on this computer."],
+                ["AI scoring", "Local", "Freight scores and openers are rule-based. No tokens spent unless you add a key later."],
+                ["Capture API", "On", "POST /api/prospects/capture for a future browser extension on pages you already opened."],
+                ["Payments", "Off", "Margin is recorded on shipments, not a processor."],
               ].map(([name, state, detail]) => (
                 <div key={name} className="st-ledger-row">
                   <div>
@@ -239,27 +319,53 @@ export function SettingsView() {
                 </div>
               ))}
             </div>
-            <Row label="Backup" hint="Download contacts, call history, follow-ups, projects, proposals, and these settings.">
-              <button type="button" className="az-btn" onClick={exportJson}>
-                Export
-              </button>
+            <Row label="Backup" hint={backupInfo?.latestAt ? `${backupInfo.count} snapshots. Latest ${new Date(backupInfo.latestAt).toLocaleString()}.` : "Download a JSON copy, or restore the last automatic snapshot."}>
+              <span className="st-row-ctrl" style={{ display: "flex", gap: 8 }}>
+                <button type="button" className="az-btn" onClick={exportJson}>
+                  Export
+                </button>
+                <button
+                  type="button"
+                  className="az-btn"
+                  disabled={backupBusy || !backupInfo?.count}
+                  onClick={async () => {
+                    if (!confirm("Restore the last automatic backup? Unsaved edits since that snapshot will be replaced.")) return;
+                    setBackupBusy(true);
+                    setBackupMsg("");
+                    try {
+                      const res = await fetch("/api/workspace/backups", { method: "POST" });
+                      const json = await res.json();
+                      if (!res.ok) throw new Error(json.error || "Restore failed");
+                      await reload();
+                      setBackupMsg("Restored the last snapshot.");
+                    } catch (error) {
+                      setBackupMsg(error instanceof Error ? error.message : "Restore failed");
+                    } finally {
+                      setBackupBusy(false);
+                    }
+                  }}
+                >
+                  {backupBusy ? "Restoring…" : "Restore last snapshot"}
+                </button>
+              </span>
             </Row>
-            <Row label="Sample data" hint="Replaces everything in this workspace.">
+            {backupMsg ? <p className="rec-import-msg">{backupMsg}</p> : null}
+            <Row label="Clear workspace" hint="Deletes every client, listing, and quote. No sample data is loaded back.">
               <button type="button" className="st-disclose" onClick={() => setShowRestore((v) => !v)}>
                 {showRestore ? "Hide" : "Show"}
               </button>
             </Row>
             {showRestore ? (
               <div className="st-danger">
-                <p>Export first if you need a copy. This cannot be undone.</p>
+                <p>Export first if you need a copy. This cannot be undone. The desk will be empty.</p>
                 <button
                   type="button"
                   className="az-btn danger"
                   onClick={() => {
-                    if (confirm("Restore sample data? This replaces the current workspace.")) reset();
+                    if (confirm("Clear this workspace? All clients and quotes will be deleted. No mock data will be restored.")) reset();
                   }}
                 >
-                  Restore sample data
+                  Clear workspace
                 </button>
               </div>
             ) : null}

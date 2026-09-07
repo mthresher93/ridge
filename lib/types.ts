@@ -29,6 +29,176 @@ export type Lead = {
   homeowner: string;
   createdAt: string;
   updatedAt: string;
+  archivedAt?: string;
+  company?: string;
+  website?: string;
+  listingUrl?: string;
+  sellerUrl?: string;
+  category?: string;
+  equipmentType?: string;
+  freightScore?: number;
+  scoreConfidence?: ScoreConfidence;
+  scoreWhy?: string;
+  freightType?: FreightType;
+  recurringPotential?: RecurringPotential;
+  lastContactAt?: string;
+  tags?: string[];
+  askingPrice?: number | null;
+  origin?: string;
+  destination?: string;
+  listingTitle?: string;
+  listingDescription?: string;
+  companyId?: string;
+  dimensions?: string;
+  weight?: string;
+  quantity?: number | null;
+  label?: string;
+};
+
+export type FreightType =
+  | "LTL"
+  | "FTL"
+  | "Flatbed"
+  | "Hotshot"
+  | "Dry Van"
+  | "Reefer"
+  | "Vehicle Transport"
+  | "Specialized / Oversized"
+  | "Unknown";
+
+export type ScoreConfidence = "HIGH" | "MEDIUM" | "LOW";
+export type RecurringPotential = "High" | "Medium" | "Low";
+
+export type Listing = {
+  id: string;
+  leadId: string;
+  companyId?: string;
+  source: string;
+  sourceUrl: string;
+  listingId?: string;
+  title: string;
+  description: string;
+  sellerName: string;
+  sellerUrl: string;
+  city: string;
+  state: string;
+  askingPrice: number | null;
+  category: string;
+  equipmentType: string;
+  dimensions: string;
+  weight: string;
+  quantity: number | null;
+  pickupLocation: string;
+  destination: string;
+  phone: string;
+  email: string;
+  website: string;
+  notes: string;
+  imageUrls: string[];
+  discoveredAt: string;
+  priceHistory: { price: number; at: string }[];
+};
+
+export type Company = {
+  id: string;
+  name: string;
+  website: string;
+  phone: string;
+  email: string;
+  city: string;
+  state: string;
+  sellerUrl: string;
+  listingCount: number;
+  categories: string[];
+  avgItemValue: number;
+  recurringCandidate: boolean;
+  notes: string;
+  createdAt: string;
+};
+
+export type Quote = {
+  id: string;
+  leadId: string;
+  opportunityId?: string;
+  origin: string;
+  destination: string;
+  commodity: string;
+  equipmentType: string;
+  customerRate: number;
+  carrierCost: number;
+  status: string;
+  notes: string;
+  createdAt: string;
+};
+
+export type ShipmentStatus =
+  | "Quote"
+  | "Booked"
+  | "Carrier Needed"
+  | "Carrier Booked"
+  | "Pickup Scheduled"
+  | "In Transit"
+  | "Delivered"
+  | "Paid"
+  | "Problem"
+  | "Canceled";
+
+export type Shipment = {
+  id: string;
+  leadId: string;
+  accountId?: string;
+  quoteId?: string;
+  customer: string;
+  contact: string;
+  origin: string;
+  destination: string;
+  pickupDate: string;
+  deliveryDate: string;
+  commodity: string;
+  weight: string;
+  dimensions: string;
+  equipmentType: string;
+  carrier: string;
+  carrierRate: number;
+  customerRate: number;
+  status: ShipmentStatus;
+  reference: string;
+  notes: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
+export type SavedSearch = {
+  id: string;
+  name: string;
+  keywords: string;
+  source: string;
+  location: string;
+  category: string;
+  minValue: number | null;
+  minFreightScore: number | null;
+  status: string;
+  huntUrl?: string;
+  createdAt: string;
+};
+
+export type FreightAnalysis = {
+  leadId: string;
+  listingId?: string;
+  score: number;
+  confidence: ScoreConfidence;
+  why: string;
+  freightType: FreightType;
+  recurringPotential: RecurringPotential;
+  known: string[];
+  estimates: string[];
+  unknown: string[];
+  openerCasual: string;
+  openerDirect: string;
+  openerBusiness: string;
+  openerShort: string;
+  openerFollowUp: string;
+  analyzedAt: string;
 };
 
 export type Point = { x: number; y: number };
@@ -177,6 +347,10 @@ export type Opportunity = {
   updatedAt: string;
   stageEnteredAt: string;
   history: StageHistory[];
+  origin?: string;
+  destination?: string;
+  freightType?: string;
+  commodity?: string;
 };
 
 export type Callback = {
@@ -265,8 +439,15 @@ export type Workspace = {
   designs: Record<string, RoofDesign>;
   proposals: Record<string, Proposal>;
   callLogs: CallLog[];
+  listings: Listing[];
+  companies: Company[];
+  quotes: Quote[];
+  shipments: Shipment[];
+  savedSearches: SavedSearch[];
+  analyses: FreightAnalysis[];
   settings: Settings;
   updatedAt: string;
+  revision?: number;
 };
 
 export type Urgency = "critical" | "attention" | "healthy";

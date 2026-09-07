@@ -3,19 +3,22 @@ import type { DispositionId } from "./dispositions";
 import { nowIso, uid } from "./format";
 
 const STAGE_BY_DISPOSITION: Partial<Record<DispositionId, string>> = {
-  appointment_set: "Appointment Set",
-  callback_scheduled: "Promising Callback",
+  appointment_set: "Quote Requested",
+  callback_scheduled: "Replied",
   qualified_lead: "Qualified",
-  not_interested: "Closed Lost",
-  disqualified: "Closed Lost",
+  not_interested: "Load Lost",
+  disqualified: "Load Lost",
 };
 
 const PROBABILITY: Record<string, number> = {
-  "Appointment Set": 55,
-  "Promising Callback": 35,
+  "Quote Requested": 45,
+  Replied: 30,
   Qualified: 40,
-  "Closed Lost": 0,
-  Proposal: 60,
+  "Load Lost": 0,
+  "Quote Sent": 50,
+  Negotiating: 60,
+  "Load Won": 100,
+  "Recurring Account": 100,
 };
 
 /** Move or create the Board opportunity when a dialer wrap changes stage. */
@@ -44,7 +47,7 @@ export function syncOpportunityFromWrap(
             name: lead.name,
             property: lead.property || item.property,
             probability: PROBABILITY[stage] ?? item.probability,
-            value: item.value || lead.estimatedValue || 0,
+            value: item.value || 0,
             stageEnteredAt: stamp,
             updatedAt: stamp,
             history: [{ from: item.stage, to: stage, at: stamp, source }, ...item.history],
@@ -59,7 +62,7 @@ export function syncOpportunityFromWrap(
     name: lead.name,
     property: lead.property,
     stage,
-    value: lead.estimatedValue || 0,
+    value: 0,
     probability: PROBABILITY[stage] ?? 20,
     owner: lead.owner || workspace.settings.defaultOwner,
     source: lead.source || "Dialer",
@@ -69,7 +72,7 @@ export function syncOpportunityFromWrap(
     createdAt: stamp,
     updatedAt: stamp,
     stageEnteredAt: stamp,
-    history: [{ from: "New Lead", to: stage, at: stamp, source }],
+    history: [{ from: "Discovered", to: stage, at: stamp, source }],
   };
   return [created, ...workspace.opportunities];
 }
@@ -97,12 +100,12 @@ export function createLinkedOpportunity(workspace: Workspace, leadId: string, na
     leadId,
     name,
     property,
-    stage: "New Lead",
+    stage: "Discovered",
     value: 0,
     probability: 10,
     owner: workspace.settings.defaultOwner,
     source: "Manual",
-    nextAction: "Verify consent, then first dial",
+    nextAction: "Label this client, then send the opener",
     expectedClose: "",
     notes: "",
     createdAt: stamp,
@@ -124,6 +127,10 @@ export function cascadeDeleteLead(workspace: Workspace, leadId: string): Workspa
     callbacks: workspace.callbacks.filter((item) => item.leadId !== leadId),
     appointments: workspace.appointments.filter((item) => item.leadId !== leadId),
     callLogs: (workspace.callLogs || []).filter((item) => item.leadId !== leadId),
+    listings: (workspace.listings || []).filter((item) => item.leadId !== leadId),
+    quotes: (workspace.quotes || []).filter((item) => item.leadId !== leadId),
+    shipments: (workspace.shipments || []).filter((item) => item.leadId !== leadId),
+    analyses: (workspace.analyses || []).filter((item) => item.leadId !== leadId),
     designs,
     proposals,
     updatedAt: nowIso(),

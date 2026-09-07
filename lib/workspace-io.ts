@@ -2,73 +2,146 @@ import { prisma } from "./prisma";
 import { azimuthToConduit, mergeConduitIntoAzimuth, parseConduitCrm } from "./conduit-bridge";
 import { readJsonStore, writeJsonStore } from "./json-store";
 import { hydrateSolar, persistSolar } from "./persist";
-import { createSeed, isWorkspace, normalizeWorkspace } from "./seed";
+import { emptyWorkspace, isWorkspace, normalizeWorkspace } from "./seed";
 import type { Workspace } from "./types";
+import { logError } from "./http";
+import { uid } from "./format";
 
 const AZIMUTH_ID = "azimuth";
 const EXTRA_ID = "conduit-ls";
 const PRODUCT_ID = "conduit-product";
 
+export class WorkspaceConflictError extends Error {
+  workspace: Workspace;
+  updatedAt: string;
+  constructor(workspace: Workspace, updatedAt: string) {
+    super("Workspace was updated elsewhere. Reloaded the saved copy.");
+    this.name = "WorkspaceConflictError";
+    this.workspace = workspace;
+    this.updatedAt = updatedAt;
+  }
+}
+
+export class WorkspaceCorruptError extends Error {
+  constructor(message = "Workspace file is unreadable. Restore a backup from Settings.") {
+    super(message);
+    this.name = "WorkspaceCorruptError";
+  }
+}
+
+async function backupWorkspace(payload: string, reason: string) {
+  try {
+    await prisma.workspaceBackup.create({
+      data: { id: uid("bak"), payload, reason },
+    });
+    const extras = await prisma.workspaceBackup.findMany({ orderBy: { createdAt: "desc" }, skip: 10, select: { id: true } });
+    if (extras.length) {
+      await prisma.workspaceBackup.deleteMany({ where: { id: { in: extras.map((row) => row.id) } } });
+    }
+  } catch (error) {
+    logError("backup", error);
+  }
+}
+
+async function latestBackup(): Promise<Workspace | null> {
+  try {
+    const row = await prisma.workspaceBackup.findFirst({ orderBy: { createdAt: "desc" } });
+    if (!row) return null;
+    const parsed = JSON.parse(row.payload) as unknown;
+    if (!isWorkspace(parsed)) return null;
+    return normalizeWorkspace(parsed);
+  } catch {
+    return null;
+  }
+}
+
 export async function loadAzimuth(): Promise<{ workspace: Workspace; updatedAt: string }> {
   const row = await prisma.workspaceStore.findUnique({ where: { id: AZIMUTH_ID } });
   if (!row) {
-    const workspace = normalizeWorkspace(createSeed());
+    const workspace = normalizeWorkspace(emptyWorkspace());
+    workspace.revision = 1;
     const created = await prisma.workspaceStore.create({
       data: { id: AZIMUTH_ID, payload: JSON.stringify(workspace) },
     });
-    await persistSolar(workspace).catch(() => {});
+    await persistSolar(workspace).catch((error) => logError("persistSolar", error));
     return { workspace, updatedAt: created.updatedAt.toISOString() };
   }
 
   try {
     const parsed = JSON.parse(row.payload) as unknown;
     if (!isWorkspace(parsed)) {
-      const workspace = normalizeWorkspace(createSeed());
-      const updated = await prisma.workspaceStore.update({
-        where: { id: AZIMUTH_ID },
-        data: { payload: JSON.stringify(workspace) },
-      });
-      await persistSolar(workspace).catch(() => {});
-      return { workspace, updatedAt: updated.updatedAt.toISOString() };
+      const restored = await latestBackup();
+      if (restored) return { workspace: restored, updatedAt: row.updatedAt.toISOString() };
+      throw new WorkspaceCorruptError();
     }
-    const workspace = await hydrateSolar(normalizeWorkspace(parsed));
-    await persistSolar(workspace).catch((error) => console.error("persistSolar failed", error));
-    return { workspace, updatedAt: row.updatedAt.toISOString() };
-  } catch {
-    const workspace = normalizeWorkspace(createSeed());
-    const updated = await prisma.workspaceStore.update({
-      where: { id: AZIMUTH_ID },
-      data: { payload: JSON.stringify(workspace) },
-    });
-    await persistSolar(workspace).catch(() => {});
-    return { workspace, updatedAt: updated.updatedAt.toISOString() };
+    const workspace = normalizeWorkspace(parsed as Workspace);
+    if (workspace.version >= 3) {
+      const hydrated = await hydrateSolar(workspace);
+      await persistSolar(hydrated).catch((error) => logError("persistSolar", error));
+      return { workspace: hydrated, updatedAt: row.updatedAt.toISOString() };
+    }
+    const migrated = { ...workspace, version: 3 };
+    const saved = await saveAzimuth(migrated, { force: true });
+    return { workspace: saved.workspace, updatedAt: saved.updatedAt };
+  } catch (error) {
+    if (error instanceof WorkspaceCorruptError) throw error;
+    logError("loadAzimuth", error);
+    const restored = await latestBackup();
+    if (restored) return { workspace: restored, updatedAt: row.updatedAt.toISOString() };
+    throw new WorkspaceCorruptError();
   }
 }
 
-export async function saveAzimuth(incoming: Workspace, opts?: { skipIfStale?: boolean }) {
+export async function saveAzimuth(incoming: Workspace, opts?: { force?: boolean }) {
   const normalized = normalizeWorkspace({
     ...incoming,
     updatedAt: incoming.updatedAt || new Date().toISOString(),
   });
+
   const existing = await prisma.workspaceStore.findUnique({ where: { id: AZIMUTH_ID } });
-  if (opts?.skipIfStale !== false && existing) {
+  if (existing && !opts?.force) {
     try {
-      const parsed = JSON.parse(existing.payload) as { updatedAt?: string };
-      if (parsed.updatedAt && Date.parse(normalized.updatedAt) + 1500 < Date.parse(parsed.updatedAt)) {
-        return { ignored: true as const, updatedAt: existing.updatedAt.toISOString(), workspace: normalized };
+      const parsed = JSON.parse(existing.payload) as Workspace;
+      const currentRev = Number(parsed.revision) || 0;
+      const incomingRev = Number(normalized.revision) || 0;
+      if (incomingRev < currentRev) {
+        throw new WorkspaceConflictError(normalizeWorkspace(parsed), existing.updatedAt.toISOString());
       }
-    } catch {
-      /* write anyway */
+    } catch (error) {
+      if (error instanceof WorkspaceConflictError) throw error;
     }
   }
+  if (existing) await backupWorkspace(existing.payload, "pre-save");
+
+  const next: Workspace = {
+    ...normalized,
+    revision: (Number(normalized.revision) || 0) + 1,
+    updatedAt: new Date().toISOString(),
+  };
 
   const row = await prisma.workspaceStore.upsert({
     where: { id: AZIMUTH_ID },
-    update: { payload: JSON.stringify(normalized) },
-    create: { id: AZIMUTH_ID, payload: JSON.stringify(normalized) },
+    update: { payload: JSON.stringify(next) },
+    create: { id: AZIMUTH_ID, payload: JSON.stringify(next) },
   });
-  await persistSolar(normalized).catch((error) => console.error("persistSolar failed", error));
-  return { ignored: false as const, updatedAt: row.updatedAt.toISOString(), workspace: normalized };
+  await persistSolar(next).catch((error) => logError("persistSolar", error));
+  return { ignored: false as const, updatedAt: row.updatedAt.toISOString(), workspace: next, revision: next.revision || 1 };
+}
+
+export async function restoreLatestBackup() {
+  const restored = await latestBackup();
+  if (!restored) throw new WorkspaceCorruptError("No backup available to restore.");
+  return saveAzimuth(restored, { force: true });
+}
+
+export async function backupMeta() {
+  try {
+    const count = await prisma.workspaceBackup.count();
+    const latest = await prisma.workspaceBackup.findFirst({ orderBy: { createdAt: "desc" }, select: { createdAt: true, reason: true } });
+    return { count, latestAt: latest?.createdAt.toISOString() || null, reason: latest?.reason || null };
+  } catch {
+    return { count: 0, latestAt: null, reason: null };
+  }
 }
 
 export async function extraStore(): Promise<Record<string, string>> {

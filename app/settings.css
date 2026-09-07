@@ -10,10 +10,12 @@
 
 .settings-desk {
   display: grid;
-  grid-template-rows: 32px 32px minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr);
   height: 100%;
   min-height: 0;
-  background: var(--bg);
+  padding: 10px;
+  gap: 8px;
+  background: var(--bg3);
   color: var(--tx);
 }
 
@@ -21,17 +23,19 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  min-height: 40px;
   padding: 0 12px;
-  background: var(--bg3);
-  border-bottom: 1px solid var(--br);
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
 }
 
 .settings-top h1 {
   margin: 0;
   font-family: var(--fh);
-  font-size: 15px;
+  font-size: 22px;
   font-weight: 600;
-  letter-spacing: 0;
+  letter-spacing: -0.03em;
   text-transform: none;
 }
 
@@ -61,9 +65,10 @@
   display: flex;
   align-items: center;
   gap: 2px;
-  padding: 0 10px;
-  border-bottom: 1px solid var(--br);
-  background: var(--bg);
+  padding: 0 8px;
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+  background: var(--panel);
 }
 
 .settings-tabs button {
@@ -72,6 +77,7 @@
   color: var(--tx4);
   min-height: 32px;
   padding: 0 12px;
+  border-radius: var(--radius-sm);
   font-size: 12px;
   font-weight: 600;
 }
@@ -83,7 +89,10 @@
 
 .settings-body {
   overflow: auto;
-  padding: 8px 0 24px;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
 }
 
 .st-list {
@@ -146,7 +155,7 @@
 .st-seg {
   display: inline-flex;
   border: 1px solid var(--br);
-  border-radius: 6px;
+  border-radius: var(--radius);
   overflow: hidden;
   background: var(--bg2);
 }
@@ -258,7 +267,7 @@
   align-items: center;
   gap: 6px;
   border: 1px solid var(--br);
-  border-radius: 6px;
+  border-radius: var(--radius-sm);
   background: var(--bg2);
   color: var(--tx3);
   padding: 0 10px 0 7px;

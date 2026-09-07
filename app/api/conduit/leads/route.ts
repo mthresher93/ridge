@@ -167,7 +167,7 @@ export async function POST(request: Request) {
         city: "",
         utility: "",
         monthlyBill: null,
-        status: "New Lead",
+        status: "Discovered",
         priority: "Medium",
         owner: workspace.settings.defaultOwner,
         source: item.sourceLabel,

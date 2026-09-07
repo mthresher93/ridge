@@ -3,8 +3,6 @@
 import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive } from "@/lib/derive";
-import { Station } from "./page-intro";
-import { Cockpit } from "./cockpit";
 
 export function AdsView() {
   const { workspace, loading } = useWorkspace();
@@ -38,36 +36,16 @@ export function AdsView() {
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading drafts…</div>;
 
   return (
-    <Station
-      n="15"
-      title="Ads"
-      lede={
-        <>
-          Local campaign drafts by city. <em>Zero live spend.</em> Current will not buy media or publish a claim without proof.
-        </>
-      }
-      chip="DRAFT · NO SPEND"
-    >
-      <Cockpit
-        kicker="AD CAMPAIGNS"
-        title="Campaign readiness cockpit"
-        blurb="Is a city even safe to draft before anyone talks about spend?"
-        stages={[
-          { n: "01", label: "Angle", p: "Hook and buyer pain.", pct: 79, detail: "Angle defines the promise and the target buyer." },
-          { n: "02", label: "Proof", p: "Claims are supported.", pct: proof ? 78 : 38, detail: "Proof prevents unsupported ad claims." },
-          { n: "03", label: "Creative", p: "Assets and variants.", pct: 64, detail: "Creative includes copy, stills, CTA, and landing fit." },
-          { n: "04", label: "Audience", p: "Demand on file.", pct: Math.min(99, 30 + count * 8), detail: "Audience is the recorded household count, not a purchased list." },
-          { n: "05", label: "Gate", p: "Human yes required.", pct: 90, detail: "No platform connect. Draft stays local." },
-        ]}
-        kpis={[
-          { l: "SPEND", v: "$0", p: "Live spend stays off." },
-          { l: "CITY", v: active || "—", p: `${count} leads on file.` },
-          { l: "CALL", v: `${callable}`, p: "Callable in this city." },
-          { l: "NEXT", v: proof ? "Draft" : "Proof", p: proof ? "Copy is safe to review." : "Need a named note." },
-        ]}
-      />
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Ads</h1>
+          <p>Drafts only · no live spend · {active || "no city"} · {count} leads · {callable} callable</p>
+        </div>
+      </header>
 
-      <div className="cd-grid" style={{ gridTemplateColumns: "220px minmax(0,1fr) 280px", marginTop: 16 }}>
+      <div className="desk-body">
+      <div className="cd-grid" style={{ gridTemplateColumns: "220px minmax(0,1fr) 280px" }}>
         <aside className="cd-glass" style={{ padding: 12 }}>
           <div className="cd-mono" style={{ marginBottom: 8 }}>
             Cities
@@ -97,10 +75,14 @@ export function AdsView() {
           </article>
         </section>
         <aside className="cd-glass" style={{ padding: 16 }}>
-          <div className="cd-mono">Honesty ledger</div>
+          <div className="cd-mono">Status</div>
           <div className="cd-row">
             <span>Live spend</span>
             <b>$0</b>
+          </div>
+          <div className="cd-row">
+            <span>Named notes in city</span>
+            <b>{proof ? "Yes" : "No"}</b>
           </div>
           <div className="cd-row">
             <span>Overdue callbacks</span>
@@ -115,6 +97,7 @@ export function AdsView() {
           </p>
         </aside>
       </div>
-    </Station>
+      </div>
+    </div>
   );
 }

@@ -1,121 +1,183 @@
 "use client";
 
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
-import { derive } from "@/lib/derive";
-import { Station } from "./page-intro";
+import { funnelCounts, shipmentMargin } from "@/lib/freight";
+import { money } from "@/lib/format";
 
 export function AnalyticsView() {
   const { workspace, loading } = useWorkspace();
-  const metrics = useMemo(() => derive(workspace), [workspace]);
+  const [source, setSource] = useState("all");
+  const [state, setState] = useState("all");
+  const [freightType, setFreightType] = useState("all");
 
-  const byType = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const event of workspace.kpiEvents) {
-      map.set(event.type, (map.get(event.type) || 0) + 1);
+  const leads = useMemo(() => {
+    return workspace.leads.filter((lead) => {
+      if (lead.archivedAt) return false;
+      if (source !== "all" && lead.source !== source) return false;
+      if (state !== "all" && lead.state !== state) return false;
+      if (freightType !== "all" && lead.freightType !== freightType) return false;
+      return true;
+    });
+  }, [workspace.leads, source, state, freightType]);
+
+  const scoped = useMemo(() => {
+    const leadIds = new Set(leads.map((item) => item.id));
+    return {
+      ...workspace,
+      leads,
+      quotes: (workspace.quotes || []).filter((item) => leadIds.has(item.leadId)),
+      shipments: (workspace.shipments || []).filter((item) => leadIds.has(item.leadId)),
+      kpiEvents: workspace.kpiEvents.filter((item) => !item.leadId || leadIds.has(item.leadId)),
+    };
+  }, [workspace, leads]);
+
+  const funnel = funnelCounts(scoped);
+  const shipments = scoped.shipments || [];
+  const revenue = shipments.reduce((sum, item) => sum + (Number(item.customerRate) || 0), 0);
+  const cost = shipments.reduce((sum, item) => sum + (Number(item.carrierRate) || 0), 0);
+  const margin = revenue - cost;
+  const contacted = funnel.contacted;
+  const responseRate = contacted ? Math.round((funnel.replied / contacted) * 100) : 0;
+  const closeRate = funnel.quotes ? Math.round((funnel.won / funnel.quotes) * 100) : 0;
+  const repeat = leads.filter((lead) => lead.status === "Recurring Account").length;
+
+  const bySource = useMemo(() => {
+    const map = new Map<string, { n: number; contacted: number; replies: number; quotes: number; loads: number; margin: number }>();
+    for (const lead of leads) {
+      const row = map.get(lead.source) || { n: 0, contacted: 0, replies: 0, quotes: 0, loads: 0, margin: 0 };
+      row.n += 1;
+      if (lead.lastContactAt || lead.attempts > 0) row.contacted += 1;
+      if (["Replied", "Qualified", "Contact Info Obtained", "Quote Requested", "Quote Sent", "Negotiating", "Load Won", "Recurring Account"].includes(lead.status)) row.replies += 1;
+      if (/Quote|Negotiating|Load Won|Recurring/.test(lead.status)) row.quotes += 1;
+      if (lead.status === "Load Won" || lead.status === "Recurring Account") row.loads += 1;
+      map.set(lead.source, row);
     }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [workspace.kpiEvents]);
-
-  const byCity = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const lead of workspace.leads) {
-      const city = lead.city || "Unset";
-      map.set(city, (map.get(city) || 0) + 1);
+    for (const ship of shipments) {
+      const lead = leads.find((item) => item.id === ship.leadId);
+      if (!lead) continue;
+      const row = map.get(lead.source) || { n: 0, contacted: 0, replies: 0, quotes: 0, loads: 0, margin: 0 };
+      row.margin += shipmentMargin(ship.customerRate, ship.carrierRate);
+      map.set(lead.source, row);
     }
-    return Array.from(map.entries()).sort((a, b) => b[1] - a[1]);
-  }, [workspace.leads]);
+    return Array.from(map.entries()).sort((a, b) => b[1].n - a[1].n);
+  }, [leads, shipments]);
 
-  const maxType = Math.max(...byType.map((item) => item[1]), 1);
-  const maxCity = Math.max(...byCity.map((item) => item[1]), 1);
+  const sources = Array.from(new Set(workspace.leads.map((item) => item.source).filter(Boolean)));
+  const states = Array.from(new Set(workspace.leads.map((item) => item.state).filter((item): item is string => Boolean(item))));
+  const types = Array.from(new Set(workspace.leads.map((item) => item.freightType).filter((item): item is NonNullable<typeof item> => Boolean(item))));
 
-  if (loading) return <div className="cd-body text-[var(--tx4)]">Crunching recorded events…</div>;
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Reading recorded activity…</div>;
 
   return (
-    <Station
-      n="12"
-      title="Analytics"
-      lede={
-        <>
-          Counts from <em>kpiEvents and the board</em>. Current will not project a win rate you have not earned.
-        </>
-      }
-      chip={`${workspace.kpiEvents.length} EVENTS`}
-    >
-      <div className="metric-strip" style={{ marginBottom: 16 }}>
-        <div className="ms-cell">
-          <div className="ms-l">Dials</div>
-          <div className="ms-v cy">{metrics.attempts}</div>
-          <div className="ms-d">recorded attempts</div>
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>Analytics</h1>
+          <p>Counts come from saved clients, quotes, and shipments — not projections.</p>
         </div>
-        <div className="ms-cell">
-          <div className="ms-l">Connect</div>
-          <div className="ms-v">{metrics.connectRate}%</div>
-          <div className="ms-d">{metrics.connected} live</div>
-        </div>
-        <div className="ms-cell">
-          <div className="ms-l">Sets</div>
-          <div className="ms-v" style={{ color: "var(--tl)" }}>
-            {metrics.sets}
-          </div>
-          <div className="ms-d">{metrics.setRate}% of dials</div>
-        </div>
-        <div className="ms-cell">
-          <div className="ms-l">Due</div>
-          <div className="ms-v" style={{ color: "var(--am)" }}>
-            {metrics.dueCallbacks.length}
-          </div>
-          <div className="ms-d">callbacks</div>
-        </div>
-        <div className="ms-cell">
-          <div className="ms-l">Sits</div>
-          <div className="ms-v">{metrics.upcoming.length}</div>
-          <div className="ms-d">on the book</div>
-        </div>
-        <div className="ms-cell">
-          <div className="ms-l">Stalled</div>
-          <div className="ms-v" style={{ color: "var(--rd)" }}>
-            {metrics.stalled.length}
-          </div>
-          <div className="ms-d">critical deals</div>
-        </div>
-      </div>
-
-      <div className="cd-grid" style={{ gridTemplateColumns: "1fr 1fr" }}>
-        <section className="cd-glass">
-          <div className="cd-head">
-            <h3>Event mix</h3>
-            <span className="r">recorded types</span>
-          </div>
-          <div className="live-bars" style={{ height: 200 }}>
-            {byType.slice(0, 8).map(([label, value]) => (
-              <div key={label} className="live-bar">
-                <div className="az-num">{value}</div>
-                <div className="bar" style={{ height: `${Math.max(8, (value / maxType) * 100)}%` }} />
-                <div className="lab">{label.replaceAll("_", " ")}</div>
-              </div>
+      </header>
+      <div className="desk-body">
+        <div className="crm-desk-tools">
+          <select className="az-select" value={source} onChange={(event) => setSource(event.target.value)}>
+            <option value="all">All sources</option>
+            {sources.map((item) => (
+              <option key={item}>{item}</option>
             ))}
-            {byType.length === 0 ? <p className="cd-mono">No events yet. Dial first.</p> : null}
-          </div>
-        </section>
-        <section className="cd-glass">
-          <div className="cd-head">
-            <h3>City demand</h3>
-            <span className="r">leads on file</span>
-          </div>
-          <div style={{ padding: 16 }}>
-            {byCity.map(([city, count]) => (
-              <div key={city} className="anal-row">
-                <span>{city}</span>
-                <div className="anal-track">
-                  <i style={{ width: `${(count / maxCity) * 100}%` }} />
-                </div>
-                <b className="az-num">{count}</b>
-              </div>
+          </select>
+          <select className="az-select" value={state} onChange={(event) => setState(event.target.value)}>
+            <option value="all">All states</option>
+            {states.map((item) => (
+              <option key={item}>{item}</option>
             ))}
+          </select>
+          <select className="az-select" value={freightType} onChange={(event) => setFreightType(event.target.value)}>
+            <option value="all">All freight types</option>
+            {types.map((item) => (
+              <option key={item}>{item}</option>
+            ))}
+          </select>
+        </div>
+        <section className="freight-funnel" aria-label="Sales funnel">
+          {[
+            ["Clients", funnel.discovered],
+            ["Contacted", funnel.contacted],
+            ["Replied", funnel.replied],
+            ["Qualified", funnel.qualified],
+            ["Quotes", funnel.quotes],
+            ["Loads", funnel.won],
+          ].map(([label, value], index) => (
+            <div key={label} className="freight-funnel-step">
+              {index ? <span className="freight-funnel-arrow">→</span> : null}
+              <div>
+                <b>{value}</b>
+                <span>{label}</span>
+              </div>
+            </div>
+          ))}
+        </section>
+        <p className="cd-mono" style={{ margin: "12px 0 18px" }}>
+          {funnel.discovered} clients → {funnel.contacted} contacted → {funnel.replied} replies → {funnel.qualified} qualified → {funnel.quotes} quotes → {funnel.won} loads → {money(margin)} gross margin
+        </p>
+        <div className="metric-strip" style={{ marginBottom: 16 }}>
+          <div className="ms-cell">
+            <div className="ms-l">Response</div>
+            <div className="ms-v">{responseRate}%</div>
+            <div className="ms-d">replies / contacted</div>
           </div>
+          <div className="ms-cell">
+            <div className="ms-l">Close</div>
+            <div className="ms-v">{closeRate}%</div>
+            <div className="ms-d">loads / quotes</div>
+          </div>
+          <div className="ms-cell">
+            <div className="ms-l">Revenue</div>
+            <div className="ms-v">{money(revenue)}</div>
+            <div className="ms-d">customer rates</div>
+          </div>
+          <div className="ms-cell">
+            <div className="ms-l">Carrier cost</div>
+            <div className="ms-v">{money(cost)}</div>
+            <div className="ms-d">recorded carrier rates</div>
+          </div>
+          <div className="ms-cell">
+            <div className="ms-l">Margin / load</div>
+            <div className="ms-v">{shipments.length ? money(Math.round(margin / shipments.length)) : "—"}</div>
+            <div className="ms-d">{repeat} repeat shippers</div>
+          </div>
+        </div>
+        <section className="az-panel freight-panel">
+          <header>
+            <h3>Lead source performance</h3>
+          </header>
+          <table className="az-table">
+            <thead>
+              <tr>
+                <th>Source</th>
+                <th>Clients</th>
+                <th>Contacted</th>
+                <th>Replies</th>
+                <th>Quotes</th>
+                <th>Loads</th>
+                <th>Margin</th>
+              </tr>
+            </thead>
+            <tbody>
+              {bySource.map(([name, row]) => (
+                <tr key={name} className="cursor-default">
+                  <td>{name}</td>
+                  <td className="az-num">{row.n}</td>
+                  <td className="az-num">{row.contacted}</td>
+                  <td className="az-num">{row.replies}</td>
+                  <td className="az-num">{row.quotes}</td>
+                  <td className="az-num">{row.loads}</td>
+                  <td className="az-num">{money(row.margin)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </section>
       </div>
-    </Station>
+    </div>
   );
 }

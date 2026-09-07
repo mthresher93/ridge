@@ -1,24 +1,21 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { PIPELINE_GROUPS } from "@/lib/stages";
-import { opportunityUrgency } from "@/lib/derive";
-import { daysBetween, money, moneyShort, nowIso, uid } from "@/lib/format";
+import { PIPELINE_GROUPS, STAGES } from "@/lib/stages";
+import { nowIso } from "@/lib/format";
 import { DealDrawer } from "./deal-drawer";
-import { Station } from "./page-intro";
-import type { Opportunity } from "@/lib/types";
 
 export function BoardView() {
+  const router = useRouter();
   const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [mode, setMode] = useState<"board" | "table">("board");
 
   const selected = workspace.opportunities.find((item) => item.id === selectedId) || null;
-  const openValue = useMemo(
-    () => workspace.opportunities.reduce((sum, item) => sum + (Number(item.value) || 0), 0),
-    [workspace.opportunities],
-  );
+  const live = workspace.opportunities.filter((item) => item.stage !== "Load Lost");
 
   function moveDeal(id: string, stage: string) {
     setWorkspace((prev) => ({
@@ -43,111 +40,140 @@ export function BoardView() {
     log("opportunity", id, "stage_change", `Moved to ${stage}`);
   }
 
-  function addDeal() {
-    const id = uid("opp");
-    const opp: Opportunity = {
-      id,
-      leadId: null,
-      name: "New rooftop",
-      property: "",
-      stage: "New Lead",
-      value: 0,
-      probability: 10,
-      owner: workspace.settings.defaultOwner,
-      source: "Manual",
-      nextAction: "Qualify bill and roof",
-      expectedClose: "",
-      notes: "",
-      createdAt: nowIso(),
-      updatedAt: nowIso(),
-      stageEnteredAt: nowIso(),
-      history: [],
-    };
-    setWorkspace((prev) => ({ ...prev, opportunities: [opp, ...prev.opportunities], updatedAt: nowIso() }));
-    setSelectedId(id);
-  }
-
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading pipeline…</div>;
 
   return (
-    <Station
-      n="09"
-      title="Pipeline"
-      fill
-      lede={
-        <>
-          Drag deals through recorded stages. <em>Value is what you typed</em> — Current will not forecast a close.
-        </>
-      }
-      chip={moneyShort(openValue)}
-      actions={
-        <button className="az-btn pri sm" onClick={addDeal}>
-          New deal
-        </button>
-      }
-    >
-    <div className="az-fill" style={{ gridTemplateRows: "minmax(0,1fr)", height: "100%" }}>
+    <div className="cd-page fill">
+      <div className="az-fill crm-desk">
+        <header className="crm-desk-head">
+          <div>
+            <h1>Pipeline</h1>
+            <p>{live.length} open · Hunt → Talk → Quote → Close. Rates stay blank until you enter one.</p>
+          </div>
+          <div className="work-tabs">
+            <button type="button" className={`az-btn sm ${mode === "board" ? "pri" : ""}`} onClick={() => setMode("board")}>
+              Board
+            </button>
+            <button type="button" className={`az-btn sm ${mode === "table" ? "pri" : ""}`} onClick={() => setMode("table")}>
+              Table
+            </button>
+            <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+              Hunt a listing
+            </button>
+          </div>
+        </header>
 
-      <div className="board">
-        {PIPELINE_GROUPS.map((group) => {
-          const rows = workspace.opportunities.filter((item) => (group.stages as readonly string[]).includes(item.stage));
-          const value = rows.reduce((sum, item) => sum + (Number(item.value) || 0), 0);
-          return (
-            <section
-              key={group.id}
-              className="board-col"
-              onDragOver={(event) => event.preventDefault()}
-              onDrop={() => {
-                if (dragging) moveDeal(dragging, group.drop);
-                setDragging(null);
-              }}
-            >
-              <div className="px-3 py-2 border-b border-[var(--line)] flex items-start justify-between gap-2">
-                <div>
-                  <div className="text-[13px] font-medium">{group.label}</div>
-                  <div className="text-[11px] text-[var(--muted)] az-num">
-                    {rows.length} · {moneyShort(value)}
+        {mode === "board" ? (
+          <div className="board pipeline-board">
+            {PIPELINE_GROUPS.map((group) => {
+              const rows = workspace.opportunities.filter((item) => (group.stages as readonly string[]).includes(item.stage));
+              return (
+                <section
+                  key={group.id}
+                  className="board-col"
+                  onDragOver={(event) => event.preventDefault()}
+                  onDrop={() => {
+                    if (dragging) moveDeal(dragging, group.drop);
+                    setDragging(null);
+                  }}
+                >
+                  <div className="board-col-head">
+                    <div className="board-col-title">{group.label}</div>
+                    <div className="board-col-meta">{rows.length}</div>
                   </div>
-                </div>
-              </div>
-              <div className="p-2 space-y-2 scroll-y flex-1">
-                {rows.map((item) => {
-                  const urgency = opportunityUrgency(item);
+                  <div className="board-col-body">
+                    {rows.length === 0 ? <p className="board-empty">Drop here</p> : null}
+                    {rows.map((item) => {
+                      const person = workspace.leads.find((lead) => lead.id === item.leadId);
+                      return (
+                        <button
+                          key={item.id}
+                          type="button"
+                          draggable
+                          onDragStart={() => setDragging(item.id)}
+                          onClick={() => {
+                            setSelectedId(item.id);
+                            if (item.leadId) setSelectedLeadId(item.leadId);
+                          }}
+                          className="board-card"
+                        >
+                          <div className="board-card-top">
+                            <span className="az-chip">{item.stage}</span>
+                            {person?.label ? <span className="az-chip">{person.label}</span> : null}
+                          </div>
+                          <div className="board-card-name">{item.property || item.name || person?.name}</div>
+                          <div className="board-card-sub">
+                            {[person?.name, person ? [person.city, person.state].filter(Boolean).join(", ") : ""].filter(Boolean).join(" · ") || "No location yet"}
+                          </div>
+                          <div className="board-card-foot">
+                            <span>{person?.freightScore != null ? `Screen ${person.freightScore}` : "Unscored"}</span>
+                            <span>{item.value ? `$${item.value}` : "Rate unset"}</span>
+                          </div>
+                        </button>
+                      );
+                    })}
+                  </div>
+                </section>
+              );
+            })}
+          </div>
+        ) : (
+          <div className="az-panel overflow-auto min-h-0 crm-table-wrap">
+            <table className="az-table min-w-[920px]">
+              <thead>
+                <tr>
+                  <th>Client</th>
+                  <th>Label</th>
+                  <th>Stage</th>
+                  <th>Lane</th>
+                  <th>Your rate</th>
+                  <th>Next</th>
+                </tr>
+              </thead>
+              <tbody>
+                {workspace.opportunities.length === 0 ? (
+                  <tr className="cursor-default">
+                    <td colSpan={6} className="py-10 text-center text-[var(--muted)]">
+                      No clients on the board yet.
+                    </td>
+                  </tr>
+                ) : null}
+                {workspace.opportunities.map((item) => {
+                  const person = workspace.leads.find((lead) => lead.id === item.leadId);
                   return (
-                    <button
-                      key={item.id}
-                      draggable
-                      onDragStart={() => setDragging(item.id)}
-                      onClick={() => {
-                        setSelectedId(item.id);
-                        if (item.leadId) setSelectedLeadId(item.leadId);
-                      }}
-                      className={`board-card ${urgency}`}
-                    >
-                      <div className="flex items-center justify-between gap-2 mb-1">
-                        <span className={`az-chip ${urgency === "healthy" ? "ok" : urgency}`}>{item.stage}</span>
-                        <span className="az-num text-[11px] text-[var(--faint)]">{daysBetween(item.stageEnteredAt)}d</span>
-                      </div>
-                      <div className="font-medium text-[13px]">{item.name}</div>
-                      <div className="text-[11px] text-[var(--muted)] truncate">{item.property || "Property unset"}</div>
-                      <div className="flex items-baseline justify-between mt-2">
-                        <b className="az-num text-[var(--gold-2)]">{money(item.value)}</b>
-                        <span className="az-num text-[11px] text-[var(--muted)]">{item.probability}%</span>
-                      </div>
-                      <div className="h-1 bg-[var(--track)] mt-1.5 overflow-hidden">
-                        <i className="block h-full bg-[var(--gold)]" style={{ width: `${item.probability}%` }} />
-                      </div>
-                    </button>
+                    <tr key={item.id} onClick={() => setSelectedId(item.id)}>
+                      <td>
+                        <div className="font-medium">{item.property || item.name}</div>
+                        <div className="text-[12px] text-[var(--muted)]">{item.name}</div>
+                      </td>
+                      <td>{person?.label || "—"}</td>
+                      <td>
+                        <select
+                          className="az-select"
+                          value={item.stage}
+                          onClick={(event) => event.stopPropagation()}
+                          onChange={(event) => moveDeal(item.id, event.target.value)}
+                        >
+                          {STAGES.map((stage) => (
+                            <option key={stage}>{stage}</option>
+                          ))}
+                        </select>
+                      </td>
+                      <td>
+                        {item.origin || person?.origin || "—"} → {item.destination || person?.destination || "—"}
+                      </td>
+                      <td className="az-num">{item.value ? item.value : "—"}</td>
+                      <td className="text-[12px] text-[var(--muted)]">{item.nextAction || "—"}</td>
+                    </tr>
                   );
                 })}
-              </div>
-            </section>
-          );
-        })}
-      </div>
+              </tbody>
+            </table>
+          </div>
+        )}
 
-      {selected ? <DealDrawer opportunity={selected} onClose={() => setSelectedId(null)} /> : null}
+        {selected ? <DealDrawer opportunity={selected} onClose={() => setSelectedId(null)} /> : null}
+      </div>
     </div>
-    </Station>
   );
 }
