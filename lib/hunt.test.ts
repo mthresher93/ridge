@@ -12,7 +12,8 @@ describe("huntSearchUrl", () => {
     expect(huntSearchUrl("linkedin-yards", "forklift", "Texas")).toContain("linkedin.com/search/results/companies");
     expect(huntSearchUrl("importyeti")).toBe("https://www.importyeti.com/");
     expect(huntSearchUrl("copart", "forklift", "TX")).toContain("copart.com");
-    expect(huntSearchUrl("dat")).toBe("https://www.dat.com/load-boards");
+    expect(huntSearchUrl("bobcat-locator")).toContain("bobcat.com");
+    expect(huntSearchUrl("truck-paper", "dump", "IL")).toContain("truckpaper.com");
   });
 });
 

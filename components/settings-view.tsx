@@ -311,7 +311,7 @@ export function SettingsView() {
                 ["Phone", phoneLink ? (phoneLink.ok ? "Connected" : "Not connected") : "Checking…", phoneLink?.detail || "Checking phone connection."],
                 ["Local save", "On", "Clients, pipeline, listings, follow-ups, and shipments stay on this computer."],
                 ["AI scoring", "Local", "Rules first. Optional: Ollama qwen3-coder:30b on this machine. No paid API required."],
-                ["What you need", "Local", "Nothing else to buy. Hunt opens public pages you click. No domain. No scrape APIs."],
+                ["APIs", "None", "Do not buy Facebook, DAT, or Maps APIs. Hunt is a normal browser tab you click. Ollama is optional and local."],
                 ["Capture", "Manual", "Paste, CSV, or the bookmarklet on a page you already opened. POST /api/prospects/capture is for that same flow."],
                 ["Trailer math", "On", "Intel uses published deck caps (HS 40'/20k/10.6'). It will not put a sleeper on a hotshot. Confirm the photo before you quote."],
                 ["Outreach pace", "On", `Soft cap ${MESSAGE_SOFT_CAP} messages/day, warning at ${MESSAGE_HARD_WARN}. You send. Variants rotate. No Messenger bots.`],
@@ -323,7 +323,7 @@ export function SettingsView() {
                     <b>{name}</b>
                     <span>{detail}</span>
                   </div>
-                  <em className={state === "On" || state === "Connected" || state === "Local" || state === "Manual" ? "ok" : ""}>{state}</em>
+                  <em className={state === "On" || state === "Connected" || state === "Local" || state === "Manual" || state === "None" ? "ok" : ""}>{state}</em>
                 </div>
               ))}
             </div>

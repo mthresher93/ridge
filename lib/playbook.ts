@@ -13,6 +13,28 @@ export type PlaybookSection = {
 
 export const PLAYBOOK: PlaybookSection[] = [
   {
+    id: "pick",
+    title: "Pick a deck",
+    blurb: "Read top to bottom. Stop at the first fail. Cheapest legal deck wins. Photo before you quote.",
+    blocks: [
+      {
+        type: "list",
+        items: [
+          "1. Height over 10.6' → not hotshot. Over 11' → RGN / lowboy family.",
+          "2. Weight over 20,000 lb → not hotshot.",
+          "3. Length over 40' → not hotshot. Over 30' in the well → extendable RGN, not a standard RGN.",
+          "4. Width over 8.5' → same trailer family, permits / escorts. Do not switch decks just for width.",
+          "5. If hotshot, step deck, and flat all pass, use hotshot. Do not jump to RGN because it also fits.",
+          "6. Catalog nicknames (sleeper, dump) are estimates. Typed L × W × H and pounds beat the nickname.",
+        ],
+      },
+      {
+        type: "p",
+        text: "Always TL: RGN, extendable RGN, lowboy, power only, drive-away. Training caps are not a carrier quote.",
+      },
+    ],
+  },
+  {
     id: "job",
     title: "The job",
     blurb: "You match shippers with carriers. You do not own the truck. The book of business is yards that already move machines.",
@@ -61,11 +83,11 @@ export const PLAYBOOK: PlaybookSection[] = [
   {
     id: "trailers",
     title: "Trailers",
-    blurb: "Open decks first. Height is cargo on the deck. Ground clearance eats legal height.",
+    blurb: "Open decks first — these are the ones the matcher uses. Enclosed and specialty are separate.",
     blocks: [
       {
         type: "p",
-        text: "Example from training: trailer ground clearance 3.6' and state max 13.6' → cargo can be about 10' high. Always confirm the state before an oversized move.",
+        text: "Height is cargo on the deck. Ground clearance eats legal height. Example: GC 3.6' and state max 13.6' → about 10' of cargo. Confirm the state.",
       },
       {
         type: "table",
@@ -77,13 +99,22 @@ export const PLAYBOOK: PlaybookSection[] = [
           ["LSDL", "Low-profile SD", "53'", "8.5'", "~11'", "GC ~2.6'", "45k lb"],
           ["RGN / LB", "Lowboy", "Well 24–30'", "8.5'", "11'+", "GC 1–1.5'", "45k+ lb"],
           ["RGNE", "Extendable RGN", "Well to 50'", "8.5'", "11'+", "GC ~1.5'", "45k+ lb"],
-          ["VA", "Dry van", "28–53'", "8.2'", "~8.5'", "Enclosed", "45k lb"],
-          ["Reefer", "Reefer", "28–53'", "8.2'", "~8.5'", "Temp unit", "45k lb"],
-          ["Sprinter", "Sprinter", "8–14'", "5.5–6'", "5.5–6.5'", "Cargo van", "2.5–3.5k lb"],
-          ["Box", "Box truck", "10–30'", "6–8'", "6–8.5'", "Lift gate ~3k", "10–15k lb"],
-          ["CNST", "Conestoga", "48–53'", "8.2'", "~8'", "Rolling tarp", "45k lb"],
-          ["Landoll", "Landoll", "48–53'", "—", "—", "Tilt/slide deck", "45k lb"],
-          ["Tilt", "Tilt trailer", "20–40'", "—", "—", "Hydraulic tilt", "to 20k lb"],
+        ],
+      },
+      {
+        type: "p",
+        text: "Enclosed / other (matcher only uses these if you type van, reefer, tilt, landoll, power only, drive-away):",
+      },
+      {
+        type: "table",
+        headers: ["Code", "Name", "Notes"],
+        rows: [
+          ["VA", "Dry van", "28–53' enclosed. Not for machinery unless it can be forklift-loaded."],
+          ["Reefer", "Reefer", "Temp control. Not open deck."],
+          ["CNST", "Conestoga", "Rolling tarp. ~8' cargo height."],
+          ["Landoll", "Landoll", "Tilt/slide. Say landoll in the unit field."],
+          ["Tilt", "Tilt trailer", "Hydraulic tilt, hotshot class."],
+          ["Sprinter / Box", "Small enclosed", "Parcel / local. Not your hotshot book."],
         ],
       },
       {

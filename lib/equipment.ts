@@ -104,7 +104,77 @@ export const TRAILER_CAPS: TrailerCap[] = [
   { code: "RGNE", name: "Extendable RGN", maxLengthFt: 50, maxWidthFt: 8.5, maxHeightFt: 14, maxWeightLbs: 80000, deckGcFt: 1.5, lengthLabel: "Well to 50'", notes: "When the unit is longer than a standard RGN well." },
 ];
 
-const MATCH_ORDER: TrailerCode[] = ["HS", "SDL", "F", "LSDL", "RGN", "RGNE"];
+export const MATCH_ORDER: TrailerCode[] = ["HS", "SDL", "F", "LSDL", "RGN", "RGNE"];
+
+export type DeckGate = {
+  id: "height" | "weight" | "length" | "width";
+  label: string;
+  ok: boolean | null;
+  detail: string;
+};
+
+export function deckGates(fit: Pick<EquipmentFit, "lengthFt" | "widthFt" | "heightFt" | "weightLbs">): DeckGate[] {
+  const hs = trailerCap("HS")!;
+  const heightOk = fit.heightFt == null ? null : fit.heightFt <= hs.maxHeightFt;
+  const weightOk = fit.weightLbs == null ? null : fit.weightLbs <= hs.maxWeightLbs;
+  const lengthOk = fit.lengthFt == null ? null : fit.lengthFt <= hs.maxLengthFt;
+  const widthOk = fit.widthFt == null ? null : fit.widthFt <= 8.5;
+  return [
+    {
+      id: "height",
+      label: "Height",
+      ok: heightOk,
+      detail:
+        fit.heightFt == null
+          ? "Need cargo height. Over 10.6' is not a hotshot. Over 11' is RGN territory."
+          : heightOk
+            ? `${fit.heightFt}' is in the hotshot band (≤ ${hs.maxHeightFt}').`
+            : `${fit.heightFt}' is over ${hs.maxHeightFt}'. Do not quote a hotshot.`,
+    },
+    {
+      id: "weight",
+      label: "Weight",
+      ok: weightOk,
+      detail:
+        fit.weightLbs == null
+          ? "Need pounds. Over 20,000 lb is not a hotshot."
+          : weightOk
+            ? `${fit.weightLbs.toLocaleString()} lb is under ${hs.maxWeightLbs.toLocaleString()} lb.`
+            : `${fit.weightLbs.toLocaleString()} lb is over ${hs.maxWeightLbs.toLocaleString()} lb. Not a hotshot.`,
+    },
+    {
+      id: "length",
+      label: "Length",
+      ok: lengthOk,
+      detail:
+        fit.lengthFt == null
+          ? "Need length. Over 40' is not a hotshot. Over 30' well needs an extendable RGN."
+          : lengthOk
+            ? `${fit.lengthFt}' fits a hotshot deck (≤ ${hs.maxLengthFt}').`
+            : `${fit.lengthFt}' is over ${hs.maxLengthFt}'. Not a hotshot.`,
+    },
+    {
+      id: "width",
+      label: "Width",
+      ok: widthOk,
+      detail:
+        fit.widthFt == null
+          ? "Need width. Over 8.5' is usually permits, not a different trailer."
+          : widthOk
+            ? `${fit.widthFt}' is at or under 8.5' legal.`
+            : `${fit.widthFt}' is over 8.5'. Same deck family — check escorts.`,
+    },
+  ];
+}
+
+export function cheaperFails(fit: EquipmentFit): FitCheck[] {
+  const idx = MATCH_ORDER.indexOf(fit.trailer);
+  if (idx <= 0) return [];
+  return fit.checks.filter((item) => {
+    const pos = MATCH_ORDER.indexOf(item.code);
+    return pos >= 0 && pos < idx && !item.pass;
+  });
+}
 
 export function trailerName(code: TrailerCode) {
   return TRAILER_NAMES[code];

@@ -2,7 +2,13 @@
 
 import { useMemo, useState } from "react";
 import { PLAYBOOK, searchPlaybook, type PlaybookBlock } from "@/lib/playbook";
-import { UNIT_PRESETS, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+import { cheaperFails, deckGates, UNIT_PRESETS, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+
+const NAV_GROUPS = [
+  { label: "Decide", ids: ["pick", "trailers", "loads", "units"] },
+  { label: "Find", ids: ["job", "prospect"] },
+  { label: "Ops", ids: ["auctions", "load-unload", "rules", "niches", "boat"] },
+];
 
 function num(value: string) {
   const n = Number(String(value).replace(/,/g, "").trim());
@@ -16,13 +22,14 @@ function fmt(n: number | null, suffix: string) {
 
 export function PlaybookView() {
   const [query, setQuery] = useState("");
-  const [topic, setTopic] = useState("trailers");
+  const [topic, setTopic] = useState("pick");
   const [unit, setUnit] = useState("forklift");
   const [length, setLength] = useState("12");
   const [width, setWidth] = useState("6");
   const [height, setHeight] = useState("8");
   const [weight, setWeight] = useState("9000");
   const [paste, setPaste] = useState("");
+  const [showAllDecks, setShowAllDecks] = useState(false);
 
   const sections = useMemo(() => searchPlaybook(query), [query]);
   const active = sections.find((item) => item.id === topic) || sections[0] || PLAYBOOK[0];
@@ -49,18 +56,33 @@ export function PlaybookView() {
         <header className="crm-desk-head">
           <div>
             <h1>Intel</h1>
-            <p>Match the unit to a deck with the training caps. Catalog guesses are not quotes — confirm the photo.</p>
+            <p>Height, weight, length — in that order. Cheapest legal deck. Confirm the photo.</p>
           </div>
         </header>
 
         <div className="intel-desk">
           <aside className="intel-nav">
             <input className="az-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search trailers, auctions, DOT…" />
-            {sections.map((item) => (
-              <button key={item.id} type="button" className={active?.id === item.id ? "on" : ""} onClick={() => setTopic(item.id)}>
-                {item.title}
-              </button>
-            ))}
+            {query.trim()
+              ? sections.map((item) => (
+                  <button key={item.id} type="button" className={active?.id === item.id ? "on" : ""} onClick={() => setTopic(item.id)}>
+                    {item.title}
+                  </button>
+                ))
+              : NAV_GROUPS.map((group) => (
+                  <div key={group.label} className="intel-nav-group">
+                    <span>{group.label}</span>
+                    {group.ids.map((id) => {
+                      const item = sections.find((section) => section.id === id);
+                      if (!item) return null;
+                      return (
+                        <button key={item.id} type="button" className={active?.id === item.id ? "on" : ""} onClick={() => setTopic(item.id)}>
+                          {item.title}
+                        </button>
+                      );
+                    })}
+                  </div>
+                ))}
             {sections.length === 0 ? <p className="rec-empty">Nothing matches.</p> : null}
           </aside>
 
@@ -115,7 +137,7 @@ export function PlaybookView() {
                   />
                 </label>
               </div>
-              <MatcherResult fit={fit} />
+              <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
             </section>
 
             {active ? (
@@ -136,9 +158,20 @@ export function PlaybookView() {
   );
 }
 
-function MatcherResult({ fit }: { fit: EquipmentFit }) {
+function MatcherResult({ fit, showAll, onToggle }: { fit: EquipmentFit; showAll: boolean; onToggle: () => void }) {
+  const gates = deckGates(fit);
+  const skipped = cheaperFails(fit);
+  const checks = showAll ? fit.checks : fit.checks.filter((item) => item.code === fit.trailer || skipped.some((row) => row.code === item.code));
   return (
     <div className="intel-result">
+      <div className="intel-gates">
+        {gates.map((gate) => (
+          <div key={gate.id} className={gate.ok === true ? "pass" : gate.ok === false ? "fail" : ""}>
+            <b>{gate.label}</b>
+            <span>{gate.detail}</span>
+          </div>
+        ))}
+      </div>
       <div className="intel-result-hero">
         <div>
           <div className="home-kicker">Use this deck</div>
@@ -151,8 +184,20 @@ function MatcherResult({ fit }: { fit: EquipmentFit }) {
           </p>
         </div>
       </div>
+      {skipped.length ? (
+        <div className="intel-skip">
+          <b>Do not use these cheaper decks</b>
+          {skipped.map((item) => (
+            <p key={item.code}>
+              {item.name}: {item.fails[0]}
+            </p>
+          ))}
+        </div>
+      ) : (
+        <p className="intel-why">Hotshot still fits. Do not jump to a bigger trailer because it also works.</p>
+      )}
       <div className="intel-checks">
-        {fit.checks.map((item) => (
+        {checks.map((item) => (
           <div key={item.code} className={item.pass ? "pass" : "fail"}>
             <b>
               {item.pass ? "Fits" : "No"} · {item.code}
@@ -161,6 +206,9 @@ function MatcherResult({ fit }: { fit: EquipmentFit }) {
           </div>
         ))}
       </div>
+      <button className="az-btn sm" type="button" onClick={onToggle}>
+        {showAll ? "Hide extra decks" : "Show every deck"}
+      </button>
       <p className="intel-why">{fit.why}</p>
       {fit.alsoFits.length ? (
         <p className="intel-also">

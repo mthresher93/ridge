@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { checkTrailer, parseDimensions, parsePounds, recommendEquipment, trailerCap } from "./equipment";
+import { cheaperFails, checkTrailer, parseDimensions, parsePounds, recommendEquipment, trailerCap } from "./equipment";
 
 describe("recommendEquipment", () => {
   it("treats 26x8.5x10 at 18k as hotshot TL", () => {
@@ -70,6 +70,13 @@ describe("recommendEquipment", () => {
     expect(fit.trailer).toBe("RGNE");
     expect(fit.trailer).not.toBe("LSDL");
     expect(fit.trailer).not.toBe("HS");
+  });
+
+  it("lists cheaper decks that failed so a beginner can see why not hotshot", () => {
+    const fit = recommendEquipment({ text: "sleeper cab" });
+    const skipped = cheaperFails(fit);
+    expect(skipped.some((item) => item.code === "HS")).toBe(true);
+    expect(skipped.find((item) => item.code === "HS")?.fails.join(" ")).toMatch(/Height/i);
   });
 
   it("trusts typed numbers over the unit nickname", () => {

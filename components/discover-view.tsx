@@ -1,10 +1,10 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, LEAD_SOURCES, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
-import { HUNT_BRIEF, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import { HUNT_BRIEF, HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, type HuntPackItem, type HuntRank } from "@/lib/hunt";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
 import type { SavedSearch } from "@/lib/types";
@@ -24,14 +24,16 @@ type LastCapture = {
 
 export function DiscoverView() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { workspace, setWorkspace, reload, loading, setSelectedLeadId } = useWorkspace();
-  const [tab, setTab] = useState<"hunt" | "paste" | "csv" | "searches">("hunt");
+  const [tab, setTab] = useState<"hunt" | "paste" | "csv" | "searches" | "logins">("hunt");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [ai, setAi] = useState<AiStatus | null>(null);
   const [huntQuery, setHuntQuery] = useState("forklift");
   const [huntPlace, setHuntPlace] = useState("Texas");
+  const [playFilter, setPlayFilter] = useState<string>("");
   const [blockedPack, setBlockedPack] = useState<HuntPackItem[]>([]);
   const [lastCapture, setLastCapture] = useState<LastCapture | null>(null);
   const [form, setForm] = useState({
@@ -61,6 +63,19 @@ export function DiscoverView() {
       .then((json) => setAi(json))
       .catch(() => setAi({ ready: false, provider: "rules" }));
   }, []);
+
+  useEffect(() => {
+    const q = searchParams.get("q");
+    const place = searchParams.get("place");
+    const play = searchParams.get("play");
+    const nextTab = searchParams.get("tab");
+    if (q) setHuntQuery(q);
+    if (place) setHuntPlace(place);
+    if (play) setPlayFilter(play);
+    if (nextTab === "paste" || nextTab === "csv" || nextTab === "searches" || nextTab === "logins" || nextTab === "hunt") {
+      setTab(nextTab);
+    }
+  }, [searchParams]);
 
   function set<K extends keyof typeof form>(key: K, value: string) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -291,7 +306,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Open public searches. Capture what you see. You send the message. Haul does not scrape or invent numbers.</p>
+            <p>Real public searches. You click Open. No scrape APIs — none to buy, none to connect.</p>
           </div>
           <div className="freight-row-actions">
             <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
@@ -304,9 +319,9 @@ export function DiscoverView() {
         <div className="discover-desk">
           <div className="discover-main">
             <div className="work-tabs wrap">
-              {(["hunt", "paste", "csv", "searches"] as const).map((item) => (
+              {(["hunt", "paste", "csv", "searches", "logins"] as const).map((item) => (
                 <button key={item} type="button" className={`az-btn sm ${tab === item ? "pri" : ""}`} onClick={() => setTab(item)}>
-                  {item === "hunt" ? "Hunt" : item === "paste" ? "Paste" : item === "csv" ? "CSV" : "Saved searches"}
+                  {item === "hunt" ? "Hunt" : item === "paste" ? "Paste" : item === "csv" ? "CSV" : item === "searches" ? "Saved searches" : "What you need"}
                 </button>
               ))}
             </div>
@@ -316,6 +331,15 @@ export function DiscoverView() {
 
             {tab === "hunt" ? (
               <div className="hunt-desk">
+                <div className="hunt-connections">
+                  {HUNT_CONNECTIONS.map((item) => (
+                    <div key={item.name}>
+                      <span className="az-chip">{item.value}</span>
+                      <b>{item.name}</b>
+                      <p>{item.detail}</p>
+                    </div>
+                  ))}
+                </div>
                 <div className="hunt-brief">
                   {HUNT_BRIEF.map((item) => (
                     <p key={item}>{item}</p>
@@ -346,6 +370,21 @@ export function DiscoverView() {
                     </button>
                   ))}
                 </div>
+                <div className="hunt-presets">
+                  <button type="button" className={`az-btn sm ${playFilter === "" ? "pri" : ""}`} onClick={() => setPlayFilter("")}>
+                    All plays
+                  </button>
+                  {HUNT_PLAYS.map((play) => (
+                    <button
+                      key={play.id}
+                      type="button"
+                      className={`az-btn sm ${playFilter === play.id ? "pri" : ""}`}
+                      onClick={() => setPlayFilter(play.id)}
+                    >
+                      {play.title}
+                    </button>
+                  ))}
+                </div>
                 <div className="hunt-actions">
                   <button className="az-btn pri sm" type="button" onClick={openTopPack}>
                     Open top searches
@@ -370,7 +409,7 @@ export function DiscoverView() {
                   ))}
                 </div>
                 <div className="hunt-plays">
-                  {HUNT_PLAYS.map((play) => (
+                  {(playFilter ? HUNT_PLAYS.filter((play) => play.id === playFilter) : HUNT_PLAYS).map((play) => (
                     <article key={play.id} className="az-panel freight-panel hunt-play">
                       <header>
                         <div>
@@ -515,6 +554,25 @@ export function DiscoverView() {
                     </a>
                   </div>
                 ))}
+              </div>
+            ) : null}
+
+            {tab === "logins" ? (
+              <div className="hunt-desk">
+                <div className="st-ledger">
+                  {HUNT_CONNECTIONS.map((item) => (
+                    <div key={item.name} className="st-ledger-row">
+                      <div>
+                        <b>{item.name}</b>
+                        <span>{item.detail}</span>
+                      </div>
+                      <em className={item.value === "None" || item.value === "Browser" ? "ok" : ""}>{item.value}</em>
+                    </div>
+                  ))}
+                </div>
+                <p className="st-fine">
+                  Machinery Trader, Google, Cat/Toyota/Bobcat/Deere locators, Sunbelt, United, TruckPaper, Copart, IAA, Ritchie — those are websites you already open. Paste or bookmarklet on a page you are allowed to view. Haul never stores a Facebook or DAT token.
+                </p>
               </div>
             ) : null}
           </div>

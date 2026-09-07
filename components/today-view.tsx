@@ -4,7 +4,9 @@ import { useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
+import { deskPlan, START_CONNECTIONS, todayHunt } from "@/lib/desk";
 import { companyName, leadLocation, outreachQueue } from "@/lib/freight";
+import { messagesSentOnDay } from "@/lib/pacing";
 import { nowIso, relativeDue } from "@/lib/format";
 
 export function TodayView() {
@@ -12,6 +14,8 @@ export function TodayView() {
   const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
   const metrics = useMemo(() => derive(workspace), [workspace]);
   const move = useMemo(() => topMove(workspace), [workspace]);
+  const hunt = useMemo(() => todayHunt(), []);
+  const plan = useMemo(() => deskPlan(workspace), [workspace]);
   const live = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
   const unlabeled = useMemo(() => live.filter((lead) => !lead.label).slice(0, 6), [live]);
   const toMessage = useMemo(() => outreachQueue(live).slice(0, 6), [live]);
@@ -31,6 +35,7 @@ export function TodayView() {
         .slice(0, 6),
     [live],
   );
+  const sentToday = useMemo(() => messagesSentOnDay(workspace.kpiEvents || []), [workspace.kpiEvents]);
 
   function complete(id: string) {
     setWorkspace((prev) => ({
@@ -59,11 +64,15 @@ export function TodayView() {
             <h1>Desk</h1>
             <p>
               {live.length
-                ? `${live.length} clients · ${yards} yards · ${auctions} auctions · hunt, label, you send, follow up, quote`
-                : "Empty file. Hunt a live listing, match the trailer in Intel, then you send."}
+                ? `${live.length} on file · ${yards} yards · ${auctions} auctions · ${sentToday} sent today`
+                : `${hunt.weekday} · ${hunt.play.title} · ${hunt.query} in ${hunt.place}. No fake clients — capture a live page.`}
             </p>
           </div>
           <div className="home-stats">
+            <div>
+              <b>{plan.length}</b>
+              <span>next</span>
+            </div>
             <div>
               <b>{unlabeled.length}</b>
               <span>unlabeled</span>
@@ -73,50 +82,66 @@ export function TodayView() {
               <span>to message</span>
             </div>
             <div>
-              <b>{metrics.overdueCallbacks.length}</b>
+              <b className={metrics.overdueCallbacks.length ? "bad" : ""}>{metrics.overdueCallbacks.length}</b>
               <span>overdue</span>
-            </div>
-            <div>
-              <b>{yards}</b>
-              <span>yards</span>
             </div>
           </div>
         </header>
 
-        {live.length === 0 ? (
-          <section className="empty-desk">
-            <h2>Start a freight book</h2>
-            <p>Haul ranks public listings and tells you which deck the unit likely needs. You open the page, you send the message, you confirm specs before you quote.</p>
-            <ol className="desk-steps">
-              <li>Discover — open dealer, rental, and auction searches. Capture what you already have on screen.</li>
-              <li>Intel — enter L × W × H and pounds. If hotshot fails, you will see why before you pick RGN.</li>
-              <li>Desk — label yards vs private. Copy the opener. You hit send. Follow up. Quote only with a real rate.</li>
-            </ol>
-            <div className="empty-start">
-              <article>
-                <h3>Hunt yards</h3>
-                <p>Dealers and rental houses already ship. One weekly yard beats a pile of Marketplace ads.</p>
-                <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
-                  Open Discover
-                </button>
-              </article>
-              <article>
-                <h3>Match the trailer</h3>
-                <p>Training caps: hotshot 40' / 20k lb / 10.6'. Sleeper cabs go RGN. Catalog guesses are not quotes.</p>
-                <button className="az-btn pri sm" type="button" onClick={() => router.push("/playbook")}>
-                  Open Intel
-                </button>
-              </article>
-              <article>
-                <h3>How you send</h3>
-                <p>No bots. Soft cap ~25 messages a day. Variants rotate. Confirm a photo before you name a rate.</p>
-                <button className="az-btn sm" type="button" onClick={() => router.push("/settings")}>
-                  Open Settings
-                </button>
-              </article>
+        <section className="desk-today">
+          <div className="desk-today-copy">
+            <div className="home-kicker">Do this next</div>
+            <h2>
+              {hunt.weekday}: {hunt.play.title}
+            </h2>
+            <p>{hunt.why}</p>
+            <p className="cd-mono">{hunt.doThis}</p>
+            <div className="empty-desk-actions">
+              <button className="az-btn pri sm" type="button" onClick={() => router.push(hunt.href)}>
+                Open {hunt.query} · {hunt.place}
+              </button>
+              <button className="az-btn sm" type="button" onClick={() => router.push("/playbook")}>
+                Check a deck
+              </button>
             </div>
-          </section>
-        ) : (
+          </div>
+          <div className="desk-today-links">
+            {hunt.links.map((item) => (
+              <a key={item.id} className="desk-open-row" href={item.url} target="_blank" rel="noreferrer">
+                <span>{item.name}</span>
+                <em>Open</em>
+              </a>
+            ))}
+          </div>
+        </section>
+
+        <ol className="desk-plan">
+          {plan.map((item, index) => (
+            <li key={`${item.href}-${item.title}`}>
+              <button type="button" className="desk-plan-row" onClick={() => router.push(item.href)}>
+                <b>{index + 1}</b>
+                <div>
+                  <span className="home-kicker">{item.kicker}</span>
+                  <strong>{item.title}</strong>
+                  <p>{item.why}</p>
+                </div>
+                <em>{item.cta}</em>
+              </button>
+            </li>
+          ))}
+        </ol>
+
+        <section className="desk-connect">
+          {START_CONNECTIONS.slice(0, 4).map((item) => (
+            <div key={item.name}>
+              <span className="az-chip">{item.need}</span>
+              <b>{item.name}</b>
+              <p>{item.detail}</p>
+            </div>
+          ))}
+        </section>
+
+        {live.length > 0 ? (
           <>
             <section className="freight-hero" onClick={() => openLead(move.leadId, move.href)}>
               <div className="home-kicker">{move.kicker}</div>
@@ -228,7 +253,7 @@ export function TodayView() {
               </section>
             ) : null}
           </>
-        )}
+        ) : null}
       </div>
     </div>
   );

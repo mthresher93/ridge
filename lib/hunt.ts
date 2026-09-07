@@ -128,6 +128,105 @@ export const HUNT_LANES: HuntLane[] = [
     messageWhere: "Call the dealer. Backup for customer deliveries.",
   },
   {
+    id: "bobcat-locator",
+    name: "Bobcat dealer locator",
+    rank: "Best",
+    fit: "Skid steer and compact excavator dealers. They already deliver sold machines.",
+    legal: "Manufacturer’s public locator. You open it.",
+    how: "Find the local dealer. Copy the published phone.",
+    messageWhere: "Call the store. Ask who books machine delivery.",
+  },
+  {
+    id: "deere-locator",
+    name: "John Deere dealer locator",
+    rank: "Best",
+    fit: "Ag and construction dealers. Recurring outbound freight.",
+    legal: "Public dealer finder.",
+    how: "Search your area. Capture the branch, not the corporate page.",
+    messageWhere: "Call the dealership. Yard or product support books trucks.",
+  },
+  {
+    id: "hyster-locator",
+    name: "Hyster dealer locator",
+    rank: "Strong",
+    fit: "Lift truck dealers next to Toyota/Cat. Same shipper profile.",
+    legal: "Public locator.",
+    how: "Open the local dealer. Phone on the page.",
+    messageWhere: "Call. Backup on customer deliveries.",
+  },
+  {
+    id: "sunbelt",
+    name: "Sunbelt Rentals locations",
+    rank: "Best",
+    fit: "National rental. Branches move iron constantly.",
+    legal: "Public branch finder.",
+    how: "Open a nearby branch. Capture that phone, not 1-800.",
+    messageWhere: "Ask for the branch manager or dispatch.",
+  },
+  {
+    id: "united-rentals",
+    name: "United Rentals locations",
+    rank: "Best",
+    fit: "Same as Sunbelt. Recurring by design.",
+    legal: "Public locations page.",
+    how: "Pick a branch in your state. Copy the local number.",
+    messageWhere: "Branch manager / dispatch.",
+  },
+  {
+    id: "truck-paper",
+    name: "TruckPaper listings",
+    rank: "Best",
+    fit: "Commercial trucks with dealer names. Dump, box, wrecker.",
+    legal: "Public classifieds you open.",
+    how: "Search dump / box / rollback. Prefer a dealer over a private seller.",
+    messageWhere: "Number on the ad.",
+  },
+  {
+    id: "commercial-truck",
+    name: "Commercial Truck Trader",
+    rank: "Best",
+    fit: "Same lane as TruckPaper. Dealer lots first.",
+    legal: "Public listings.",
+    how: "Keyword search. Capture dealer + phone.",
+    messageWhere: "Call the lot.",
+  },
+  {
+    id: "fastline",
+    name: "Fastline",
+    rank: "Strong",
+    fit: "Ag and industrial iron. Lots of dealer inventory.",
+    legal: "Public search.",
+    how: "Search your machine type. Skip household.",
+    messageWhere: "Phone on the listing.",
+  },
+  {
+    id: "auctiontime",
+    name: "AuctionTime",
+    rank: "Strong",
+    fit: "Online auctions with pickup locations. Clock is real.",
+    legal: "Public auction search.",
+    how: "Note pickup city and end time. Capture the seller if named.",
+    messageWhere: "Contact on the lot. You send it.",
+  },
+  {
+    id: "bigiron",
+    name: "BigIron",
+    rank: "Strong",
+    fit: "Farm and construction auctions. Removal windows after the sale.",
+    legal: "Public catalog.",
+    how: "Search heavy. Copy lot and location.",
+    messageWhere: "Seller or auction contact.",
+  },
+  {
+    id: "rock-dirt",
+    name: "Rock & Dirt",
+    rank: "Strong",
+    fit: "Construction equipment classifieds. Dealer-heavy.",
+    legal: "Public listings.",
+    how: "Search your type and state. Capture business names.",
+    messageWhere: "Number on the ad.",
+  },
+  {
     id: "machinery-trader",
     name: "Machinery Trader listings",
     rank: "Best",
@@ -289,7 +388,23 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "Dealers and rental houses already ship. One good yard is the backbone of a hotshot book.",
     talkTo: "Yard manager, branch manager, or whoever books outbound freight. Ask to be backup when their guy can’t cover a sold machine.",
-    laneIds: ["mt-dealers", "maps-dealers", "maps-rental", "google-dealers", "cat-locator", "toyota-forklift"],
+    laneIds: ["mt-dealers", "maps-dealers", "maps-rental", "google-dealers", "cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator"],
+  },
+  {
+    id: "oem",
+    title: "OEM locators",
+    rank: "Best",
+    why: "The manufacturer already published the local dealer. That yard ships to customers. You are asking to be backup freight.",
+    talkTo: "The store phone on the locator. Product support or the person who books deliveries.",
+    laneIds: ["cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator", "hyster-locator"],
+  },
+  {
+    id: "rental",
+    title: "Rental branches",
+    rank: "Best",
+    why: "Rental houses move machines every week. Capture the branch, not the 1-800 number.",
+    talkTo: "Branch manager or dispatch.",
+    laneIds: ["maps-rental", "sunbelt", "united-rentals"],
   },
   {
     id: "listings",
@@ -297,7 +412,15 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "A listing is proof something might move. Prefer a dealer name and a phone over a private seller.",
     talkTo: "The number on the ad. If it is a dealer, treat it as a yard relationship, not a one-load bid.",
-    laneIds: ["machinery-trader", "equipment-trader", "tractorhouse"],
+    laneIds: ["machinery-trader", "equipment-trader", "tractorhouse", "fastline", "rock-dirt"],
+  },
+  {
+    id: "trucks",
+    title: "Commercial trucks",
+    rank: "Best",
+    why: "Dump, box, and wrecker lots. Run the unit through Intel before you name a deck.",
+    talkTo: "The dealer phone on the listing.",
+    laneIds: ["truck-paper", "commercial-truck"],
   },
   {
     id: "auctions",
@@ -305,7 +428,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Strong",
     why: "When the hammer falls, someone has a removal deadline and storage fees. Speed matters more than a cheap rate.",
     talkTo: "Seller or auction contact on the lot. After they win, they need a truck off that yard.",
-    laneIds: ["ritchie", "purple-wave", "govplanet", "copart", "iaa", "manheim"],
+    laneIds: ["ritchie", "purple-wave", "govplanet", "copart", "iaa", "manheim", "auctiontime", "bigiron"],
   },
   {
     id: "people",
@@ -351,6 +474,28 @@ export function huntSearchUrl(laneId: string, keywords = "forklift", location = 
       return "https://www.cat.com/en_US/support/dealer-locator.html";
     case "toyota-forklift":
       return "https://www.toyotaforklift.com/find-a-dealer";
+    case "bobcat-locator":
+      return "https://www.bobcat.com/na/en/find-a-dealer";
+    case "deere-locator":
+      return "https://dealerlocator.deere.com/";
+    case "hyster-locator":
+      return "https://www.hyster.com/na/en-us/find-a-dealer/";
+    case "sunbelt":
+      return "https://www.sunbeltrentals.com/locations/";
+    case "united-rentals":
+      return "https://www.unitedrentals.com/locations";
+    case "truck-paper":
+      return `https://www.truckpaper.com/listings/search?Keywords=${q(query)}`;
+    case "commercial-truck":
+      return `https://www.commercialtrucktrader.com/listing/search?keyword=${q(query)}`;
+    case "fastline":
+      return `https://www.fastline.com/farm-equipment-for-sale?q=${q(query)}`;
+    case "auctiontime":
+      return `https://www.auctiontime.com/search?keywords=${q(query)}`;
+    case "bigiron":
+      return `https://www.bigiron.com/Search?keyword=${q(query)}`;
+    case "rock-dirt":
+      return `https://www.rockanddirt.com/equipment-for-sale/${q(query)}`;
     case "machinery-trader":
       return `https://www.machinerytrader.com/listings/search?keywords=${q(query)}`;
     case "equipment-trader":
@@ -445,4 +590,11 @@ export const HUNT_RULES = [
   "You open the page. You capture it. Haul never logs into Facebook, Craigslist, DAT, or LinkedIn for you.",
   "A phone or email only counts if it was on the page you copied.",
   "You send the message. No bots, no fake accounts, no invented rates.",
+];
+
+export const HUNT_CONNECTIONS = [
+  { name: "APIs", value: "None", detail: "Do not buy a Facebook, DAT, or Maps API. Haul does not call those. Open is a normal tab." },
+  { name: "Start today", value: "Browser", detail: "Google, Machinery Trader, OEM locators, auction catalogs. No login required to look." },
+  { name: "Your logins", value: "Optional", detail: "Facebook and LinkedIn if you hunt there. DAT/Truckstop only for empty miles, on their sites." },
+  { name: "Ollama", value: "Optional", detail: "Local scoring when you paste. The desk works without it." },
 ];
