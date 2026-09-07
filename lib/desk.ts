@@ -1,5 +1,6 @@
 import { outreachQueue } from "./freight";
 import { HUNT_PLAYS, huntLane, huntSearchUrl, type HuntPlay } from "./hunt";
+import { workPath } from "./nav";
 import type { Workspace } from "./types";
 
 export type DayHunt = {
@@ -72,20 +73,19 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
   }
   if (unlabeled) {
     moves.push({
-      kicker: "Label first",
+      kicker: "Work this",
       title: unlabeled.name,
-      why: "Yard, auction, or private. Haul will not guess. The opener changes.",
-      href: `/people?id=${unlabeled.id}`,
-      cta: "Open and label",
+      why: "Label yard vs private, copy the opener, you send it. Follow-up is set when you mark sent.",
+      href: workPath(unlabeled.id),
+      cta: "Open",
     });
-  }
-  if (nextMessage) {
+  } else if (nextMessage) {
     moves.push({
       kicker: "You send",
       title: nextMessage.name,
       why: nextMessage.scoreWhy || "Copy the opener. You hit send on the listing or the published number.",
-      href: "/outreach",
-      cta: "Open outreach",
+      href: workPath(nextMessage.id),
+      cta: "Open",
     });
   }
   if (moves.length < 3) {

@@ -2,6 +2,7 @@ import type { Opportunity, Urgency, Workspace } from "./types";
 import { CLOSED_STAGES, WON_STAGES } from "./stages";
 import { daysBetween } from "./format";
 import { funnelCounts, outreachQueue, shipmentMargin } from "./freight";
+import { workPath } from "./nav";
 
 export function isOpen(stage: string) {
   return !CLOSED_STAGES.has(stage);
@@ -164,11 +165,11 @@ export function topMove(workspace: Workspace, now = Date.now()) {
   const unlabeled = workspace.leads.find((lead) => !lead.archivedAt && !lead.label);
   if (unlabeled) {
     return {
-      kicker: "Label this client",
+      kicker: "Work this client",
       title: unlabeled.name,
-      reason: "You decide if they are a dealer, private seller, auction, rental, or shipper. Haul will not guess.",
-      href: `/people?id=${unlabeled.id}`,
-      cta: "Open and label",
+      reason: "Label yard vs private, copy the opener, you send it. Follow-up is set when you mark sent.",
+      href: workPath(unlabeled.id),
+      cta: "Open",
       leadId: unlabeled.id,
     };
   }
@@ -179,8 +180,8 @@ export function topMove(workspace: Workspace, now = Date.now()) {
       kicker: "Send a message",
       title: nextMessage.name,
       reason: nextMessage.scoreWhy || "Copy the opener. You hit send on the listing or the dealer’s published number.",
-      href: "/outreach",
-      cta: "Open outreach",
+      href: workPath(nextMessage.id),
+      cta: "Open",
       leadId: nextMessage.id,
     };
   }

@@ -17,6 +17,13 @@ describe("answerCopilot", () => {
 
   it("answers trailer questions from training specs, not the pipeline", () => {
     const result = answerCopilot(emptyWorkspace(), "what trailer for a sleeper cab");
+    expect(result.answer).toMatch(/Catalog estimate/i);
     expect(result.answer).toMatch(/RGN|lowboy/i);
+  });
+
+  it("does not invent follow-ups on an empty desk", () => {
+    const result = answerCopilot(emptyWorkspace(), "who should I follow up with today");
+    expect(result.answer).toMatch(/No open follow-ups/i);
+    expect(result.matches).toEqual([]);
   });
 });

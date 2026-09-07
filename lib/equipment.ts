@@ -74,6 +74,13 @@ export const UNIT_PRESETS: UnitPreset[] = [
   { id: "example-hs-tl", label: "26' @ 18k (HS TL)", text: "machine", lengthFt: 26, widthFt: 8.5, heightFt: 10, weightLbs: 18000 },
 ];
 
+export const CALL_ASK = [
+  { id: "photo", ask: "Do you have a photo of the unit on the ground?" },
+  { id: "length", ask: "What's the length in feet?" },
+  { id: "height", ask: "What's the height sitting on the deck — not overall on tires if it can be lowered?" },
+  { id: "weight", ask: "What's the weight in pounds?" },
+] as const;
+
 /** Typical US interstate cap. Confirm the state — some are 13.5', some 14'. */
 export const LEGAL_HEIGHT_FT = 13.6;
 
@@ -425,6 +432,14 @@ export function recommendEquipment(input: {
   const ask = ["Ask for a photo and full specs. Do not quote from a catalog guess alone."];
   if (lengthFt == null || weightLbs == null) ask.push("Need length and weight in feet and pounds.");
   if (/\btruck|semi|dump|bus\b/i.test(blob)) ask.push("Wheelbase matters for RGN well space. Confirm it.");
+  const hasNumbers = lengthFt != null || widthFt != null || heightFt != null || weightLbs != null;
+  if (
+    !hasNumbers &&
+    !guessed &&
+    !/\b(landoll|tilt|power\s*only|drive[-\s]?away|reefer|refrigerat|produce|perishable|dry\s*van|palletized)\b/.test(blob)
+  ) {
+    return finish("UNKNOWN", dims, checks, "Need length, width, height, and weight before you pick a deck.", ask, "unknown", false);
+  }
 
   if (/\bpower\s*only\b/.test(blob)) {
     return finish("PO", dims, checks, "Power only — tractor, no trailer. Trailer on site must be DOT-ready.", ask, "known", false);

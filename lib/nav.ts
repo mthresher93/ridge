@@ -7,11 +7,15 @@ export const DESK_NAV: NavItem[] = [
   { href: "/discover", label: "Discover" },
   { href: "/playbook", label: "Intel" },
   { href: "/people", label: "Clients" },
-  { href: "/outreach", label: "Outreach" },
+  { href: "/outreach", label: "Work" },
   { href: "/callbacks", label: "Follow-ups" },
   { href: "/board", label: "Pipeline" },
   { href: "/shipments", label: "Shipments" },
 ];
+
+export function workPath(leadId?: string | null) {
+  return leadId ? `/outreach?id=${encodeURIComponent(leadId)}` : "/outreach";
+}
 
 export const MORE_NAV: NavItem[] = [
   { href: "/accounts", label: "Accounts" },

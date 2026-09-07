@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { generateFollowUp, companyName } from "@/lib/freight";
+import { workPath } from "@/lib/nav";
 import { nowIso, relativeDue, uid } from "@/lib/format";
 import type { CallbackType } from "@/lib/types";
 
@@ -193,10 +194,10 @@ export function CallbacksView() {
                     onClick={() => {
                       if (suggested) navigator.clipboard.writeText(suggested);
                       setSelectedLeadId(item.leadId);
-                      router.push("/outreach");
+                      router.push(workPath(item.leadId));
                     }}
                   >
-                    Copy + outreach
+                    Copy + work
                   </button>
                   {item.status === "open" ? (
                     <button className="az-btn sm" type="button" onClick={() => complete(item.id)}>

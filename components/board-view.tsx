@@ -64,6 +64,20 @@ export function BoardView() {
         </header>
 
         {mode === "board" ? (
+          workspace.opportunities.length === 0 ? (
+            <section className="empty-desk">
+              <h2>Pipeline is empty</h2>
+              <p>Capture a live listing. Deals appear here from clients you saved — no sample loads.</p>
+              <div className="empty-desk-actions">
+                <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+                  Hunt a listing
+                </button>
+                <button className="az-btn sm" type="button" onClick={() => router.push("/people")}>
+                  Clients
+                </button>
+              </div>
+            </section>
+          ) : (
           <div className="board pipeline-board">
             {PIPELINE_GROUPS.map((group) => {
               const rows = workspace.opportunities.filter((item) => (group.stages as readonly string[]).includes(item.stage));
@@ -103,7 +117,7 @@ export function BoardView() {
                           </div>
                           <div className="board-card-name">{item.property || item.name || person?.name}</div>
                           <div className="board-card-sub">
-                            {[person?.name, person ? [person.city, person.state].filter(Boolean).join(", ") : ""].filter(Boolean).join(" · ") || "No location yet"}
+                            {[person?.name, person ? [person.city, person.state].filter(Boolean).join(", ") : ""].filter(Boolean).join(" · ") || "—"}
                           </div>
                           <div className="board-card-foot">
                             <span>{person?.freightScore != null ? `Screen ${person.freightScore}` : "Unscored"}</span>
@@ -117,6 +131,7 @@ export function BoardView() {
               );
             })}
           </div>
+          )
         ) : (
           <div className="az-panel overflow-auto min-h-0 crm-table-wrap">
             <table className="az-table min-w-[920px]">
@@ -134,7 +149,7 @@ export function BoardView() {
                 {workspace.opportunities.length === 0 ? (
                   <tr className="cursor-default">
                     <td colSpan={6} className="py-10 text-center text-[var(--muted)]">
-                      No clients on the board yet.
+                      No clients on the board yet. Hunt a listing — this board only shows people you captured.
                     </td>
                   </tr>
                 ) : null}

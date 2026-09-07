@@ -1,11 +1,13 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { funnelCounts, shipmentMargin } from "@/lib/freight";
 import { money } from "@/lib/format";
 
 export function AnalyticsView() {
+  const router = useRouter();
   const { workspace, loading } = useWorkspace();
   const [source, setSource] = useState("all");
   const [state, setState] = useState("all");
@@ -78,6 +80,18 @@ export function AnalyticsView() {
         </div>
       </header>
       <div className="desk-body">
+        {workspace.leads.filter((lead) => !lead.archivedAt).length === 0 ? (
+          <section className="empty-desk">
+            <h2>No recorded activity yet</h2>
+            <p>Counts here only come from clients you capture, messages you send, and rates you type. Nothing is projected.</p>
+            <div className="empty-desk-actions">
+              <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
+                Hunt a listing
+              </button>
+            </div>
+          </section>
+        ) : (
+          <>
         <div className="crm-desk-tools">
           <select className="az-select" value={source} onChange={(event) => setSource(event.target.value)}>
             <option value="all">All sources</option>
@@ -177,6 +191,8 @@ export function AnalyticsView() {
             </tbody>
           </table>
         </section>
+          </>
+        )}
       </div>
     </div>
   );

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { PLAYBOOK, searchPlaybook, type PlaybookBlock } from "@/lib/playbook";
-import { cheaperFails, deckGates, UNIT_PRESETS, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+import { CALL_ASK, cheaperFails, deckGates, UNIT_PRESETS, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
 
 const NAV_GROUPS = [
   { label: "Decide", ids: ["pick", "trailers", "loads", "units"] },
@@ -23,16 +23,18 @@ function fmt(n: number | null, suffix: string) {
 export function PlaybookView() {
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("pick");
-  const [unit, setUnit] = useState("forklift");
-  const [length, setLength] = useState("12");
-  const [width, setWidth] = useState("6");
-  const [height, setHeight] = useState("8");
-  const [weight, setWeight] = useState("9000");
+  const [unit, setUnit] = useState("");
+  const [length, setLength] = useState("");
+  const [width, setWidth] = useState("");
+  const [height, setHeight] = useState("");
+  const [weight, setWeight] = useState("");
   const [paste, setPaste] = useState("");
   const [showAllDecks, setShowAllDecks] = useState(false);
+  const [fromTraining, setFromTraining] = useState(false);
 
   const sections = useMemo(() => searchPlaybook(query), [query]);
   const active = sections.find((item) => item.id === topic) || sections[0] || PLAYBOOK[0];
+  const hasInput = Boolean(unit.trim() || length.trim() || width.trim() || height.trim() || weight.trim() || paste.trim());
   const fit = recommendEquipment({
     text: unit,
     lengthFt: num(length),
@@ -48,6 +50,7 @@ export function PlaybookView() {
     setHeight(String(preset.heightFt));
     setWeight(String(preset.weightLbs));
     setPaste("");
+    setFromTraining(true);
   }
 
   return (
@@ -56,7 +59,7 @@ export function PlaybookView() {
         <header className="crm-desk-head">
           <div>
             <h1>Intel</h1>
-            <p>Height, weight, length — in that order. Cheapest legal deck. Confirm the photo.</p>
+            <p>Type specs from the call. Training buttons are catalog examples, not a live load.</p>
           </div>
         </header>
 
@@ -90,9 +93,18 @@ export function PlaybookView() {
             <section className="az-panel freight-panel intel-fit">
               <header>
                 <h3>What trailer?</h3>
-                <span className="az-chip">{fit.confidence}</span>
+                <span className="az-chip">{hasInput ? fit.confidence : "—"}</span>
               </header>
+              <div className="call-ask-block">
+                <div className="home-kicker">Ask these four, then type the numbers</div>
+                <ol className="call-ask">
+                  {CALL_ASK.map((item) => (
+                    <li key={item.id}>{item.ask}</li>
+                  ))}
+                </ol>
+              </div>
               <div className="intel-presets">
+                <span className="cd-mono">Training examples — catalog sizes, not a live load</span>
                 {UNIT_PRESETS.map((preset) => (
                   <button key={preset.id} type="button" className="az-btn sm" onClick={() => applyPreset(preset)}>
                     {preset.label}
@@ -102,23 +114,67 @@ export function PlaybookView() {
               <div className="intel-fit-grid">
                 <label className="rec-field intel-unit">
                   Unit
-                  <input className="az-input" value={unit} onChange={(event) => setUnit(event.target.value)} placeholder="sleeper cab, mini excavator…" />
+                  <input
+                    className="az-input"
+                    value={unit}
+                    onChange={(event) => {
+                      setFromTraining(false);
+                      setUnit(event.target.value);
+                    }}
+                    placeholder="sleeper cab, mini excavator…"
+                  />
                 </label>
                 <label className="rec-field">
                   Length (ft)
-                  <input className="az-input" inputMode="decimal" value={length} onChange={(event) => setLength(event.target.value)} placeholder="26" />
+                  <input
+                    className="az-input"
+                    inputMode="decimal"
+                    value={length}
+                    onChange={(event) => {
+                      setFromTraining(false);
+                      setLength(event.target.value);
+                    }}
+                    placeholder="26"
+                  />
                 </label>
                 <label className="rec-field">
                   Width (ft)
-                  <input className="az-input" inputMode="decimal" value={width} onChange={(event) => setWidth(event.target.value)} placeholder="8.5" />
+                  <input
+                    className="az-input"
+                    inputMode="decimal"
+                    value={width}
+                    onChange={(event) => {
+                      setFromTraining(false);
+                      setWidth(event.target.value);
+                    }}
+                    placeholder="8.5"
+                  />
                 </label>
                 <label className="rec-field">
                   Height (ft)
-                  <input className="az-input" inputMode="decimal" value={height} onChange={(event) => setHeight(event.target.value)} placeholder="10" />
+                  <input
+                    className="az-input"
+                    inputMode="decimal"
+                    value={height}
+                    onChange={(event) => {
+                      setFromTraining(false);
+                      setHeight(event.target.value);
+                    }}
+                    placeholder="10"
+                  />
                 </label>
                 <label className="rec-field">
                   Weight (lb)
-                  <input className="az-input" inputMode="numeric" value={weight} onChange={(event) => setWeight(event.target.value)} placeholder="18000" />
+                  <input
+                    className="az-input"
+                    inputMode="numeric"
+                    value={weight}
+                    onChange={(event) => {
+                      setFromTraining(false);
+                      setWeight(event.target.value);
+                    }}
+                    placeholder="18000"
+                  />
                 </label>
                 <label className="rec-field intel-paste">
                   Or paste L × W × H
@@ -127,6 +183,7 @@ export function PlaybookView() {
                     value={paste}
                     onChange={(event) => {
                       const next = event.target.value;
+                      setFromTraining(false);
                       setPaste(next);
                       const parsed = parseDimensions(next);
                       if (parsed.lengthFt != null) setLength(String(parsed.lengthFt));
@@ -137,7 +194,12 @@ export function PlaybookView() {
                   />
                 </label>
               </div>
-              <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
+              {fromTraining ? <p className="cd-mono">Training example — catalog sizes, not a live load.</p> : null}
+              {hasInput ? (
+                <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
+              ) : (
+                <p className="intel-why">Nothing to match yet. Type what they told you, or paste L × W × H.</p>
+              )}
             </section>
 
             {active ? (
@@ -162,6 +224,22 @@ function MatcherResult({ fit, showAll, onToggle }: { fit: EquipmentFit; showAll:
   const gates = deckGates(fit);
   const skipped = cheaperFails(fit);
   const checks = showAll ? fit.checks : fit.checks.filter((item) => item.code === fit.trailer || skipped.some((row) => row.code === item.code));
+  if (fit.trailer === "UNKNOWN") {
+    return (
+      <div className="intel-result">
+        <div className="intel-gates">
+          {gates.map((gate) => (
+            <div key={gate.id} className={gate.ok === true ? "pass" : gate.ok === false ? "fail" : ""}>
+              <b>{gate.label}</b>
+              <span>{gate.detail}</span>
+            </div>
+          ))}
+        </div>
+        <p className="intel-why">{fit.why}</p>
+        <p className="cd-mono">{fit.ask.join(" ")}</p>
+      </div>
+    );
+  }
   return (
     <div className="intel-result">
       <div className="intel-gates">
@@ -174,7 +252,7 @@ function MatcherResult({ fit, showAll, onToggle }: { fit: EquipmentFit; showAll:
       </div>
       <div className="intel-result-hero">
         <div>
-          <div className="home-kicker">Use this deck</div>
+          <div className="home-kicker">{fit.usedGuess ? "Catalog estimate — confirm on the call" : "Use this deck"}</div>
           <h4>{fit.trailerName}</h4>
           <p>
             {fit.loadClass}
@@ -193,9 +271,9 @@ function MatcherResult({ fit, showAll, onToggle }: { fit: EquipmentFit; showAll:
             </p>
           ))}
         </div>
-      ) : (
+      ) : fit.trailer === "HS" ? (
         <p className="intel-why">Hotshot still fits. Do not jump to a bigger trailer because it also works.</p>
-      )}
+      ) : null}
       <div className="intel-checks">
         {checks.map((item) => (
           <div key={item.code} className={item.pass ? "pass" : "fail"}>

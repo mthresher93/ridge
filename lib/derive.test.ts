@@ -10,18 +10,18 @@ describe("topMove", () => {
     expect(move.cta).toMatch(/Discover/i);
   });
 
-  it("asks you to label an unlabeled client before outreach", () => {
+  it("sends an unlabeled client to the work screen", () => {
     const workspace = emptyWorkspace();
     workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Hill Yard", status: "Discovered" })];
     const move = topMove(workspace);
-    expect(move.kicker).toMatch(/Label/i);
-    expect(move.href).toContain("/people?id=lead-1");
+    expect(move.kicker).toMatch(/Work/i);
+    expect(move.href).toBe("/outreach?id=lead-1");
   });
 
-  it("opens outreach once the client is labeled", () => {
+  it("opens the work screen once the client is labeled", () => {
     const workspace = emptyWorkspace();
     workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Hill Yard", status: "Discovered", label: "Dealer" })];
     const move = topMove(workspace);
-    expect(move.href).toBe("/outreach");
+    expect(move.href).toBe("/outreach?id=lead-1");
   });
 });

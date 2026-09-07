@@ -191,7 +191,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
           origin: live.origin || live.city,
           destination: live.destination || "",
           commodity: live.listingTitle || live.equipmentType || "",
-          equipmentType: live.freightType || "",
+          equipmentType: live.equipmentType || "",
           customerRate: 0,
           carrierCost: 0,
           status: "requested",
@@ -228,7 +228,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
           commodity: live.listingTitle || live.equipmentType || "",
           weight: live.weight || "",
           dimensions: live.dimensions || "",
-          equipmentType: live.freightType || "",
+          equipmentType: live.equipmentType || "",
           carrier: "",
           carrierRate: 0,
           customerRate: 0,
@@ -275,8 +275,8 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
         </header>
 
         <div className="rec-actions">
-          <button className="az-btn pri sm" type="button" onClick={() => { setSelectedLeadId(live.id); router.push("/outreach"); }}>
-            Outreach
+          <button className="az-btn pri sm" type="button" onClick={() => { setSelectedLeadId(live.id); router.push(`/outreach?id=${live.id}`); }}>
+            Work this
           </button>
           {live.listingUrl ? (
             <a className="az-btn sm" href={live.listingUrl} target="_blank" rel="noreferrer">
@@ -338,21 +338,25 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
                 <b>{live.shipperRole || analysis?.shipperRole || "Unknown"}</b>
               </div>
               <div>
-                <span>Trailer guess</span>
-                <b>{live.trailerHint || `${fit.trailerName} · ${fit.loadClass}`}</b>
+                <span>Trailer</span>
+                <b>{live.dimensions || live.weight ? live.trailerHint || `${fit.trailerName} · ${fit.loadClass}` : "Ask on the call"}</b>
               </div>
               <div>
                 <span>Recurring</span>
-                <b>{live.recurringPotential || "Low"}</b>
+                <b>{live.recurringPotential || "—"}</b>
               </div>
               <div>
                 <span>Lane</span>
                 <b>
-                  {live.origin || live.city || "—"} → {live.destination || "Unknown"}
+                  {live.origin || live.city || "—"} → {live.destination || "—"}
                 </b>
               </div>
             </div>
-            <p className="cd-mono">{fit.why}</p>
+            <p className="cd-mono">
+              {live.dimensions || live.weight
+                ? fit.why
+                : "Ask length, height on the deck, and pounds before you pick a trailer."}
+            </p>
             {analysis ? (
               <>
                 <h3>Known</h3>
@@ -414,7 +418,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
                   {item.origin} → {item.destination}
                 </b>
                 <p>
-                  Customer {money(item.customerRate)} · carrier {money(item.carrierCost)} · margin {money(shipmentMargin(item.customerRate, item.carrierCost))}
+                  Customer {item.customerRate ? money(item.customerRate) : "—"} · carrier {item.carrierCost ? money(item.carrierCost) : "—"} · margin {item.customerRate || item.carrierCost ? money(shipmentMargin(item.customerRate, item.carrierCost)) : "—"}
                 </p>
               </div>
             ))}

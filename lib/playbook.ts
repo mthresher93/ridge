@@ -15,7 +15,7 @@ export const PLAYBOOK: PlaybookSection[] = [
   {
     id: "pick",
     title: "Pick a deck",
-    blurb: "Read top to bottom. Stop at the first fail. Cheapest legal deck wins. Photo before you quote.",
+    blurb: "Ask photo, length, height on the deck, pounds. Then type the numbers. Cheapest legal deck wins. Leave the rate blank.",
     blocks: [
       {
         type: "list",

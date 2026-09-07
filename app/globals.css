@@ -9,9 +9,9 @@
   --panel-2: #fffdf9;
   --line: #e4ddd2;
   --line-2: #d3cbbd;
-  --text: #1c1915;
-  --muted: #6b6358;
-  --faint: #8a8174;
+  --text: #101114;
+  --muted: #2f3640;
+  --faint: #3d4652;
   --gold: #c2410c;
   --gold-2: #9a3412;
   --gold-dim: rgba(194, 65, 12, 0.1);
@@ -40,8 +40,9 @@ body {
   background: var(--ink);
   color: var(--text);
   font-family: var(--font-sans), system-ui, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   color-scheme: light;
 }
@@ -401,14 +402,14 @@ textarea {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 2px 7px;
+  padding: 4px 9px;
   border-radius: var(--radius-sm, 8px);
   border: 1px solid var(--line);
   font-family: var(--font-mono), ui-monospace, monospace;
-  font-size: 10px;
-  letter-spacing: 0.06em;
+  font-size: 12px;
+  letter-spacing: 0.04em;
   text-transform: uppercase;
-  color: var(--muted);
+  color: var(--text);
   background: var(--panel-2);
 }
 
@@ -438,8 +439,9 @@ textarea {
 .az-select,
 .az-area {
   width: 100%;
-  min-height: 32px;
-  padding: 6px 10px;
+  min-height: 40px;
+  padding: 8px 12px;
+  font-size: 16px;
   border-radius: 3px;
   border: 1px solid var(--line);
   background: var(--ink);

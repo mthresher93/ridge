@@ -41,10 +41,10 @@
 
 .settings-status {
   font-family: var(--fm);
-  font-size: 10px;
-  letter-spacing: 0.08em;
+  font-size: 13px;
+  letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--tx4);
+  color: var(--tx2);
 }
 
 .settings-desk.is-dirty .settings-status {
@@ -74,11 +74,11 @@
 .settings-tabs button {
   border: 0;
   background: transparent;
-  color: var(--tx4);
-  min-height: 32px;
+  color: var(--tx2);
+  min-height: 36px;
   padding: 0 12px;
   border-radius: var(--radius-sm);
-  font-size: 12px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -116,15 +116,15 @@
 }
 
 .st-row-copy b {
-  font-size: 13px;
+  font-size: 15px;
   font-weight: 600;
   color: var(--tx);
 }
 
 .st-row-copy small {
-  font-size: 11px;
-  line-height: 1.35;
-  color: var(--tx4);
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--tx2);
 }
 
 .st-row-ctrl {
@@ -147,9 +147,9 @@
 
 .st-fine {
   margin: 12px 16px 4px;
-  font-size: 12px;
-  line-height: 1.45;
-  color: var(--tx3);
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--tx2);
 }
 
 .st-seg {
@@ -163,10 +163,10 @@
 .st-seg button {
   border: 0;
   background: transparent;
-  color: var(--tx3);
+  color: var(--tx);
   padding: 0 12px;
-  min-height: 28px;
-  font-size: 12px;
+  min-height: 32px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -194,7 +194,7 @@
 .st-range b {
   min-width: 36px;
   text-align: right;
-  font-size: 12px;
+  font-size: 14px;
 }
 
 .st-pair {
@@ -204,8 +204,8 @@
 }
 
 .st-pair span {
-  font-size: 11px;
-  color: var(--tx4);
+  font-size: 14px;
+  color: var(--tx2);
 }
 
 .st-pair .az-input {
@@ -220,8 +220,8 @@
   gap: 8px;
   border: 0;
   background: transparent;
-  color: var(--tx2);
-  font-size: 12px;
+  color: var(--tx);
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -269,10 +269,10 @@
   border: 1px solid var(--br);
   border-radius: var(--radius-sm);
   background: var(--bg2);
-  color: var(--tx3);
+  color: var(--tx);
   padding: 0 10px 0 7px;
-  min-height: 28px;
-  font-size: 12px;
+  min-height: 32px;
+  font-size: 14px;
   font-weight: 600;
 }
 
@@ -304,23 +304,23 @@
 
 .st-ledger-row b {
   display: block;
-  font-size: 12px;
+  font-size: 15px;
 }
 
 .st-ledger-row span {
   display: block;
   margin-top: 2px;
-  font-size: 11px;
-  color: var(--tx4);
+  font-size: 14px;
+  color: var(--tx2);
 }
 
 .st-ledger-row em {
   font-style: normal;
   font-family: var(--fm);
-  font-size: 10px;
+  font-size: 13px;
   letter-spacing: 0.06em;
   text-transform: uppercase;
-  color: var(--tx4);
+  color: var(--tx2);
   white-space: nowrap;
 }
 
@@ -331,8 +331,8 @@
 .st-disclose {
   border: 0;
   background: transparent;
-  color: var(--gold);
-  font-size: 12px;
+  color: var(--gold-2);
+  font-size: 14px;
   font-weight: 600;
   padding: 0;
 }
@@ -346,7 +346,7 @@
 
 .st-danger p {
   margin: 0;
-  font-size: 12px;
+  font-size: 15px;
   color: var(--tx3);
 }
 

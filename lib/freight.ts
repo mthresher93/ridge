@@ -11,7 +11,7 @@ import type {
 } from "./types";
 import { CONTACTED_STAGES, PHONE_STAGES, QUALIFIED_STAGES, QUOTE_STAGES, REPLIED_STAGES, UNCONTACTED_STAGES, WON_STAGES } from "./stages";
 import { normalizePhone, nowIso, uid } from "./format";
-import { recommendEquipment } from "./equipment";
+import { parseDimensions, recommendEquipment } from "./equipment";
 import { variantIndex } from "./pacing";
 
 export const LEAD_SOURCES = [
@@ -127,6 +127,15 @@ export function leadLocation(lead: Lead) {
   return [lead.city, lead.state].filter(Boolean).join(", ");
 }
 
+export function hasMeasuredSpecs(lead: { dimensions?: string | null; weight?: string | null }) {
+  return Boolean(String(lead.dimensions || "").trim() || String(lead.weight || "").trim());
+}
+
+export function trailerFact(lead: { dimensions?: string | null; weight?: string | null; trailerHint?: string | null }, unset = "Ask on the call") {
+  if (!hasMeasuredSpecs(lead)) return unset;
+  return lead.trailerHint || unset;
+}
+
 export function shipmentMargin(customerRate: number, carrierRate: number) {
   return (Number(customerRate) || 0) - (Number(carrierRate) || 0);
 }
@@ -143,12 +152,29 @@ export function sourceFromUrl(url: string) {
   return "Manual";
 }
 
+const US_STATES = new Set("AL AK AZ AR CA CO CT DE FL GA HI ID IL IN IA KS KY LA ME MD MA MI MN MS MO MT NE NV NH NJ NM NY NC ND OH OK OR PA RI SC SD TN TX UT VT VA WA WV WI WY DC".split(" "));
+
 function parsePrice(value: unknown) {
   if (typeof value === "number" && Number.isFinite(value)) return value;
-  const text = String(value || "");
-  const match = text.replace(/,/g, "").match(/\$?\s*(\d+(?:\.\d+)?)/);
+  const text = String(value || "").trim();
+  if (!text) return null;
+  const dollar = text.replace(/,/g, "").match(/\$\s*(\d+(?:\.\d+)?)/);
+  if (dollar) {
+    const n = Number(dollar[1]);
+    return Number.isFinite(n) ? n : null;
+  }
+  if (/^[\d,]+(?:\.\d+)?$/.test(text)) {
+    const n = Number(text.replace(/,/g, ""));
+    return Number.isFinite(n) ? n : null;
+  }
+  return null;
+}
+
+function parseListingPrice(blob: string) {
+  const text = String(blob || "").replace(/,/g, "");
+  const match = text.match(/(?:asking(?:\s*price)?|price)\s*:?\s*\$?\s*(\d+(?:\.\d+)?)|\$\s*(\d+(?:\.\d+)?)/i);
   if (!match) return null;
-  const n = Number(match[1]);
+  const n = Number(match[1] || match[2]);
   return Number.isFinite(n) ? n : null;
 }
 
@@ -160,16 +186,103 @@ function parsePlace(location: string, city = "", state = "") {
   return { city: city || text.replace(/\b[A-Z]{2}\b/, "").replace(/,/g, "").trim(), state: state || (st ? st[1].toUpperCase() : "") };
 }
 
+function extractPlaceFromText(text: string) {
+  for (const line of String(text || "").split(/\n+/)) {
+    const located = line.match(/\b(?:located in|pickup(?:\s+in)?)\s+([A-Z][a-zA-Z .']+),\s*([A-Z]{2})\b/i);
+    const pair = line.match(/\b([A-Z][a-zA-Z.'-]+(?:[ ][A-Z][a-zA-Z.'-]+)*),\s*([A-Z]{2})\b/);
+    const match = located || pair;
+    if (!match) continue;
+    const st = match[2].toUpperCase();
+    if (!US_STATES.has(st)) continue;
+    const city = match[1].trim().replace(/^(located in|pickup(?:\s+in)?)\s+/i, "");
+    if (!city || city.split(/\s+/).length > 4) continue;
+    if (/\b(llc|inc|ltd|corp)\b/i.test(city)) continue;
+    return { city, state: st };
+  }
+  return { city: "", state: "" };
+}
+
+function extractPublishedPhone(given: string, blob: string) {
+  if (given.trim()) return given.trim();
+  const tel = blob.match(/tel:\+?1?(\d{10})/i);
+  if (tel) {
+    const d = tel[1];
+    return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
+  }
+  const stripped = blob.replace(/\b\d+(?:\.\d+)?\s*[x×]\s*\d+(?:\.\d+)?(?:\s*[x×]\s*\d+(?:\.\d+)?)?/gi, " ");
+  const matches = stripped.matchAll(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/g);
+  for (const hit of matches) {
+    const digits = hit[0].replace(/\D/g, "");
+    const ten = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+    if (ten.length !== 10) continue;
+    if (/^(\d)\1{9}$/.test(ten) || ten.startsWith("000") || ten.startsWith("111")) continue;
+    return hit[0];
+  }
+  return "";
+}
+
+function cleanSeller(value: string) {
+  const name = value.replace(/\s+/g, " ").replace(/[|•].*$/, "").trim();
+  if (name.length < 3 || name.length > 80) return "";
+  if (/ago|hour|minute|yesterday|today|for sale/i.test(name)) return "";
+  return name.slice(0, 80);
+}
+
+function extractSellerName(given: string, blob: string) {
+  if (given.trim()) return given.trim().slice(0, 80);
+  const posted = blob.match(/(?:posted by|listed by|seller(?: name)?|dealer|company|sold by)\s*[:\-]\s*([^\n]{3,70})/i);
+  if (posted) {
+    const name = cleanSeller(posted[1]);
+    if (name) return name;
+  }
+  const company = blob.match(/\b([A-Z][A-Za-z0-9 .'&-]{1,50}\s(?:LLC|Inc\.?|Ltd|Corp\.?))\b/);
+  if (company) return company[1].trim().slice(0, 80);
+  const lines = blob.split(/\n+/).map((line) => line.trim().replace(/\s+/g, " ")).filter(Boolean);
+  for (const line of lines) {
+    if (line.length > 70) continue;
+    if (/^(call|phone|email|price|asking|location|dimensions?|weight|shipping)/i.test(line)) continue;
+    if (/\b(machinery|equipment|rental|dealership|lift sales)\b/i.test(line) && !/\$/.test(line) && !/\b(forklift|excavator|skid\s*steer|bobcat|dozer)\b/i.test(line)) {
+      return line.slice(0, 80);
+    }
+  }
+  return "";
+}
+
+function extractDimensions(given: string, blob: string) {
+  if (given.trim()) return given.trim();
+  const withUnits = blob.match(/\b\d+(?:\.\d+)?\s*(?:x|×)\s*\d+(?:\.\d+)?(?:\s*(?:x|×)\s*\d+(?:\.\d+)?)?\s*(?:in|ft|feet|inches|")\b/i);
+  if (withUnits) return withUnits[0];
+  const bare = blob.match(/\b\d+(?:\.\d+)?\s*(?:x|×)\s*\d+(?:\.\d+)?(?:\s*(?:x|×)\s*\d+(?:\.\d+)?)\b/i);
+  if (!bare) return "";
+  const parsed = parseDimensions(bare[0]);
+  if (parsed.lengthFt == null || parsed.widthFt == null) return "";
+  return bare[0];
+}
+
+export function captureFacts(extracted: ExtractedListing) {
+  return [
+    extracted.sellerName ? { k: "Seller", v: extracted.sellerName } : null,
+    extracted.city || extracted.state ? { k: "City", v: [extracted.city, extracted.state].filter(Boolean).join(", ") } : null,
+    extracted.phone ? { k: "Phone", v: extracted.phone } : null,
+    extracted.email ? { k: "Email", v: extracted.email } : null,
+    extracted.dimensions ? { k: "Dims", v: extracted.dimensions } : null,
+    extracted.weight ? { k: "Weight", v: extracted.weight } : null,
+    extracted.equipmentType ? { k: "Unit", v: extracted.equipmentType } : null,
+    extracted.askingPrice != null ? { k: "Their ask", v: `$${Math.round(extracted.askingPrice)}` } : null,
+  ].filter(Boolean) as { k: string; v: string }[];
+}
+
 export function extractListingData(payload: CapturePayload): ExtractedListing {
   const blob = [payload.title, payload.description, payload.pageText, payload.notes].filter(Boolean).join("\n");
   const firstLine = (payload.title || blob.split("\n").find((line) => line.trim()) || "Untitled listing").trim();
-  const place = parsePlace(payload.location || "", payload.city || "", payload.state || "");
+  const named = parsePlace(payload.location || "", payload.city || "", payload.state || "");
+  const fromBlob = extractPlaceFromText(blob);
+  const place = named.city || named.state ? named : fromBlob;
   const url = (payload.url || "").trim();
-  const price = parsePrice(payload.price) ?? parsePrice(blob);
+  const price = parsePrice(payload.price) ?? parseListingPrice(blob);
   const email = payload.email || (blob.match(/[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}/i) || [])[0] || "";
-  const phoneMatch = blob.match(/(\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]?\d{3}[\s.-]?\d{4}/);
-  const dims = payload.dimensions || (blob.match(/\b\d+(?:\.\d+)?\s*(?:x|×)\s*\d+(?:\.\d+)?(?:\s*(?:x|×)\s*\d+(?:\.\d+)?)?\s*(?:in|ft|")\b/i) || [])[0] || "";
-  const weight = payload.weight || (blob.match(/\b\d[\d,]*\s*(?:lbs?|pounds|tons?|kg)\b/i) || [])[0] || "";
+  const dims = extractDimensions(payload.dimensions || "", blob);
+  const weight = payload.weight || (blob.match(/\b\d[\d,]*\s*(?:lbs?|pounds|#|tons?|kg)\b/i) || [])[0] || "";
   const qtyRaw = payload.quantity;
   const quantity = typeof qtyRaw === "number" ? qtyRaw : qtyRaw ? Number(qtyRaw) || null : null;
   const equipment = payload.equipmentType || guessEquipment(firstLine + " " + blob);
@@ -178,7 +291,7 @@ export function extractListingData(payload: CapturePayload): ExtractedListing {
     description: (payload.description || payload.pageText || "").trim().slice(0, 4000),
     source: payload.source || sourceFromUrl(url),
     sourceUrl: url,
-    sellerName: (payload.sellerName || "").trim(),
+    sellerName: extractSellerName(payload.sellerName || "", blob),
     sellerUrl: (payload.sellerUrl || "").trim(),
     city: place.city,
     state: place.state,
@@ -190,7 +303,7 @@ export function extractListingData(payload: CapturePayload): ExtractedListing {
     quantity,
     pickupLocation: payload.pickupLocation || [place.city, place.state].filter(Boolean).join(", "),
     destination: payload.destination || "",
-    phone: payload.phone || (phoneMatch ? phoneMatch[0] : ""),
+    phone: extractPublishedPhone(payload.phone || "", blob),
     email,
     website: payload.website || "",
     notes: payload.notes || "",
@@ -470,7 +583,7 @@ export function generateOpeningMessage(analysis: FreightAnalysis, style: Message
 
 function guessItemFromOpeners(analysis: FreightAnalysis) {
   const text = analysis.openerCasual || analysis.why || "item";
-  const hit = text.match(/the ([a-z0-9][a-z0-9\s-]{2,40}?)(?:\.|,| if| sells| need)/i);
+  const hit = text.match(/(?:the|a|this)\s+([a-z0-9][a-z0-9\s-]{2,40}?)(?:\.|,|:| if| sells| need| has)/i);
   return (hit?.[1] || "item").trim();
 }
 

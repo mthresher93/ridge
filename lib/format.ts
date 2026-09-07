@@ -87,6 +87,12 @@ export function daysBetween(iso: string, now = Date.now()) {
   return Math.max(0, Math.floor((now - Date.parse(iso)) / 86400000));
 }
 
+/** Days until the next occurrence of weekday (0 Sun … 6 Sat). Today counts as next week. */
+export function daysUntilNextWeekday(weekday: number, from = new Date()) {
+  const delta = (weekday - from.getDay() + 7) % 7;
+  return delta === 0 ? 7 : delta;
+}
+
 export function leadScore(lead: Lead) {
   return lead.freightScore ?? 0;
 }

@@ -1,13 +1,12 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { nowIso, phonePretty } from "@/lib/format";
-import { createLinkedOpportunity } from "@/lib/crm";
+import { phonePretty } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv, type ImportDraft } from "@/lib/contacts";
 import { LeadDrawer } from "./lead-drawer";
-import { blankProspect, companyName, ingestCapture, leadLocation, matchesProspectFilter, type ProspectFilter } from "@/lib/freight";
+import { companyName, ingestCapture, leadLocation, matchesProspectFilter, type ProspectFilter } from "@/lib/freight";
 
 const FILTERS: { id: ProspectFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -19,6 +18,7 @@ const FILTERS: { id: ProspectFilter; label: string }[] = [
 ];
 
 export function PeopleView() {
+  const router = useRouter();
   const searchParams = useSearchParams();
   const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
   const [query, setQuery] = useState(searchParams.get("q") || "");
@@ -30,6 +30,9 @@ export function PeopleView() {
   const [importRows, setImportRows] = useState<ImportDraft[] | null>(null);
   const [importError, setImportError] = useState("");
   const [selectedId, setSelectedId] = useState<string | null>(searchParams.get("id"));
+  const [adding, setAdding] = useState(false);
+  const [addForm, setAddForm] = useState({ name: "", phone: "", city: "", state: "" });
+  const [addError, setAddError] = useState("");
   const minScore = Number(searchParams.get("score") || 0);
 
   useEffect(() => {
@@ -54,17 +57,31 @@ export function PeopleView() {
 
   const selected = workspace.leads.find((lead) => lead.id === selectedId) || null;
 
-  function addLead() {
-    const id = `lead-${crypto.randomUUID?.() || Date.now()}`;
-    const prospect = blankProspect(workspace.settings.defaultOwner, { id, name: "New client", status: "Discovered" });
+  function addLead(event: React.FormEvent) {
+    event.preventDefault();
+    const name = addForm.name.trim();
+    if (!name) {
+      setAddError("Name is required. Use a real seller or company from the listing.");
+      return;
+    }
+    let savedId = "";
     setWorkspace((prev) => {
-      const withLead = { ...prev, leads: [prospect, ...prev.leads], updatedAt: nowIso() };
-      const opp = createLinkedOpportunity(withLead, id, prospect.name, companyName(prospect));
-      return { ...withLead, opportunities: [opp, ...withLead.opportunities] };
+      const result = ingestCapture(prev, {
+        source: "Manual",
+        sellerName: name,
+        phone: addForm.phone.trim(),
+        location: [addForm.city.trim(), addForm.state.trim()].filter(Boolean).join(", "),
+        title: name,
+      });
+      savedId = result.lead.id;
+      return result.workspace;
     });
-    log("lead", id, "created", "Client created");
-    setSelectedId(id);
-    setSelectedLeadId(id);
+    log("lead", savedId, "created", "Client added from typed facts");
+    setSelectedId(savedId);
+    setSelectedLeadId(savedId);
+    setAdding(false);
+    setAddForm({ name: "", phone: "", city: "", state: "" });
+    setAddError("");
   }
 
   function exportCsv() {
@@ -119,10 +136,13 @@ export function PeopleView() {
           <div>
             <h1>Clients</h1>
             <p>
-              {leads.length} {shelf} · you label what they are. Listing prices stay on the listing, not as your rate.
+              {leads.length} {shelf} · typed name, published phone, city. Hunt a listing when you can paste the page.
             </p>
           </div>
           <div className="rec-head-actions">
+            <button className="az-btn sm" type="button" onClick={() => router.push("/discover?tab=paste")}>
+              Paste a listing
+            </button>
             <button className="az-btn sm" type="button" onClick={exportCsv}>
               Export CSV
             </button>
@@ -139,7 +159,7 @@ export function PeopleView() {
                 }}
               />
             </label>
-            <button className="az-btn pri sm" onClick={addLead}>
+            <button className="az-btn pri sm" type="button" onClick={() => setAdding(true)}>
               Add client
             </button>
           </div>
@@ -197,8 +217,19 @@ export function PeopleView() {
             <tbody>
               {leads.length === 0 ? (
                 <tr className="cursor-default">
-                  <td colSpan={7} className="py-10 text-center text-[var(--muted)]">
-                    No clients yet. Hunt a live listing in Discover, or add one here.
+                  <td colSpan={7} className="py-10">
+                    <div className="empty-desk" style={{ margin: 0, boxShadow: "none" }}>
+                      <h2>No clients yet</h2>
+                      <p>Paste a live listing, or type a real seller name. Haul will not invent a contact.</p>
+                      <div className="empty-desk-actions">
+                        <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover?tab=paste")}>
+                          Paste a listing
+                        </button>
+                        <button className="az-btn sm" type="button" onClick={() => setAdding(true)}>
+                          Add from a call
+                        </button>
+                      </div>
+                    </div>
                   </td>
                 </tr>
               ) : null}
@@ -234,6 +265,63 @@ export function PeopleView() {
         </div>
 
         {selected ? <LeadDrawer lead={selected} onClose={() => setSelectedId(null)} /> : null}
+        {adding ? (
+          <div className="az-overlay" onClick={() => setAdding(false)}>
+            <aside className="az-drawer" onClick={(event) => event.stopPropagation()}>
+              <h2>Add client</h2>
+              <p className="cd-mono">Type facts you have. Leave phone blank if it was not published.</p>
+              <form className="rec-form" onSubmit={addLead}>
+                {addError ? <p className="rec-warn">{addError}</p> : null}
+                <label className="rec-field">
+                  Name / company
+                  <input
+                    className="az-input"
+                    value={addForm.name}
+                    onChange={(event) => setAddForm((prev) => ({ ...prev, name: event.target.value }))}
+                    placeholder="Westside Machinery LLC"
+                    autoFocus
+                  />
+                </label>
+                <label className="rec-field">
+                  Published phone
+                  <input
+                    className="az-input"
+                    value={addForm.phone}
+                    onChange={(event) => setAddForm((prev) => ({ ...prev, phone: event.target.value }))}
+                    placeholder="Only if it was on the page or they gave it"
+                  />
+                </label>
+                <div className="rec-grid">
+                  <label className="rec-field">
+                    City
+                    <input
+                      className="az-input"
+                      value={addForm.city}
+                      onChange={(event) => setAddForm((prev) => ({ ...prev, city: event.target.value }))}
+                    />
+                  </label>
+                  <label className="rec-field">
+                    State
+                    <input
+                      className="az-input"
+                      value={addForm.state}
+                      onChange={(event) => setAddForm((prev) => ({ ...prev, state: event.target.value }))}
+                      placeholder="TX"
+                    />
+                  </label>
+                </div>
+                <div className="rec-save">
+                  <button className="az-btn pri" type="submit">
+                    Save
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => setAdding(false)}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            </aside>
+          </div>
+        ) : null}
       </div>
     </div>
   );

@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { CLIENT_KINDS, LEAD_SOURCES, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
+import { CLIENT_KINDS, LEAD_SOURCES, captureFacts, extractListingData, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
+import { workPath } from "@/lib/nav";
 import { HUNT_BRIEF, HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, type HuntPackItem, type HuntRank } from "@/lib/hunt";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
@@ -178,23 +179,38 @@ export function DiscoverView() {
       setError("Listing text is too long. Trim it under 8,000 characters.");
       return;
     }
-    const id = await capture({
+    const pulledListing = extractListingData({
       source: form.source,
       url: form.url,
       title: form.title,
       description: form.description,
-      price: form.price,
       location: form.location,
       sellerName: form.sellerName,
-      sellerUrl: form.sellerUrl,
       phone: form.phone,
-      email: form.email,
+      price: form.price,
+      pageText: blob,
+    });
+    const id = await capture({
+      source: form.source,
+      url: form.url,
+      title: form.title || pulledListing.title,
+      description: form.description,
+      price: form.price || (pulledListing.askingPrice != null ? String(pulledListing.askingPrice) : ""),
+      location: form.location || [pulledListing.city, pulledListing.state].filter(Boolean).join(", "),
+      sellerName: form.sellerName || pulledListing.sellerName,
+      sellerUrl: form.sellerUrl,
+      phone: form.phone || pulledListing.phone,
+      email: form.email || pulledListing.email,
       website: form.website,
       notes: form.notes,
+      dimensions: pulledListing.dimensions,
+      weight: pulledListing.weight,
       pageText: blob,
     });
     if (id) {
       setForm({ source: form.source, url: "", title: "", sellerName: "", sellerUrl: "", location: "", price: "", description: "", phone: "", email: "", website: "", notes: "" });
+      setSelectedLeadId(id);
+      router.push(workPath(id));
     }
   }
 
@@ -297,6 +313,22 @@ export function DiscoverView() {
   }
 
   const capturedLead = lastCapture ? workspace.leads.find((item) => item.id === lastCapture.leadId) : null;
+  const pastePreview = useMemo(
+    () =>
+      extractListingData({
+        source: form.source,
+        url: form.url,
+        title: form.title,
+        description: form.description,
+        location: form.location,
+        sellerName: form.sellerName,
+        phone: form.phone,
+        price: form.price,
+        pageText: form.description,
+      }),
+    [form],
+  );
+  const pulled = captureFacts(pastePreview);
 
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading discovery…</div>;
 
@@ -446,8 +478,22 @@ export function DiscoverView() {
               <form className="discover-form" onSubmit={onPaste}>
                 <label className="rec-field">
                   Paste the listing
-                  <textarea className="az-area" rows={7} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder="Paste the ad: seller, city, phone if it is on the page, equipment, dimensions…" />
+                  <textarea className="az-area" rows={8} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder="Paste the whole ad. Haul pulls name, published phone, city, dims, and weight. Confirm below, then save." />
                 </label>
+                {form.description.trim() ? (
+                  <div className="paste-preview">
+                    {pulled.length ? (
+                      pulled.map((item) => (
+                        <span key={item.k}>
+                          <b>{item.k}</b> {item.v}
+                        </span>
+                      ))
+                    ) : (
+                      <span>Nothing parsed yet — a name, city, or dims help.</span>
+                    )}
+                    {!pastePreview.phone ? <span>No phone on the page — that's fine.</span> : null}
+                  </div>
+                ) : null}
                 <div className="rec-grid">
                   <label className="rec-field">
                     Source
@@ -465,17 +511,17 @@ export function DiscoverView() {
                 <div className="rec-grid">
                   <label className="rec-field">
                     Seller / business
-                    <input className="az-input" value={form.sellerName} onChange={(event) => set("sellerName", event.target.value)} />
+                    <input className="az-input" value={form.sellerName} onChange={(event) => set("sellerName", event.target.value)} placeholder={pastePreview.sellerName || "Pulled from the paste if you leave this blank"} />
                   </label>
                   <label className="rec-field">
                     City, ST
-                    <input className="az-input" value={form.location} onChange={(event) => set("location", event.target.value)} placeholder="Chicago, IL" />
+                    <input className="az-input" value={form.location} onChange={(event) => set("location", event.target.value)} placeholder={pastePreview.city ? [pastePreview.city, pastePreview.state].filter(Boolean).join(", ") : "Chicago, IL"} />
                   </label>
                 </div>
                 <div className="rec-grid">
                   <label className="rec-field">
                     Phone (only if it was on the page)
-                    <input className="az-input" value={form.phone} onChange={(event) => set("phone", event.target.value)} />
+                    <input className="az-input" value={form.phone} onChange={(event) => set("phone", event.target.value)} placeholder={pastePreview.phone || "Leave blank if it wasn't published"} />
                   </label>
                   <label className="rec-field">
                     Their ask (optional — not your rate)
@@ -484,7 +530,7 @@ export function DiscoverView() {
                 </div>
                 <div className="rec-save">
                   <button className="az-btn pri" type="submit" disabled={busy}>
-                    {busy ? "Scoring…" : "Save & score"}
+                    {busy ? "Saving…" : "Save and work this"}
                   </button>
                   <span className="cd-mono">{ai?.ready ? `Classifying with ${ai.provider}` : "Local rules until Ollama is up"}</span>
                 </div>
@@ -591,7 +637,7 @@ export function DiscoverView() {
                     {lastCapture.duplicate ? " · already on file" : ""}
                   </p>
                   {lastCapture.why ? <p>{lastCapture.why}</p> : null}
-                  <p className="cd-mono">Label — you decide. Suggested: {lastCapture.suggested || "none"}</p>
+                  <p className="cd-mono">Label here or on the work screen. Suggested: {lastCapture.suggested || "none"}</p>
                   <div className="label-chips">
                     {CLIENT_KINDS.filter((kind) => kind !== "Unlabeled").map((kind) => (
                       <button
@@ -610,13 +656,10 @@ export function DiscoverView() {
                       type="button"
                       onClick={() => {
                         setSelectedLeadId(lastCapture.leadId);
-                        router.push("/outreach");
+                        router.push(workPath(lastCapture.leadId));
                       }}
                     >
-                      Work outreach
-                    </button>
-                    <button className="az-btn sm" type="button" onClick={() => router.push(`/people?id=${lastCapture.leadId}`)}>
-                      Open client
+                      Work this
                     </button>
                   </div>
                 </>
@@ -636,7 +679,7 @@ export function DiscoverView() {
               {recent.map((item) => {
                 const lead = workspace.leads.find((row) => row.id === item.leadId);
                 return (
-                  <button key={item.id} type="button" className="work-row text-left" onClick={() => router.push(`/people?id=${item.leadId}`)}>
+                  <button key={item.id} type="button" className="work-row text-left" onClick={() => { setSelectedLeadId(item.leadId); router.push(workPath(item.leadId)); }}>
                     <div>
                       <b>{lead?.name || item.sellerName || item.title}</b>
                       <div className="cd-mono">

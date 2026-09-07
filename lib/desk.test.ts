@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { deskPlan, todayHunt } from "./desk";
+import { blankProspect } from "./freight";
 import { emptyWorkspace } from "./seed";
 import { HUNT_PLAYS } from "./hunt";
 
@@ -21,5 +22,13 @@ describe("deskPlan", () => {
     expect(plan[0].href).toContain("/discover");
     expect(plan[1].href).toBe("/playbook");
     expect(plan[2].href).toContain("paste");
+  });
+
+  it("sends an unlabeled capture to the work screen, not Clients", () => {
+    const workspace = emptyWorkspace();
+    workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Westside Machinery LLC", status: "Discovered" })];
+    const plan = deskPlan(workspace, Date.parse("2026-09-07T12:00:00"));
+    expect(plan[0].href).toBe("/outreach?id=lead-1");
+    expect(plan.some((item) => item.href.startsWith("/people"))).toBe(false);
   });
 });

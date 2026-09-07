@@ -3,7 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { NAV } from "@/lib/nav";
+import { NAV, workPath } from "@/lib/nav";
 
 type Result = {
   id: string;
@@ -38,7 +38,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         router.push(href);
       };
       people.push(
-        { id: `${lead.id}-outreach`, title: `${lead.name} · Outreach`, detail: `${lead.property} · score ${lead.freightScore ?? "—"}`, run: () => open("/outreach") },
+        { id: `${lead.id}-outreach`, title: `${lead.name} · Work`, detail: `${lead.property} · score ${lead.freightScore ?? "—"}`, run: () => open(workPath(lead.id)) },
         { id: `${lead.id}-record`, title: `${lead.name} · Client`, detail: lead.label ? `${lead.label} · ${lead.status}` : lead.status, run: () => open(`/people?id=${lead.id}`) },
       );
       if (people.length >= 16) break;

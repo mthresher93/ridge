@@ -31,8 +31,9 @@ export function answerCopilot(workspace: Workspace, question: string): CopilotAn
       .slice(0, 3)
       .map((item) => `${item.code} no: ${item.fails[0]}`)
       .join(" ");
+    const prefix = fit.usedGuess || fit.confidence !== "known" ? "Catalog estimate — type measured L×W×H and pounds in Intel. " : "";
     return {
-      answer: `${fit.trailerName} · ${fit.loadClass} (${fit.confidence}). ${fit.why} ${nos} ${fit.ask[0] || ""}${extra}`,
+      answer: `${prefix}${fit.trailerName} · ${fit.loadClass} (${fit.confidence}). ${fit.why} ${nos} ${fit.ask[0] || ""}${extra}`,
       matches: [],
     };
   }

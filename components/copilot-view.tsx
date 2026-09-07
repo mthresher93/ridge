@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { answerCopilot } from "@/lib/freight-copilot";
@@ -13,30 +13,34 @@ const PROMPTS = [
   "What were my best lead sources this month?",
 ];
 
+const EMPTY_ANSWER = {
+  answer: "Ask about clients you captured. Trailer chips are catalog drills until you type measured numbers in Intel.",
+  matches: [] as { id: string; label: string }[],
+};
+
 export function CopilotView() {
   const router = useRouter();
   const { workspace, loading, setSelectedLeadId } = useWorkspace();
-  const [question, setQuestion] = useState("Who should I follow up with today?");
-  const [answer, setAnswer] = useState(() => answerCopilot(workspace, "Who should I follow up with today?"));
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState(EMPTY_ANSWER);
   const [provider, setProvider] = useState("rules");
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    if (loading) return;
-    void ask("Who should I follow up with today?");
-  }, [loading]);
+  const [asked, setAsked] = useState(false);
 
   async function ask(text: string) {
-    setQuestion(text);
+    const q = text.trim();
+    if (!q) return;
+    setQuestion(q);
+    setAsked(true);
     setBusy(true);
-    const local = answerCopilot(workspace, text);
+    const local = answerCopilot(workspace, q);
     setAnswer(local);
     setProvider("rules");
     try {
       const res = await fetch("/api/ai/copilot", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: text }),
+        body: JSON.stringify({ question: q }),
       });
       const json = await res.json();
       if (res.ok && json.answer) {
@@ -57,7 +61,9 @@ export function CopilotView() {
       <header className="crm-desk-head">
         <div>
           <h1>AI Copilot</h1>
-          <p>Answers come from this workspace. {provider === "rules" ? "Local desk logic." : `Model: ${provider}.`} No invented pipeline numbers.</p>
+          <p>
+            Answers come from this workspace. {provider === "rules" ? "Local desk logic." : `Model: ${provider}.`} No invented names, phones, or rates.
+          </p>
         </div>
       </header>
       <div className="desk-body">
@@ -81,7 +87,7 @@ export function CopilotView() {
           ))}
         </div>
         <section className="az-panel freight-panel" style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
-          {answer.answer}
+          {asked || question ? answer.answer : EMPTY_ANSWER.answer}
         </section>
         {answer.matches.length ? (
           <section className="desk-list">

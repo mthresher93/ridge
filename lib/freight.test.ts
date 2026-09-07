@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeFreightOpportunity, detectShipperRole, extractListingData, generateOpeningMessage, ingestCapture, suggestClientKind } from "./freight";
+import { analyzeFreightOpportunity, captureFacts, detectShipperRole, extractListingData, generateOpeningMessage, hasMeasuredSpecs, ingestCapture, suggestClientKind, trailerFact } from "./freight";
 import { emptyWorkspace } from "./seed";
 
 function score(text: string, extra: Record<string, string> = {}) {
@@ -66,6 +66,26 @@ describe("ingestCapture", () => {
     expect(result.lead.estimatedValue).toBe(0);
     expect(result.workspace.opportunities[0]?.value).toBe(0);
   });
+
+  it("pulls seller, city, phone, dims, and weight from a pasted dealer ad", () => {
+    const result = ingestCapture(emptyWorkspace(), {
+      description: `Toyota 8FGU25 forklift 5,000 lb
+Westside Machinery LLC
+Dallas, TX
+Call (214) 555-0100
+26 x 8.5 x 10
+Asking $18,900
+Can load on a trailer`,
+    });
+    expect(result.lead.name).toBe("Westside Machinery LLC");
+    expect(result.lead.city).toBe("Dallas");
+    expect(result.lead.state).toBe("TX");
+    expect(result.lead.phone).toMatch(/214/);
+    expect(result.lead.dimensions).toMatch(/26/);
+    expect(result.lead.weight).toMatch(/5,000\s*lb/i);
+    expect(result.lead.estimatedValue).toBe(0);
+    expect(result.lead.askingPrice).toBe(18900);
+  });
 });
 
 describe("suggestClientKind", () => {
@@ -95,6 +115,39 @@ describe("generateOpeningMessage", () => {
     const a = generateOpeningMessage(analysis, "Casual", "lead-1", 0);
     const b = generateOpeningMessage(analysis, "Casual", "lead-1", 1);
     expect(a.length).toBeGreaterThan(20);
+    expect(a).toMatch(/forklift/i);
     expect(a).not.toBe(b);
+  });
+});
+
+describe("extractListingData", () => {
+  it("does not invent a phone when none is on the page", () => {
+    const extracted = extractListingData({
+      description: "Toyota forklift in Dallas, TX. 9000 lb. 12 x 6 x 8. Asking $12,500.",
+    });
+    expect(extracted.phone).toBe("");
+    expect(extracted.city).toBe("Dallas");
+    expect(extracted.dimensions).toMatch(/12/);
+    expect(extracted.weight).toMatch(/9000/);
+    expect(extracted.askingPrice).toBe(12500);
+    expect(captureFacts(extracted).some((item) => item.k === "Phone")).toBe(false);
+  });
+
+  it("reads a company from Posted by and unitless LxWxH", () => {
+    const extracted = extractListingData({
+      pageText: "Posted by: Hill Country Lift LLC\nAustin, TX\n28 x 8 x 13\n20000 lb sleeper cab",
+    });
+    expect(extracted.sellerName).toBe("Hill Country Lift LLC");
+    expect(extracted.city).toBe("Austin");
+    expect(extracted.dimensions).toBe("28 x 8 x 13");
+    expect(extracted.weight).toMatch(/20000/);
+  });
+});
+
+describe("trailerFact", () => {
+  it("does not present a catalog trailer as a measured fact", () => {
+    expect(hasMeasuredSpecs({ dimensions: "", weight: "" })).toBe(false);
+    expect(trailerFact({ dimensions: "", weight: "", trailerHint: "Hot Shot · Partial" })).toBe("Ask on the call");
+    expect(trailerFact({ dimensions: "12 x 6 x 8", weight: "9000", trailerHint: "Hot Shot · Partial" })).toBe("Hot Shot · Partial");
   });
 });

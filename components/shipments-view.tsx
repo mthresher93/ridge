@@ -3,11 +3,27 @@
 import { useMemo, useState } from "react";
 import { useWorkspace } from "@/lib/workspace-context";
 import { money, nowIso, uid } from "@/lib/format";
-import { shipmentMargin } from "@/lib/freight";
+import { companyName, leadLocation, shipmentMargin } from "@/lib/freight";
 import { parseMoney, SHIPMENT_STATUSES } from "@/lib/validate";
-import type { Shipment, ShipmentStatus } from "@/lib/types";
+import type { Lead, Shipment, ShipmentStatus } from "@/lib/types";
 
 const STATUSES = SHIPMENT_STATUSES;
+
+function fillFromLead(person: Lead | undefined, prev: Omit<Shipment, "id" | "createdAt" | "updatedAt">) {
+  if (!person) return { ...prev, leadId: "" };
+  return {
+    ...prev,
+    leadId: person.id,
+    customer: companyName(person) || person.name,
+    contact: person.name,
+    origin: person.origin || leadLocation(person) || "",
+    destination: person.destination || "",
+    commodity: person.listingTitle || person.equipmentType || "",
+    weight: person.weight || "",
+    dimensions: person.dimensions || "",
+    equipmentType: person.equipmentType || "",
+  };
+}
 
 const EMPTY: Omit<Shipment, "id" | "createdAt" | "updatedAt"> = {
   leadId: "",
@@ -44,12 +60,8 @@ export function ShipmentsView() {
 
   function openNew() {
     setEditing("new");
-    setDraft({
-      ...EMPTY,
-      leadId: workspace.leads[0]?.id || "",
-      customer: workspace.leads[0] ? workspace.leads[0].company || workspace.leads[0].property : "",
-      contact: workspace.leads[0]?.name || "",
-    });
+    setDraft({ ...EMPTY });
+    setFormError("");
   }
 
   function openEdit(item: Shipment) {
@@ -165,16 +177,7 @@ export function ShipmentsView() {
                   Prospect
                   <select className="az-select" value={draft.leadId} onChange={(event) => {
                     const person = workspace.leads.find((item) => item.id === event.target.value);
-                    setDraft((prev) => ({
-                      ...prev,
-                      leadId: event.target.value,
-                      customer: person?.company || person?.property || prev.customer,
-                      contact: person?.name || prev.contact,
-                      origin: person?.origin || prev.origin,
-                      destination: person?.destination || prev.destination,
-                      commodity: person?.listingTitle || prev.commodity,
-                      equipmentType: person?.freightType || prev.equipmentType,
-                    }));
+                    setDraft((prev) => fillFromLead(person, prev));
                   }}>
                     <option value="">Unlinked</option>
                     {workspace.leads.map((item) => (
@@ -239,14 +242,32 @@ export function ShipmentsView() {
                 <div className="rec-grid">
                   <label className="rec-field">
                     Customer rate
-                    <input className="az-input" type="number" value={draft.customerRate} onChange={(event) => setDraft((prev) => ({ ...prev, customerRate: Number(event.target.value) }))} />
+                    <input
+                      className="az-input"
+                      type="number"
+                      min={0}
+                      value={draft.customerRate || ""}
+                      placeholder="Blank until you have a rate"
+                      onChange={(event) => setDraft((prev) => ({ ...prev, customerRate: event.target.value === "" ? 0 : Number(event.target.value) }))}
+                    />
                   </label>
                   <label className="rec-field">
                     Carrier cost
-                    <input className="az-input" type="number" value={draft.carrierRate} onChange={(event) => setDraft((prev) => ({ ...prev, carrierRate: Number(event.target.value) }))} />
+                    <input
+                      className="az-input"
+                      type="number"
+                      min={0}
+                      value={draft.carrierRate || ""}
+                      placeholder="Blank until you have a cost"
+                      onChange={(event) => setDraft((prev) => ({ ...prev, carrierRate: event.target.value === "" ? 0 : Number(event.target.value) }))}
+                    />
                   </label>
                 </div>
-                <p className="cd-mono">Gross margin {money(shipmentMargin(Number(draft.customerRate) || 0, Number(draft.carrierRate) || 0))}</p>
+                <p className="cd-mono">
+                  {draft.customerRate || draft.carrierRate
+                    ? `Gross margin ${money(shipmentMargin(Number(draft.customerRate) || 0, Number(draft.carrierRate) || 0))}`
+                    : "Leave rates blank until a customer or carrier gives you a number. Listing ask is not your rate."}
+                </p>
                 <label className="rec-field">
                   Carrier
                   <input className="az-input" value={draft.carrier} onChange={(event) => setDraft((prev) => ({ ...prev, carrier: event.target.value }))} />

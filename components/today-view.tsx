@@ -6,6 +6,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
 import { deskPlan, START_CONNECTIONS, todayHunt } from "@/lib/desk";
 import { companyName, leadLocation, outreachQueue } from "@/lib/freight";
+import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
 import { nowIso, relativeDue } from "@/lib/format";
 
@@ -160,7 +161,7 @@ export function TodayView() {
                 </header>
                 {unlabeled.length === 0 ? <p className="rec-empty">Every client is labeled.</p> : null}
                 {unlabeled.map((lead) => (
-                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, `/people?id=${lead.id}`)}>
+                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, workPath(lead.id))}>
                     <div>
                       <b>{lead.name}</b>
                       <div className="cd-mono">
@@ -175,17 +176,17 @@ export function TodayView() {
               <section className="az-panel freight-panel">
                 <header>
                   <h3>Message these</h3>
-                  <button className="az-btn sm" type="button" onClick={() => router.push("/outreach")}>
-                    Outreach
+                  <button className="az-btn sm" type="button" onClick={() => router.push(workPath())}>
+                    Work
                   </button>
                 </header>
                 {toMessage.length === 0 ? <p className="rec-empty">Queue is clear.</p> : null}
                 {toMessage.map((lead) => (
-                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, "/outreach")}>
+                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, workPath(lead.id))}>
                     <div>
                       <b>{lead.name}</b>
                       <div className="cd-mono">
-                        {lead.label || "Unlabeled"} · {lead.shipperRole || "Unknown"} · {lead.trailerHint || companyName(lead) || lead.source}
+                        {lead.label || "Unlabeled"} · {lead.shipperRole && lead.shipperRole !== "Unknown" ? lead.shipperRole : "—"} · {companyName(lead) || lead.source}
                       </div>
                     </div>
                     <div className="freight-score">
@@ -237,11 +238,11 @@ export function TodayView() {
                   </button>
                 </header>
                 {hotYards.map((lead) => (
-                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, `/people?id=${lead.id}`)}>
+                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, workPath(lead.id))}>
                     <div>
                       <b>{lead.name}</b>
                       <div className="cd-mono">
-                        {lead.trailerHint || "Trailer unset"} · {leadLocation(lead) || "—"}
+                        {lead.dimensions || lead.weight ? lead.trailerHint || "Trailer from specs" : "Ask trailer on the call"} · {leadLocation(lead) || "—"}
                       </div>
                     </div>
                     <div className="freight-score">

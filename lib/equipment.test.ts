@@ -79,6 +79,13 @@ describe("recommendEquipment", () => {
     expect(skipped.find((item) => item.code === "HS")?.fails.join(" ")).toMatch(/Height/i);
   });
 
+  it("does not invent a deck when no unit or numbers are given", () => {
+    const fit = recommendEquipment({});
+    expect(fit.trailer).toBe("UNKNOWN");
+    expect(fit.usedGuess).toBe(false);
+    expect(fit.why).toMatch(/Need length/i);
+  });
+
   it("trusts typed numbers over the unit nickname", () => {
     const fit = recommendEquipment({ text: "sleeper cab", lengthFt: 12, widthFt: 6, heightFt: 8, weightLbs: 9000 });
     expect(fit.trailer).toBe("HS");
