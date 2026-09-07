@@ -3,6 +3,7 @@
 import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
 import { BrandMark } from "@/components/mark";
+import { PRODUCT_NAME, PRODUCT_SUB } from "@/lib/brand";
 
 function nextPath(raw: string | null) {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/login")) return "/";
@@ -43,8 +44,8 @@ function LoginForm() {
         <div className="az-brand">
           <BrandMark />
           <div>
-            <div className="az-brand-name">Lumen</div>
-            <div className="az-brand-sub">Freight OS</div>
+            <div className="az-brand-name">{PRODUCT_NAME}</div>
+            <div className="az-brand-sub">{PRODUCT_SUB}</div>
           </div>
         </div>
         <h1>Sign in</h1>

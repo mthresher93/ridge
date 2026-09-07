@@ -68,7 +68,7 @@ export function PeopleView() {
   }
 
   function exportCsv() {
-    downloadText(`lumen-clients-${shelf}.csv`, contactsToCsv(leads));
+    downloadText(`haul-clients-${shelf}.csv`, contactsToCsv(leads));
   }
 
   function onImportFile(file: File) {

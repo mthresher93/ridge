@@ -72,7 +72,7 @@ export function TodayView() {
             <h2>Hunt → capture → label → you send</h2>
             <ol className="desk-steps">
               <li>Open a live listing you can see.</li>
-              <li>Capture it. Lumen scores. You label what they are.</li>
+              <li>Capture it. Haul scores. You label what they are.</li>
               <li>Copy the opener. You hit send.</li>
               <li>Follow up. Quote only after you have a real rate.</li>
             </ol>

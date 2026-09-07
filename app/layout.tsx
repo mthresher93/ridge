@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Figtree, Fraunces, IBM_Plex_Mono } from "next/font/google";
+import { PRODUCT_NAME } from "@/lib/brand";
 import "./globals.css";
 import "./current.css";
 import "./dialer.css";
@@ -36,13 +37,13 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Lumen",
+  title: PRODUCT_NAME,
   description: "Freight prospecting operating system",
   icons: {
-    icon: "/lumen.svg",
-    apple: "/lumen-mark.png",
+    icon: "/haul.svg",
+    apple: "/haul.svg",
   },
-  appleWebApp: { title: "Lumen", capable: true, statusBarStyle: "black-translucent" },
+  appleWebApp: { title: PRODUCT_NAME, capable: true, statusBarStyle: "black-translucent" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

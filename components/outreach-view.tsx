@@ -137,7 +137,7 @@ export function OutreachView() {
           </header>
           <section className="empty-desk">
             <h2>You send the message</h2>
-            <p>Lumen copies an opener. You paste it into Facebook, email, or you dial the dealer’s published number. No bots.</p>
+            <p>Haul copies an opener. You paste it into Facebook, email, or you dial the dealer’s published number. No bots.</p>
             <button className="az-btn pri" type="button" onClick={() => router.push("/discover")}>
               Go to Discover
             </button>
@@ -209,7 +209,7 @@ export function OutreachView() {
             <p className="cd-mono">{lead.listingDescription || listing?.description || lead.notes}</p>
           </article>
           <aside className="az-panel freight-panel outreach-actions">
-            <p className="cd-mono">Copy, then you send it. Lumen does not message anyone.</p>
+            <p className="cd-mono">Copy, then you send it. Haul does not message anyone.</p>
             <label className="rec-field">
               Message style
               <select className="az-select" value={style} onChange={(event) => setStyle(event.target.value as MessageStyle)}>

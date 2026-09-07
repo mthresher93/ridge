@@ -63,7 +63,7 @@ export function SettingsView() {
       .then((json: { liveReady?: boolean; detail?: string }) =>
         setPhoneLink({
           ok: !!json.liveReady,
-          detail: (json.detail || "Phone is not connected.").replace(/\bCurrent\b/g, "Lumen").replace(/\bazimuth\b/gi, "this workspace"),
+          detail: (json.detail || "Phone is not connected.").replace(/\bCurrent\b/g, "Haul").replace(/\bazimuth\b/gi, "this workspace"),
         }),
       )
       .catch(() => setPhoneLink({ ok: false, detail: "Could not check phone connection." }));
@@ -87,7 +87,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "lumen-workspace.json";
+    a.download = "haul-workspace.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -198,7 +198,7 @@ export function SettingsView() {
             </Row>
             {aiMsg ? <p className="rec-import-msg">{aiMsg}</p> : null}
             <p className="st-fine">
-              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Lumen never logs into Facebook for you.
+              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Haul never logs into Facebook for you.
             </p>
           </section>
         ) : null}

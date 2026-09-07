@@ -166,7 +166,7 @@ export function topMove(workspace: Workspace, now = Date.now()) {
     return {
       kicker: "Label this client",
       title: unlabeled.name,
-      reason: "You decide if they are a dealer, private seller, auction, rental, or shipper. Lumen will not guess.",
+      reason: "You decide if they are a dealer, private seller, auction, rental, or shipper. Haul will not guess.",
       href: `/people?id=${unlabeled.id}`,
       cta: "Open and label",
       leadId: unlabeled.id,

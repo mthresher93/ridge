@@ -11,6 +11,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/api/health") ||
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
+    pathname === "/haul.svg" ||
     pathname === "/lumen.svg" ||
     pathname === "/lumen-mark.png"
   ) {

@@ -1,4 +1,4 @@
-/* Lumen brand system — white desk, ink type, brass only on the mark. */
+/* Haul brand system — white desk, ink type, brass only on the mark. */
 
 :root {
   --bg: #ffffff;
@@ -111,8 +111,8 @@ body::before {
 }
 
 .az-brand-mark {
-  width: 26px;
-  height: 26px;
+  width: 30px;
+  height: 30px;
   color: #c4a46a;
   background: none;
   border: 0;
@@ -120,6 +120,7 @@ body::before {
   padding: 0;
   display: block;
   flex: none;
+  overflow: visible;
 }
 
 .az-brand-name {
@@ -1417,7 +1418,7 @@ input[type="range"] {
   .desk-home-grid,
   .desk-work-grid,
   .discover-desk,
-  .hunt-lanes,
+  .hunt-plays,
   .pipeline-board.board {
     grid-template-columns: 1fr;
   }
@@ -1432,18 +1433,92 @@ input[type="range"] {
   overflow: auto;
 }
 
-.hunt-lanes {
+.hunt-brief {
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
-  align-items: stretch;
+  gap: 6px;
+  padding: 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
 }
 
-.hunt-card {
+.hunt-brief p {
+  margin: 0;
+  color: var(--tx2);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.hunt-plays {
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  height: 100%;
+  gap: 10px;
+}
+
+.hunt-play header > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.hunt-play h3 {
+  margin: 0;
+}
+
+.hunt-play > p {
+  margin: 8px 0 0;
+}
+
+.hunt-link-rows {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.hunt-link-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  background: var(--bg3);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+}
+
+.hunt-link-row > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.hunt-link-row b {
+  font-size: 13px;
+}
+
+.hunt-link-row span {
+  color: var(--tx3);
+  font-size: 12px;
+}
+
+.hunt-blocked {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: color-mix(in srgb, var(--warn, #c9a227) 12%, transparent);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+}
+
+.hunt-blocked p {
+  margin: 0;
+  width: 100%;
+  color: var(--tx2);
+  font-size: 13px;
 }
 
 .desk-work-grid {
@@ -1548,20 +1623,6 @@ input[type="range"] {
   margin: 4px 0 8px;
 }
 
-.hunt-card header > div {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-width: 0;
-}
-
-.hunt-card h3 {
-  margin: 0;
-}
-
-.hunt-card p {
-  margin: 8px 0 0;
-}
 
 .az-sync-banner {
   display: flex;
@@ -1590,6 +1651,14 @@ input[type="range"] {
   padding: 28px;
   border: 1px solid var(--line, #2a2a2a);
   background: var(--panel, #141412);
+}
+
+.login-card .az-brand-mark {
+  color: #c4a46a;
+}
+
+.login-card .az-brand-name {
+  color: #f4f1ea;
 }
 
 .login-card h1 {

@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, LEAD_SOURCES, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
-import { HUNT_LANES, HUNT_RULES, huntSearchUrl } from "@/lib/hunt";
+import { HUNT_BRIEF, HUNT_PLAYS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, type HuntPackItem, type HuntRank } from "@/lib/hunt";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
 import type { SavedSearch } from "@/lib/types";
@@ -32,6 +32,7 @@ export function DiscoverView() {
   const [ai, setAi] = useState<AiStatus | null>(null);
   const [huntQuery, setHuntQuery] = useState("forklift");
   const [huntPlace, setHuntPlace] = useState("Texas");
+  const [blockedPack, setBlockedPack] = useState<HuntPackItem[]>([]);
   const [lastCapture, setLastCapture] = useState<LastCapture | null>(null);
   const [form, setForm] = useState({
     source: "Manual",
@@ -248,6 +249,38 @@ export function DiscoverView() {
     }
   }
 
+  function openTopPack() {
+    setError("");
+    const pack = huntPack(huntQuery, huntPlace);
+    const blocked: HuntPackItem[] = [];
+    for (const item of pack) {
+      const win = window.open(item.url, `_haul_${item.id}`);
+      if (!win) blocked.push(item);
+    }
+    setBlockedPack(blocked);
+    if (blocked.length) {
+      setResult(`Opened ${pack.length - blocked.length} searches. Browser blocked the rest — click Open on those.`);
+    } else {
+      setResult(`Opened ${pack.length} public searches. Capture yards with a name and a phone.`);
+    }
+  }
+
+  async function copyHuntLinks() {
+    setError("");
+    try {
+      await navigator.clipboard.writeText(huntPackText(huntQuery, huntPlace));
+      setResult("Hunt links copied. Paste them into a note or open them yourself.");
+    } catch {
+      setError("Clipboard blocked.");
+    }
+  }
+
+  function rankChip(rank: HuntRank) {
+    if (rank === "Best") return "az-chip gold";
+    if (rank === "Volume" || rank === "Spot") return "az-chip warn";
+    return "az-chip";
+  }
+
   const capturedLead = lastCapture ? workspace.leads.find((item) => item.id === lastCapture.leadId) : null;
 
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading discovery…</div>;
@@ -258,7 +291,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Open a live listing. Capture it. You label. You send. No scraping, no fake rates.</p>
+            <p>Find yards that already ship. Open public searches. Capture what you see. You send the message.</p>
           </div>
           <div className="freight-row-actions">
             <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
@@ -283,6 +316,11 @@ export function DiscoverView() {
 
             {tab === "hunt" ? (
               <div className="hunt-desk">
+                <div className="hunt-brief">
+                  {HUNT_BRIEF.map((item) => (
+                    <p key={item}>{item}</p>
+                  ))}
+                </div>
                 <div className="rec-grid">
                   <label className="rec-field">
                     What to hunt
@@ -293,25 +331,57 @@ export function DiscoverView() {
                     <input className="az-input" value={huntPlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Texas" />
                   </label>
                 </div>
+                <div className="hunt-actions">
+                  <button className="az-btn pri sm" type="button" onClick={openTopPack}>
+                    Open top searches
+                  </button>
+                  <button className="az-btn sm" type="button" onClick={() => void copyHuntLinks()}>
+                    Copy hunt links
+                  </button>
+                </div>
+                {blockedPack.length ? (
+                  <div className="hunt-blocked">
+                    <p>Browser blocked these. Open them one at a time:</p>
+                    {blockedPack.map((item) => (
+                      <a key={item.id} className="az-btn sm" href={item.url} target="_blank" rel="noreferrer">
+                        {item.name}
+                      </a>
+                    ))}
+                  </div>
+                ) : null}
                 <div className="hunt-rules">
                   {HUNT_RULES.map((item) => (
                     <p key={item}>{item}</p>
                   ))}
                 </div>
-                <div className="hunt-lanes">
-                  {HUNT_LANES.map((lane) => (
-                    <article key={lane.id} className="az-panel freight-panel hunt-card">
+                <div className="hunt-plays">
+                  {HUNT_PLAYS.map((play) => (
+                    <article key={play.id} className="az-panel freight-panel hunt-play">
                       <header>
                         <div>
-                          <span className="az-chip">{lane.rank}</span>
-                          <h3>{lane.name}</h3>
+                          <span className={rankChip(play.rank)}>{play.rank}</span>
+                          <h3>{play.title}</h3>
                         </div>
-                        <a className="az-btn pri sm" href={huntSearchUrl(lane.id, huntQuery, huntPlace)} target="_blank" rel="noreferrer">
-                          Open
-                        </a>
                       </header>
-                      <p>{lane.fit}</p>
-                      <p className="cd-mono">{lane.how} {lane.messageWhere}</p>
+                      <p>{play.why}</p>
+                      <p className="cd-mono">{play.talkTo}</p>
+                      <div className="hunt-link-rows">
+                        {play.laneIds.map((laneId) => {
+                          const lane = huntLane(laneId);
+                          if (!lane) return null;
+                          return (
+                            <div key={lane.id} className="hunt-link-row">
+                              <div>
+                                <b>{lane.name}</b>
+                                <span>{lane.fit}</span>
+                              </div>
+                              <a className="az-btn sm" href={huntSearchUrl(lane.id, huntQuery, huntPlace)} target="_blank" rel="noreferrer">
+                                Open
+                              </a>
+                            </div>
+                          );
+                        })}
+                      </div>
                     </article>
                   ))}
                 </div>
@@ -485,7 +555,7 @@ export function DiscoverView() {
             <section className="az-panel freight-panel">
               <header>
                 <h3>On file</h3>
-                <button className="az-btn sm" type="button" onClick={() => downloadText("lumen-clients.csv", contactsToCsv(workspace.leads))}>
+                <button className="az-btn sm" type="button" onClick={() => downloadText("haul-clients.csv", contactsToCsv(workspace.leads))}>
                   CSV
                 </button>
               </header>
