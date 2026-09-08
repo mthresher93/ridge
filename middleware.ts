@@ -12,6 +12,7 @@ export async function middleware(request: NextRequest) {
     pathname.startsWith("/_next") ||
     pathname === "/favicon.ico" ||
     pathname === "/haul.svg" ||
+    pathname === "/move.svg" ||
     pathname === "/lumen.svg" ||
     pathname === "/lumen-mark.png"
   ) {

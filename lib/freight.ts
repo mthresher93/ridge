@@ -12,6 +12,8 @@ import type {
 import { CONTACTED_STAGES, PHONE_STAGES, QUALIFIED_STAGES, QUOTE_STAGES, REPLIED_STAGES, UNCONTACTED_STAGES, WON_STAGES } from "./stages";
 import { normalizePhone, nowIso, uid } from "./format";
 import { parseDimensions, recommendEquipment } from "./equipment";
+import { looksLikeYardName } from "./yard";
+import { workQueue } from "./metro";
 import { variantIndex } from "./pacing";
 
 export const LEAD_SOURCES = [
@@ -41,8 +43,8 @@ export function suggestClientKind(input: { source?: string; sellerName?: string;
   const hay = [source, seller, input.title, input.description, input.website].filter(Boolean).join(" ").toLowerCase();
   if (/\b(ritchie|ironplanet|auction|govdeals|purple wave)\b/.test(hay)) return "Auction";
   if (/\brental/.test(hay)) return "Rental";
-  if (/\b(dealer|dealership)\b/.test(hay) || /\b(llc|inc|ltd|corp)\b/.test(seller)) return "Dealer";
-  if (/\b(facebook marketplace|craigslist)\b/.test(source) && !/\b(llc|inc|dealer)\b/.test(seller)) return "Private seller";
+  if (/\b(dealer|dealership)\b/.test(hay) || /\b(llc|inc|ltd|corp)\b/.test(seller) || looksLikeYardName(input.sellerName || "") || looksLikeYardName(input.website || "")) return "Dealer";
+  if (/\b(facebook marketplace|craigslist)\b/.test(source) && !/\b(llc|inc|dealer)\b/.test(seller) && !looksLikeYardName(input.sellerName || "")) return "Private seller";
   return "";
 }
 
@@ -102,7 +104,7 @@ const HOUSEHOLD = /\b(sofa|couch|mattress|dresser|clothing|clothes|iphone|ipad|p
 const SHIPPING = /\b(ship|shipping|delivery|freight|transport|out\s*of\s*state|nationwide|can\s*deliver)\b/i;
 const DEALER = /\b(dealer|dealership|llc|inc\.?|equipment\s*co|machinery|rental|auction|yard|branch)\b/i;
 const INTERSTATE = /\b(out\s*of\s*state|nationwide|will\s*ship|can\s*ship|buyer\s*pays\s*shipping)\b/i;
-const YARD = /\b(dealer|dealership|rental|llc|inc\.?|ltd|corp|equipment\s*co|machinery|auction|yard|inventory|forklift\s*sales)\b/i;
+const YARD = /\b(dealer|dealership|rental|llc|inc\.?|ltd|corp|equipment\s*co|machinery|auction|yard|inventory|forklift\s*sales|material handling)\b/i;
 
 export function detectShipperRole(input: {
   source?: string;
@@ -113,8 +115,8 @@ export function detectShipperRole(input: {
   const source = (input.source || "").toLowerCase();
   const hay = [input.sellerName, input.title, input.description, source].filter(Boolean).join(" ").toLowerCase();
   if (/\b(ritchie|ironplanet|auction|govdeals|purple wave|copart|iaa|manheim)\b/.test(hay) || source.includes("auction")) return "Auction";
-  if (/\brental/.test(hay) || YARD.test(hay)) return "Yard";
-  if (/\b(facebook marketplace|craigslist)\b/.test(source) && !YARD.test(input.sellerName || "")) return "Private";
+  if (/\brental/.test(hay) || looksLikeYardName(input.sellerName || "") || YARD.test(hay)) return "Yard";
+  if (/\b(facebook marketplace|craigslist)\b/.test(source) && !YARD.test(input.sellerName || "") && !looksLikeYardName(input.sellerName || "")) return "Private";
   if (YARD.test(hay)) return "Yard";
   return "Unknown";
 }
@@ -934,8 +936,20 @@ export function ingestCapture(workspace: Workspace, payload: CapturePayload, ove
     listingId: listing.id,
   };
   const scored = applyAnalysisToLead(lead, analysis, extracted);
+  const kind = suggestClientKind({
+    source: extracted.source,
+    sellerName: extracted.sellerName,
+    title: extracted.title,
+    description: extracted.description,
+    website: extracted.website,
+  });
   const { companies, company } = upsertCompany({ ...workspace, listings }, extracted, scored);
-  const tagged = { ...scored, companyId: company.id, tags: company.recurringCandidate ? ["recurring-candidate"] : scored.tags || [] };
+  const tagged = {
+    ...scored,
+    companyId: company.id,
+    label: scored.label || kind || scored.label,
+    tags: company.recurringCandidate ? ["recurring-candidate"] : scored.tags || [],
+  };
   listing.companyId = company.id;
 
   const opportunities = isNewLead
@@ -1028,9 +1042,7 @@ export function matchesProspectFilter(lead: Lead, filter: ProspectFilter, now = 
 }
 
 export function outreachQueue(leads: Lead[]) {
-  return leads
-    .filter((lead) => !lead.archivedAt && (UNCONTACTED_STAGES.has(lead.status) || lead.status === "Contacted"))
-    .sort((a, b) => (b.freightScore || 0) - (a.freightScore || 0));
+  return workQueue(leads);
 }
 
 export function isAccountLead(lead: Lead, workspace: Workspace) {

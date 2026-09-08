@@ -3,9 +3,8 @@
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
-import { BrandMark } from "./mark";
+import { BrandLockup } from "./mark";
 import { CommandPalette } from "./command-palette";
-import { PRODUCT_NAME, PRODUCT_SUB } from "@/lib/brand";
 import { useWorkspace } from "@/lib/workspace-context";
 import { DESK_NAV, MORE_NAV } from "@/lib/nav";
 import { settingsWithDefaults } from "@/lib/types";
@@ -44,11 +43,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
     <div className={`az-shell density-${density}`} data-accent={prefs.accent}>
       <aside className="az-rail">
         <Link href="/" className="az-brand">
-          <BrandMark />
-          <div>
-            <div className="az-brand-name">{PRODUCT_NAME}</div>
-            <div className="az-brand-sub">{PRODUCT_SUB}</div>
-          </div>
+          <BrandLockup />
         </Link>
 
         <nav className="az-rail-nav" aria-label="Workspace">

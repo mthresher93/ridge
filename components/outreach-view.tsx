@@ -3,10 +3,13 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, leadLocation, outreachQueue, type ClientKind, type MessageStyle } from "@/lib/freight";
+import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, leadLocation, outreachQueue, suggestClientKind, type ClientKind, type MessageStyle } from "@/lib/freight";
 import { CALL_ASK, recommendEquipment } from "@/lib/equipment";
+import { metroOf, sameMetroQueue } from "@/lib/metro";
+import { analysisFromLead, applyCallOutcome, firstCall, type CallOutcome } from "@/lib/prospect";
 import { messagesSentOnDay, pacingNote } from "@/lib/pacing";
 import { daysUntilNextWeekday, nowIso, phonePretty, uid } from "@/lib/format";
+import { workPath } from "@/lib/nav";
 
 export function OutreachView() {
   const router = useRouter();
@@ -14,7 +17,7 @@ export function OutreachView() {
   const { workspace, setWorkspace, log, loading, selectedLeadId, setSelectedLeadId } = useWorkspace();
   const queue = useMemo(() => outreachQueue(workspace.leads), [workspace.leads]);
   const [index, setIndex] = useState(0);
-  const [style, setStyle] = useState<MessageStyle>("Casual");
+  const [style, setStyle] = useState<MessageStyle>("Very Short");
   const [copied, setCopied] = useState(false);
   const [copyError, setCopyError] = useState("");
   const [note, setNote] = useState("");
@@ -39,11 +42,14 @@ export function OutreachView() {
   const queued = queue[index] || null;
   const focused = pinned && wantedId ? workspace.leads.find((item) => item.id === wantedId && !item.archivedAt) : null;
   const lead = focused || queued;
-  const analysis = lead ? (workspace.analyses || []).find((item) => item.leadId === lead.id) : null;
-  const listing = lead ? (workspace.listings || []).find((item) => item.leadId === lead.id) : null;
   const sentToday = messagesSentOnDay(workspace.kpiEvents || []);
+  const script = lead ? firstCall(lead, sentToday) : null;
+  const analysis = lead ? (workspace.analyses || []).find((item) => item.leadId === lead.id) || analysisFromLead(lead) : null;
+  const listing = lead ? (workspace.listings || []).find((item) => item.leadId === lead.id) : null;
   const pace = pacingNote(sentToday);
   const follow = lead ? (workspace.callbacks || []).find((item) => item.leadId === lead.id && item.status === "open") : null;
+  const suggested = lead && !lead.label ? suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website }) : "";
+  const metroNext = lead ? sameMetroQueue(workspace.leads, lead, 6) : [];
   const fit = lead
     ? recommendEquipment({
         text: [lead.equipmentType, lead.listingTitle, lead.listingDescription].filter(Boolean).join(" "),
@@ -52,35 +58,9 @@ export function OutreachView() {
       })
     : null;
   const message = lead
-    ? analysis
-      ? generateOpeningMessage(analysis, style, lead.id, sentToday)
-      : style === "Follow-Up"
-        ? generateFollowUp(lead, lead.nextAction)
-        : generateOpeningMessage(
-            {
-              leadId: lead.id,
-              score: lead.freightScore || 0,
-              confidence: lead.scoreConfidence || "LOW",
-              why: lead.scoreWhy || "",
-              freightType: lead.freightType || "Unknown",
-              recurringPotential: lead.recurringPotential || "Low",
-              known: [],
-              estimates: [],
-              unknown: [],
-              openerCasual: `Hey, random question about the ${(lead.equipmentType || "item").toLowerCase()}. If somebody bought it from another state, do you already have someone you normally use to transport it?`,
-              openerDirect: "",
-              openerBusiness: "",
-              openerShort: "",
-              openerFollowUp: generateFollowUp(lead),
-              analyzedAt: "",
-              shipperRole: lead.shipperRole,
-              trailerHint: lead.trailerHint,
-              loadClass: lead.loadClass,
-            },
-            style,
-            lead.id,
-            sentToday,
-          )
+    ? style === "Follow-Up"
+      ? generateFollowUp(lead, lead.nextAction)
+      : generateOpeningMessage(analysis || analysisFromLead(lead), style, lead.id, sentToday)
     : "";
 
   const go = useCallback((delta: number) => {
@@ -108,6 +88,28 @@ export function OutreachView() {
     const url = lead?.listingUrl || listing?.sourceUrl || lead?.sellerUrl;
     if (url) window.open(url, "_blank", "noopener,noreferrer");
   }, [lead, listing]);
+
+  const noteCall = useCallback(
+    (outcome: CallOutcome, advance = true) => {
+      if (!lead) return;
+      const stamp = nowIso();
+      const due = new Date(Date.now() + 86400000).toISOString();
+      setWorkspace((prev) => ({
+        ...prev,
+        leads: prev.leads.map((item) => (item.id === lead.id ? applyCallOutcome(item, outcome, stamp, due) : item)),
+        updatedAt: stamp,
+      }));
+      log(
+        "lead",
+        lead.id,
+        "call_attempt",
+        outcome === "talked" ? "Talked from Work" : outcome === "voicemail" ? "Voicemail from Work" : outcome === "wrong_number" ? "Wrong number from Work" : "No pickup from Work",
+      );
+      if (outcome === "no_pickup" || outcome === "voicemail") void copy();
+      if (advance) go(1);
+    },
+    [copy, go, lead, log, setWorkspace],
+  );
 
   const mark = useCallback((status: string, detail: string, followDays?: number, advance = false) => {
     if (!lead) return;
@@ -207,7 +209,7 @@ export function OutreachView() {
           </header>
           <section className="empty-desk">
             <h2>Nothing to work yet</h2>
-            <p>Paste or bookmarklet a live page. Haul copies an opener. You send it. No bots. Soft cap about 25 sent per day.</p>
+            <p>Paste or bookmarklet a live page. Move' copies an opener. You send it. No bots. Soft cap about 25 sent per day.</p>
             <div className="empty-start">
               <article>
                 <h3>Capture first</h3>
@@ -244,7 +246,7 @@ export function OutreachView() {
           <div>
             <h1>Work</h1>
             <p>
-              {queue.length ? `${index + 1} / ${queue.length}` : "1"} · {sentToday} sent today · C copy · O listing · F sent + 3 days · N next
+              {queue.length ? `${index + 1} / ${queue.length}` : "1"} · {metroOf(lead)?.label || leadLocation(lead) || "—"} · {sentToday} sent · C copy · N next
             </p>
           </div>
         </header>
@@ -253,9 +255,11 @@ export function OutreachView() {
             <div className="az-kicker">{lead.source}</div>
             <h2>{lead.name}</h2>
             <p className="cd-mono">
-              {lead.label || "Unlabeled"} · {companyName(lead)} · {leadLocation(lead) || "Location unset"}
+              {lead.label || suggested || "Unlabeled"} · {companyName(lead)} · {leadLocation(lead) || metroOf(lead)?.label || "Location unset"}
+              {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : " · untried"}
             </p>
-            <p className="cd-mono">Label first. The opener changes for a yard vs a private seller.</p>
+            {script ? <p className="desk-ask">{script.ask}</p> : null}
+            {suggested ? <p className="cd-mono">Looks like a {suggested}. Label it so the opener stays a yard ask.</p> : <p className="cd-mono">Label first. The opener changes for a yard vs a private seller.</p>}
             <div className="label-chips">
               {CLIENT_KINDS.filter((kind) => kind !== "Unlabeled").map((kind) => (
                 <button key={kind} type="button" className={`az-btn sm ${lead.label === kind ? "pri" : ""}`} onClick={() => setLabel(kind)}>
@@ -307,7 +311,7 @@ export function OutreachView() {
           </article>
           <aside className="az-panel freight-panel outreach-actions">
             <p className={`pace-${pace.level}`}>{pace.text}</p>
-            <p className="cd-mono">Copy, then you send it. Haul does not message anyone. Leave the rate blank.</p>
+            <p className="cd-mono">Copy, then you send it. Move' does not message anyone. Leave the rate blank.</p>
             {lead.phone ? (
               <a className="az-btn pri" href={`tel:${lead.phone}`}>
                 Call {phonePretty(lead.phone)}
@@ -315,6 +319,21 @@ export function OutreachView() {
             ) : (
               <p className="cd-mono">No published phone. Copy the opener instead.</p>
             )}
+            <div className="call-disposition">
+              <button className="az-btn" type="button" onClick={() => noteCall("no_pickup")}>
+                No pickup
+              </button>
+              <button className="az-btn" type="button" onClick={() => noteCall("voicemail")}>
+                Voicemail
+              </button>
+              <button className="az-btn" type="button" onClick={() => noteCall("talked", false)}>
+                Talked
+              </button>
+              <button className="az-btn" type="button" onClick={() => noteCall("wrong_number")}>
+                Wrong number
+              </button>
+            </div>
+            <p className="cd-mono">Call outcomes do not count as a sent message. Copy the opener if nobody picks up.</p>
             <label className="rec-field">
               Message style
               <select className="az-select" value={style} onChange={(event) => setStyle(event.target.value as MessageStyle)}>
@@ -356,6 +375,31 @@ export function OutreachView() {
                 Skip / next
               </button>
             </details>
+            {metroNext.length ? (
+              <div className="metro-next">
+                <div className="home-kicker">Next in {metroOf(lead)?.label || "this book"}</div>
+                {metroNext.map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    className="work-row text-left"
+                    onClick={() => {
+                      setPinned(true);
+                      setSelectedLeadId(item.id);
+                      router.push(workPath(item.id));
+                    }}
+                  >
+                    <div>
+                      <b>{item.name}</b>
+                      <div className="cd-mono">
+                        {item.label || "Unlabeled"} · {item.phone ? phonePretty(item.phone) : "no phone"}
+                        {(item.attempts || 0) > 0 ? ` · tried ${item.attempts}` : ""}
+                      </div>
+                    </div>
+                  </button>
+                ))}
+              </div>
+            ) : null}
           </aside>
         </div>
       </div>

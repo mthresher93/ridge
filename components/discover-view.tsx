@@ -7,6 +7,9 @@ import { CLIENT_KINDS, LEAD_SOURCES, captureFacts, extractListingData, ingestCap
 import { workPath } from "@/lib/nav";
 import { todayHunt } from "@/lib/desk";
 import { HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, HUNT_STEPS, huntLane, huntPack, huntPackText, huntSearchUrl, sourceFromLane, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import { densestHuntPlace, leadsInPlace, METROS } from "@/lib/metro";
+import { firstCall } from "@/lib/prospect";
+import { isCallablePhone } from "@/lib/carriers";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
 import type { SavedSearch } from "@/lib/types";
@@ -33,9 +36,10 @@ export function DiscoverView() {
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
   const [ai, setAi] = useState<AiStatus | null>(null);
-  const dayHunt = useMemo(() => todayHunt(), []);
+  const dayHunt = useMemo(() => todayHunt(new Date(), workspace), [workspace]);
   const [huntQuery, setHuntQuery] = useState(searchParams.get("q") || dayHunt.query);
-  const [huntPlace, setHuntPlace] = useState(searchParams.get("place") || dayHunt.place);
+  const [huntPlace, setHuntPlace] = useState(searchParams.get("place") || "");
+  const activePlace = huntPlace || densestHuntPlace(workspace) || dayHunt.place;
   const [playFilter, setPlayFilter] = useState(searchParams.get("play") || dayHunt.play.id);
   const [blockedPack, setBlockedPack] = useState<HuntPackItem[]>([]);
   const [lastCapture, setLastCapture] = useState<LastCapture | null>(null);
@@ -171,7 +175,7 @@ export function DiscoverView() {
     setLastCapture((prev) => (prev && prev.leadId === leadId ? { ...prev, suggested: next && next !== "Unlabeled" ? (next as LastCapture["suggested"]) : prev.suggested } : prev));
   }
 
-  async function onPaste(event: React.FormEvent) {
+  async function onPaste(event: React.FormEvent, andWork = false) {
     event.preventDefault();
     const blob = [form.title, form.description, form.url, form.location].join("\n");
     if (!blob.trim()) {
@@ -204,7 +208,6 @@ export function DiscoverView() {
       sellerUrl: form.sellerUrl,
       phone: form.phone || pulledListing.phone,
       email: form.email || pulledListing.email,
-      website: form.website,
       website: form.website || pulledListing.website,
       notes: form.notes,
       dimensions: pulledListing.dimensions,
@@ -214,7 +217,7 @@ export function DiscoverView() {
     if (id) {
       setForm({ source: form.source, url: "", title: "", sellerName: "", sellerUrl: "", location: "", price: "", description: "", phone: "", email: "", website: "", notes: "" });
       setSelectedLeadId(id);
-      router.push(workPath(id));
+      if (andWork) router.push(workPath(id));
     }
   }
 
@@ -291,7 +294,7 @@ export function DiscoverView() {
   }
 
   function openFirstSearch() {
-    const pack = huntPack(huntQuery, huntPlace, playFilter);
+    const pack = huntPack(huntQuery, activePlace, playFilter);
     const first = pack[0];
     if (!first) return;
     markOpened(first.id);
@@ -304,15 +307,15 @@ export function DiscoverView() {
     const play = HUNT_PLAYS.find((item) => item.id === playFilter) || HUNT_PLAYS[0];
     const item: SavedSearch = {
       id: uid("ss"),
-      name: [huntQuery, huntPlace, play?.title].filter(Boolean).join(" · "),
+      name: [huntQuery, activePlace, play?.title].filter(Boolean).join(" · "),
       keywords: huntQuery,
       source: play?.id || "",
-      location: huntPlace,
+      location: activePlace,
       category: play?.title || "",
       minValue: null,
       minFreightScore: 70,
       status: "",
-      huntUrl: huntPack(huntQuery, huntPlace, playFilter)[0]?.url || huntSearchUrl("maps-dealers", huntQuery, huntPlace),
+      huntUrl: huntPack(huntQuery, activePlace, playFilter)[0]?.url || huntSearchUrl("maps-dealers", huntQuery, activePlace),
       createdAt: nowIso(),
     };
     setWorkspace((prev) => ({ ...prev, savedSearches: [item, ...(prev.savedSearches || [])], updatedAt: nowIso() }));
@@ -321,7 +324,7 @@ export function DiscoverView() {
 
   function openTopPack() {
     setError("");
-    const pack = huntPack(huntQuery, huntPlace, playFilter);
+    const pack = huntPack(huntQuery, activePlace, playFilter);
     const blocked: HuntPackItem[] = [];
     for (const item of pack) {
       markOpened(item.id);
@@ -339,7 +342,7 @@ export function DiscoverView() {
   async function copyHuntLinks() {
     setError("");
     try {
-      await navigator.clipboard.writeText(huntPackText(huntQuery, huntPlace, playFilter));
+      await navigator.clipboard.writeText(huntPackText(huntQuery, activePlace, playFilter));
       setResult("Hunt links copied. Paste them into a note or open them yourself.");
     } catch {
       setError("Clipboard blocked.");
@@ -353,7 +356,14 @@ export function DiscoverView() {
   }
 
   const activePlay = HUNT_PLAYS.find((item) => item.id === playFilter) || HUNT_PLAYS[0];
-  const pack = huntPack(huntQuery, huntPlace, activePlay.id);
+  const pack = huntPack(huntQuery, activePlace, activePlay.id);
+  const nearby = useMemo(
+    () =>
+      leadsInPlace(workspace.leads, activePlace)
+        .filter((lead) => isCallablePhone(lead.phone) || lead.phone)
+        .slice(0, 8),
+    [workspace.leads, activePlace],
+  );
   const capturedToday = useMemo(() => {
     const start = new Date();
     start.setHours(0, 0, 0, 0);
@@ -386,7 +396,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Pick a hunt. Open one public search. Paste the page. Haul never scrapes it for you.</p>
+            <p>Stay in one metro. Open a public search. Paste the page. The next yard stays on this screen.</p>
           </div>
           <div className="freight-row-actions">
             <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
@@ -425,15 +435,27 @@ export function DiscoverView() {
                     </label>
                     <label className="rec-field">
                       Area
-                      <input className="az-input" value={huntPlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Texas" />
+                      <input className="az-input" value={activePlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Dallas TX" />
                     </label>
+                  </div>
+                  <div className="metro-chips">
+                    {METROS.map((metro) => (
+                      <button
+                        key={metro.id}
+                        type="button"
+                        className={`az-btn sm ${activePlace === metro.hunt ? "pri" : ""}`}
+                        onClick={() => setHuntPlace(metro.hunt)}
+                      >
+                        {metro.label}
+                      </button>
+                    ))}
                   </div>
                   <div className="hunt-presets">
                     {HUNT_PRESETS.map((preset) => (
                       <button
                         key={`${preset.query}-${preset.place}`}
                         type="button"
-                        className={`az-btn sm ${huntQuery === preset.query && huntPlace === preset.place ? "pri" : ""}`}
+                        className={`az-btn sm ${huntQuery === preset.query && activePlace === preset.place ? "pri" : ""}`}
                         onClick={() => {
                           setHuntQuery(preset.query);
                           setHuntPlace(preset.place);
@@ -511,7 +533,7 @@ export function DiscoverView() {
                   <header>
                     <div>
                       <div className="home-kicker">Where to open</div>
-                      <h3>{activePlay.title} · {huntQuery} in {huntPlace}</h3>
+                      <h3>{activePlay.title} · {huntQuery} in {activePlace}</h3>
                     </div>
                     <span className="cd-mono">{activePlay.laneIds.length} public searches · you open them</span>
                   </header>
@@ -526,7 +548,7 @@ export function DiscoverView() {
                               <span className={rankChip(lane.rank)}>{lane.rank}</span>
                               <h3>{lane.name}</h3>
                             </div>
-                            <a className="az-btn pri sm" href={huntSearchUrl(lane.id, huntQuery, huntPlace)} target="_blank" rel="noreferrer" onClick={() => markOpened(lane.id)}>
+                            <a className="az-btn pri sm" href={huntSearchUrl(lane.id, huntQuery, activePlace)} target="_blank" rel="noreferrer" onClick={() => markOpened(lane.id)}>
                               Open
                             </a>
                           </header>
@@ -539,10 +561,43 @@ export function DiscoverView() {
                   </div>
                 </section>
 
-                <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={onPaste}>
+                {nearby.length ? (
+                  <section className="az-panel freight-panel nearby-file">
+                    <header>
+                      <div>
+                        <div className="home-kicker">Already on file</div>
+                        <h3>{nearby.length} in {activePlace}</h3>
+                      </div>
+                    </header>
+                    <p className="cd-mono">Skip recapturing these. Call them from Desk if they are still uncontacted.</p>
+                    {nearby.map((lead) => (
+                      <button
+                        key={lead.id}
+                        type="button"
+                        className="work-row text-left"
+                        onClick={() => {
+                          setSelectedLeadId(lead.id);
+                          router.push(workPath(lead.id));
+                        }}
+                      >
+                        <div>
+                          <b>{lead.name}</b>
+                          <div className="cd-mono">
+                            {lead.label || "Unlabeled"} · {lead.phone ? phonePretty(lead.phone) : "no phone"} · {lead.status}
+                          </div>
+                        </div>
+                        <span className="freight-score">
+                          <b>{lead.freightScore ?? "—"}</b>
+                        </span>
+                      </button>
+                    ))}
+                  </section>
+                ) : null}
+
+                <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={(event) => void onPaste(event, false)}>
                   <div className="home-kicker">{lastLane ? `Paste from ${lastLane.name}` : "Then capture"}</div>
                   <h3>Paste the page you copied</h3>
-                  <p>Haul pulls name, published phone, and city. Leave the phone blank if it was not on the page.</p>
+                  <p>Move' pulls name, published phone, and city. Leave the phone blank if it was not on the page.</p>
                   <label className="rec-field">
                     Listing or Maps card
                     <textarea className="az-area" rows={7} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page.` : "Paste the whole dealer or listing page."} />
@@ -577,9 +632,12 @@ export function DiscoverView() {
                   </div>
                   <div className="rec-save">
                     <button className="az-btn pri" type="submit" disabled={busy}>
-                      {busy ? "Saving…" : "Save and work this"}
+                      {busy ? "Saving…" : "Save — keep hunting"}
                     </button>
-                    <span className="cd-mono">You send the message. No bots.</span>
+                    <button className="az-btn" type="button" disabled={busy} onClick={(event) => void onPaste(event, true)}>
+                      Save and work this
+                    </button>
+                    <span className="cd-mono">Stays on this hunt so you can paste the next yard.</span>
                   </div>
                 </form>
                 <p className="hunt-fine">{HUNT_RULES[0]}</p>
@@ -587,13 +645,13 @@ export function DiscoverView() {
             ) : null}
 
             {tab === "paste" ? (
-              <form className="az-panel freight-panel paste-stage" onSubmit={onPaste}>
+              <form className="az-panel freight-panel paste-stage" onSubmit={(event) => void onPaste(event, true)}>
                 <div className="home-kicker">Capture</div>
                 <h2>Paste the listing</h2>
-                <p>Copy a dealer card or listing you already opened. Haul only keeps facts that were on the page.</p>
+                <p>Copy a dealer card or listing you already opened. Move' only keeps facts that were on the page.</p>
                 <label className="rec-field">
                   Paste the listing
-                  <textarea className="az-area" rows={8} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page. Haul pulls name, published phone, city.` : "Paste the whole dealer or listing page. Haul pulls name, published phone, city, dims, and weight."} />
+                  <textarea className="az-area" rows={8} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page. Move' pulls name, published phone, city.` : "Paste the whole dealer or listing page. Move' pulls name, published phone, city, dims, and weight."} />
                 </label>
                 {form.description.trim() ? (
                   <div className="paste-preview">
@@ -732,7 +790,7 @@ export function DiscoverView() {
                   ))}
                 </div>
                 <p className="st-fine">
-                  Machinery Trader, Google, Cat/Toyota/Bobcat/Deere locators, Sunbelt, United, TruckPaper, Copart, IAA, Ritchie — those are websites you already open. Paste or bookmarklet on a page you are allowed to view. Haul never stores a Facebook or DAT token.
+                  Machinery Trader, Google, Cat/Toyota/Bobcat/Deere locators, Sunbelt, United, TruckPaper, Copart, IAA, Ritchie — those are websites you already open. Paste or bookmarklet on a page you are allowed to view. Move' never stores a Facebook or DAT token.
                 </p>
               </div>
             ) : null}
@@ -752,7 +810,8 @@ export function DiscoverView() {
                     {lastCapture.duplicate ? " · already on file" : ""}
                   </p>
                   {lastCapture.why ? <p>{lastCapture.why}</p> : null}
-                  <p className="cd-mono">Label here or on the work screen. Suggested: {lastCapture.suggested || "none"}</p>
+                  {capturedLead ? <blockquote className="desk-opener">{firstCall(capturedLead).opener}</blockquote> : null}
+                  <p className="cd-mono">Label here, then call. Suggested: {lastCapture.suggested || "none"}</p>
                   <div className="label-chips">
                     {CLIENT_KINDS.filter((kind) => kind !== "Unlabeled").map((kind) => (
                       <button
@@ -766,8 +825,29 @@ export function DiscoverView() {
                     ))}
                   </div>
                   <div className="freight-row-actions" style={{ marginTop: 10 }}>
+                    {lastCapture.phone ? (
+                      <a className="az-btn pri sm" href={`tel:${lastCapture.phone}`}>
+                        Call {phonePretty(lastCapture.phone)}
+                      </a>
+                    ) : null}
+                    {capturedLead ? (
+                      <button
+                        className="az-btn sm"
+                        type="button"
+                        onClick={async () => {
+                          try {
+                            await navigator.clipboard.writeText(firstCall(capturedLead).opener);
+                            setResult("Opener copied. You send it.");
+                          } catch {
+                            setError("Clipboard blocked. Select the opener on Work.");
+                          }
+                        }}
+                      >
+                        Copy opener
+                      </button>
+                    ) : null}
                     <button
-                      className="az-btn pri sm"
+                      className="az-btn sm"
                       type="button"
                       onClick={() => {
                         setSelectedLeadId(lastCapture.leadId);
@@ -789,7 +869,7 @@ export function DiscoverView() {
             <section className="az-panel freight-panel">
               <header>
                 <h3>On file</h3>
-                <button className="az-btn sm" type="button" onClick={() => downloadText("haul-clients.csv", contactsToCsv(workspace.leads))}>
+                <button className="az-btn sm" type="button" onClick={() => downloadText("move-clients.csv", contactsToCsv(workspace.leads))}>
                   CSV
                 </button>
               </header>

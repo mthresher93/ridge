@@ -13,7 +13,15 @@ describe("todayHunt", () => {
     expect(hunt.links[0].url).toMatch(/^https:\/\//);
     expect(hunt.href).toContain("play=yards");
     expect(hunt.href).toContain("q=forklift");
+    expect(hunt.place).toMatch(/TX$/);
     expect(HUNT_PLAYS.some((play) => play.id === hunt.play.id)).toBe(true);
+  });
+
+  it("does not send Tuesday hunting to Florida while the rotation lives in Texas", () => {
+    const hunt = todayHunt(new Date("2026-09-08T12:00:00"));
+    expect(hunt.weekday).toBe("Tuesday");
+    expect(hunt.place).not.toMatch(/Florida|California|Georgia|Illinois/i);
+    expect(hunt.place).toMatch(/TX$/);
   });
 });
 

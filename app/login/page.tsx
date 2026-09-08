@@ -2,8 +2,7 @@
 
 import { FormEvent, Suspense, useState } from "react";
 import { useSearchParams } from "next/navigation";
-import { BrandMark } from "@/components/mark";
-import { PRODUCT_NAME, PRODUCT_SUB } from "@/lib/brand";
+import { BrandLockup } from "@/components/mark";
 
 function nextPath(raw: string | null) {
   if (!raw || !raw.startsWith("/") || raw.startsWith("//") || raw.startsWith("/login")) return "/";
@@ -42,11 +41,7 @@ function LoginForm() {
     <div className="login-screen">
       <form className="login-card" onSubmit={onSubmit}>
         <div className="az-brand">
-          <BrandMark />
-          <div>
-            <div className="az-brand-name">{PRODUCT_NAME}</div>
-            <div className="az-brand-sub">{PRODUCT_SUB}</div>
-          </div>
+          <BrandLockup />
         </div>
         <h1>Sign in</h1>
         <p>This workspace is password-protected.</p>

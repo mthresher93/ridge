@@ -1,3 +1,6 @@
+import { PRODUCT_NAME } from "./brand";
+import { HUNT_HOME_MARKETS } from "./metro";
+
 export type HuntRank = "Best" | "Strong" | "Volume" | "Local" | "Spot";
 
 export type HuntLane = {
@@ -56,16 +59,16 @@ export function huntPlaceParts(place: string) {
 export const HUNT_BRIEF = [
   "The money in this job is not the load board. It is a small book of yards that already move machines: dealers, rental houses, auction sellers.",
   "One dealer who ships every week beats fifty Marketplace ads. Ask to be backup freight, not their new exclusive.",
-  "Haul only opens public search pages you could click yourself. You copy the listing. You send the message. No scraping, no bots, no fake numbers.",
+  `${PRODUCT_NAME} only opens public search pages you could click yourself. You copy the listing. You send the message. No scraping, no bots, no fake numbers.`,
 ];
 
 export const HUNT_PRESETS = [
-  { query: "forklift", place: "Texas" },
-  { query: "skid steer", place: "Florida" },
-  { query: "mini excavator", place: "Georgia" },
-  { query: "telehandler", place: "California" },
-  { query: "CNC machine", place: "Ohio" },
-  { query: "dump truck", place: "Illinois" },
+  { query: "forklift", place: "Dallas TX" },
+  { query: "forklift", place: "Houston TX" },
+  { query: "skid steer", place: "Fort Worth TX" },
+  { query: "mini excavator", place: "Austin TX" },
+  { query: "telehandler", place: "San Antonio TX" },
+  { query: "dump truck", place: "Odessa TX" },
 ];
 
 export const HUNT_LANES: HuntLane[] = [
@@ -831,8 +834,9 @@ export function huntDayKey(now = new Date()) {
   return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
 }
 
-export function huntQueue(now = new Date(), count = 12): HuntQueueItem[] {
+export function huntQueue(now = new Date(), count = 12, places?: string[]): HuntQueueItem[] {
   const day = huntDayKey(now);
+  const markets = places?.length ? places : HUNT_HOME_MARKETS;
   const items: HuntQueueItem[] = [];
   for (let i = 0; i < count; i += 1) {
     const play = HUNT_PLAYS.find((item) => item.id === QUEUE_PLAY_IDS[(day + i) % QUEUE_PLAY_IDS.length]);
@@ -840,7 +844,7 @@ export function huntQueue(now = new Date(), count = 12): HuntQueueItem[] {
     const laneId = play.laneIds[(day + i) % play.laneIds.length];
     const lane = huntLane(laneId);
     if (!lane) continue;
-    const place = HUNT_MARKETS[(day + i * 2) % HUNT_MARKETS.length];
+    const place = markets[(day + i) % markets.length];
     const query = HUNT_UNITS[(day + i * 3) % HUNT_UNITS.length];
     items.push({
       id: `${laneId}-${place}-${query}-${i}`,
@@ -870,7 +874,7 @@ function clSubdomain(location: string) {
 
 export function captureBookmarklet(origin = "http://localhost:6793", token = "") {
   const header = token ? `,'x-capture-token':'${token.replace(/'/g, "")}'` : "";
-  return `javascript:(function(){var t=document.title||'';var u=location.href;var s=(window.getSelection&&String(window.getSelection())||document.body.innerText||'').slice(0,7000);fetch('${origin}/api/prospects/capture',{method:'POST',headers:{'Content-Type':'application/json'${header}},body:JSON.stringify({source:'Capture',url:u,title:t,pageText:s,description:s})}).then(function(r){return r.json()}).then(function(j){alert(j.ok?('Haul saved · score '+(j.score||'?')+'/100. Work it: ${origin}/outreach?id='+(j.leadId||'')):(j.error||'Capture failed'))}).catch(function(){alert('Haul is not running at ${origin}')});})();`;
+  return `javascript:(function(){var t=document.title||'';var u=location.href;var s=(window.getSelection&&String(window.getSelection())||document.body.innerText||'').slice(0,7000);fetch('${origin}/api/prospects/capture',{method:'POST',headers:{'Content-Type':'application/json'${header}},body:JSON.stringify({source:'Capture',url:u,title:t,pageText:s,description:s})}).then(function(r){return r.json()}).then(function(j){alert(j.ok?("${PRODUCT_NAME} saved · score "+(j.score||'?')+"/100. Work it: ${origin}/outreach?id="+(j.leadId||'')):(j.error||'Capture failed'))}).catch(function(){alert("${PRODUCT_NAME} is not running at ${origin}")});})();`;
 }
 
 export function sourceFromLane(laneId: string) {
@@ -884,19 +888,19 @@ export function sourceFromLane(laneId: string) {
 }
 
 export const HUNT_STEPS = [
-  "Open one public search. Haul does not scrape it.",
+  `Open one public search. ${PRODUCT_NAME} does not scrape it.`,
   "Copy the dealer or listing (or click the bookmarklet on that page).",
   "Paste it. Name, published phone, and city only if they were on the page.",
 ];
 
 export const HUNT_RULES = [
-  "You open the page. You capture it. Haul never logs into Facebook, Craigslist, DAT, or LinkedIn for you.",
+  `You open the page. You capture it. ${PRODUCT_NAME} never logs into Facebook, Craigslist, DAT, or LinkedIn for you.`,
   "A phone or email only counts if it was on the page you copied.",
   "You send the message. No bots, no fake accounts, no invented rates.",
 ];
 
 export const HUNT_CONNECTIONS = [
-  { name: "APIs", value: "None", detail: "Do not buy a Facebook, DAT, or Maps API. Haul does not call those. Open is a normal tab." },
+  { name: "APIs", value: "None", detail: `Do not buy a Facebook, DAT, or Maps API. ${PRODUCT_NAME} does not call those. Open is a normal tab.` },
   { name: "Start today", value: "Browser", detail: "Google, Machinery Trader, OEM locators, auction catalogs. No login required to look." },
   { name: "Your logins", value: "Optional", detail: "Facebook and LinkedIn if you hunt there. DAT/Truckstop only for empty miles, on their sites." },
   { name: "Ollama", value: "Optional", detail: "Local scoring when you paste. The desk works without it." },

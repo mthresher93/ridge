@@ -22,7 +22,7 @@ function fillFromLead(person: Lead | undefined, prev: Omit<Shipment, "id" | "cre
     commodity: person.listingTitle || person.equipmentType || "",
     weight: person.weight || "",
     dimensions: person.dimensions || "",
-    equipmentType: person.equipmentType || "",
+    equipmentType: person.trailerHint || person.equipmentType || "",
   };
 }
 
@@ -270,6 +270,11 @@ export function ShipmentsView() {
                     <input className="az-input" value={draft.dimensions} onChange={(event) => setDraft((prev) => ({ ...prev, dimensions: event.target.value }))} />
                   </label>
                 </div>
+                {draft.leadId && (draft.weight || draft.dimensions) ? (
+                  <p className="cd-mono">Pulled saved Intel specs from that yard. Rates stay blank — listing ask is not your rate.</p>
+                ) : draft.leadId ? (
+                  <p className="cd-mono">No saved L × W × H on this yard yet. Type what they told you, or leave blank. Rates still start empty.</p>
+                ) : null}
                 <div className="rec-grid">
                   <label className="rec-field">
                     Equipment

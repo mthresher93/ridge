@@ -85,7 +85,7 @@ export function PeopleView() {
   }
 
   function exportCsv() {
-    downloadText(`haul-clients-${shelf}.csv`, contactsToCsv(leads));
+    downloadText(`move-clients-${shelf}.csv`, contactsToCsv(leads));
   }
 
   function onImportFile(file: File) {
@@ -220,7 +220,7 @@ export function PeopleView() {
                   <td colSpan={7} className="py-10">
                     <div className="empty-desk" style={{ margin: 0, boxShadow: "none" }}>
                       <h2>No clients yet</h2>
-                      <p>Paste a live listing, or type a real seller name. Haul will not invent a contact.</p>
+                      <p>Paste a live listing, or type a real seller name. Move' will not invent a contact.</p>
                       <div className="empty-desk-actions">
                         <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover?tab=paste")}>
                           Paste a listing

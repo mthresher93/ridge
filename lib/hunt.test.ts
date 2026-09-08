@@ -54,6 +54,7 @@ describe("huntQueue", () => {
       expect(item.place).toMatch(/[A-Z]{2}$/);
       expect(item.query.length).toBeGreaterThan(2);
     }
+    expect(monday[0].place).toMatch(/TX$/);
     expect(tuesday[0].id).not.toBe(monday[0].id);
   });
 });
@@ -85,7 +86,7 @@ describe("captureBookmarklet", () => {
     expect(code.startsWith("javascript:")).toBe(true);
     expect(code).toContain("/api/prospects/capture");
     expect(code).toContain("pageText");
-    expect(code).toContain("Haul saved");
+    expect(code).toContain("Move' saved");
     expect(code).toContain("/outreach?id=");
   });
 });

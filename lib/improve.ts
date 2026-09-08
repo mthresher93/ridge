@@ -7,7 +7,7 @@ export const NO_SPEND = [
   {
     n: "2",
     title: "If nobody picks up, copy the opener and send it",
-    detail: "LinkedIn or the listing from your real profile. Haul does not send. Soft cap about 25 a day.",
+    detail: "LinkedIn or the listing from your real profile. Move' does not send. Soft cap about 25 a day.",
   },
   {
     n: "3",
@@ -22,6 +22,10 @@ export const NO_SPEND = [
 ];
 
 export const HOW_VOLUME_GROWS = [
+  {
+    title: "Stay in one metro",
+    detail: "Call Dallas until that list is thin. Do not open Florida Marketplace while Houston phones are still untried.",
+  },
   {
     title: "Yards beat ads",
     detail: "One dealer who ships every week beats fifty Marketplace ads. Phone is free.",

@@ -16,7 +16,7 @@ const TABS: { id: SettingsTab; label: string }[] = [
 ];
 
 const ACCENTS: { id: Accent; label: string; swatch: string }[] = [
-  { id: "cyan", label: "Brass", swatch: "#b0893a" },
+  { id: "cyan", label: "Brass", swatch: "#e2b84a" },
   { id: "violet", label: "Violet", swatch: "#7c4dff" },
   { id: "amber", label: "Amber", swatch: "#ffab00" },
   { id: "teal", label: "Teal", swatch: "#00bfa5" },
@@ -64,7 +64,7 @@ export function SettingsView() {
       .then((json: { liveReady?: boolean; detail?: string }) =>
         setPhoneLink({
           ok: !!json.liveReady,
-          detail: (json.detail || "Phone is not connected.").replace(/\bCurrent\b/g, "Haul").replace(/\bazimuth\b/gi, "this workspace"),
+          detail: (json.detail || "Phone is not connected.").replace(/\bCurrent\b/g, "Move'").replace(/\bazimuth\b/gi, "this workspace"),
         }),
       )
       .catch(() => setPhoneLink({ ok: false, detail: "Could not check phone connection." }));
@@ -88,7 +88,7 @@ export function SettingsView() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "haul-workspace.json";
+    a.download = "move-workspace.json";
     a.click();
     URL.revokeObjectURL(url);
   }
@@ -142,7 +142,7 @@ export function SettingsView() {
               <input className="az-input" value={draft.defaultOwner} onChange={(e) => set("defaultOwner", e.target.value)} />
             </Row>
             <p className="st-fine">
-              Haul is a desk, not a bot. You hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough — no custom domain. Trailer matching uses training caps, not a carrier quote.
+              Move' is a desk, not a bot. You hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough — no custom domain. Trailer matching uses training caps, not a carrier quote.
             </p>
             <Row label="Session" hint="Sign out of this browser when a workspace password is set.">
               <button
@@ -202,7 +202,7 @@ export function SettingsView() {
             </Row>
             {aiMsg ? <p className="rec-import-msg">{aiMsg}</p> : null}
             <p className="st-fine">
-              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Haul never logs into Facebook for you. Trailer picks still run from the Intel math if Ollama is down.
+              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Move' never logs into Facebook for you. Trailer picks still run from the Intel math if Ollama is down.
             </p>
           </section>
         ) : null}

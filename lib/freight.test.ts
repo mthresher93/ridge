@@ -142,6 +142,8 @@ describe("suggestClientKind", () => {
   it("suggests Dealer from an LLC name, not from the word forklift", () => {
     expect(suggestClientKind({ sellerName: "Hill Country Lift LLC", title: "Toyota forklift" })).toBe("Dealer");
     expect(suggestClientKind({ sellerName: "Jane", title: "Toyota forklift", source: "Manual" })).toBe("");
+    expect(suggestClientKind({ sellerName: "Briggs Equipment — Dallas", title: "Telehandler" })).toBe("Dealer");
+    expect(suggestClientKind({ sellerName: "Toyota Lift of Houston (Doggett)", title: "Forklift" })).toBe("Dealer");
     expect(suggestClientKind({ source: "Facebook Marketplace", sellerName: "Mike" })).toBe("Private seller");
     expect(suggestClientKind({ source: "Auction", title: "Ritchie lot" })).toBe("Auction");
   });

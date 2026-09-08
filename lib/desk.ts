@@ -1,7 +1,7 @@
 import { outreachQueue } from "./freight";
 import { HUNT_PLAYS, huntLane, huntSearchUrl, type HuntPlay } from "./hunt";
+import { callableUncontacted, densestHuntPlace } from "./metro";
 import { workPath } from "./nav";
-import { isCallablePhone } from "./carriers";
 import type { Workspace } from "./types";
 
 export type DayHunt = {
@@ -24,41 +24,37 @@ export type DeskMove = {
 };
 
 const ROTATION: { playId: string; query: string; place: string; why: string; doThis: string }[] = [
-  { playId: "people", query: "forklift dealer", place: "Texas", why: "Sunday is for names, not ads. Find who books outbound at a yard you already know exists.", doThis: "Open LinkedIn people search from your login. Short note. You send it." },
-  { playId: "yards", query: "forklift", place: "Texas", why: "Monday: dealers and rental houses. That is the book, not Marketplace.", doThis: "Open the dealer directory and Maps. Capture yards with a published phone." },
-  { playId: "listings", query: "skid steer", place: "Florida", why: "Tuesday: live inventory. A listing is proof something might move.", doThis: "Prefer a dealer name and a phone over a private seller." },
-  { playId: "auctions", query: "mini excavator", place: "Georgia", why: "Wednesday: auction clock. After the hammer they have a removal deadline.", doThis: "Open Ritchie / Copart / IAA. Note lot number and pickup city." },
-  { playId: "oem", query: "telehandler", place: "Texas", why: "Thursday: OEM locators. Cat, Toyota, Bobcat, Deere already ship to customers.", doThis: "Open a locator, grab the local store phone, ask who books deliveries." },
-  { playId: "rental", query: "scissor lift", place: "California", why: "Friday: rental chains. They move iron every week by design.", doThis: "Open Sunbelt / United / Maps rental. Capture the branch, not HQ." },
-  { playId: "trucks", query: "dump truck", place: "Illinois", why: "Saturday: commercial trucks. Dump and box units need a real deck guess before you talk.", doThis: "Open TruckPaper / Commercial Truck Trader. Run specs through Intel before you quote." },
+  { playId: "people", query: "forklift dealer", place: "Dallas TX", why: "Sunday is for names, not ads. Find who books outbound at a yard you already know exists.", doThis: "Open LinkedIn people search from your login. Short note. You send it." },
+  { playId: "yards", query: "forklift", place: "Dallas TX", why: "Monday: dealers and rental houses in the metros already on this book. That is the book, not Marketplace.", doThis: "Open the dealer directory and Maps. Capture yards with a published phone." },
+  { playId: "listings", query: "skid steer", place: "Houston TX", why: "Tuesday: live inventory in a Texas metro you can actually call. A listing is proof something might move.", doThis: "Prefer a dealer name and a phone over a private seller." },
+  { playId: "auctions", query: "mini excavator", place: "Dallas TX", why: "Wednesday: auction clock. After the hammer they have a removal deadline.", doThis: "Open Ritchie / Copart / IAA. Note lot number and pickup city." },
+  { playId: "oem", query: "telehandler", place: "Fort Worth TX", why: "Thursday: OEM locators. Cat, Toyota, Bobcat, Deere already ship to customers.", doThis: "Open a locator, grab the local store phone, ask who books deliveries." },
+  { playId: "rental", query: "scissor lift", place: "Houston TX", why: "Friday: rental chains. They move iron every week by design.", doThis: "Open Sunbelt / United / Maps rental. Capture the branch, not HQ." },
+  { playId: "trucks", query: "dump truck", place: "Houston TX", why: "Saturday: commercial trucks. Dump and box units need a real deck guess before you talk.", doThis: "Open TruckPaper / Commercial Truck Trader. Run specs through Intel before you quote." },
 ];
 
-export function todayHunt(now = new Date()): DayHunt {
+export function todayHunt(now = new Date(), workspace?: Workspace): DayHunt {
   const row = ROTATION[now.getDay()] || ROTATION[1];
   const play = HUNT_PLAYS.find((item) => item.id === row.playId) || HUNT_PLAYS[0];
   const weekday = now.toLocaleDateString("en-US", { weekday: "long" });
+  const place = densestHuntPlace(workspace) || row.place;
   return {
     weekday,
     play,
     query: row.query,
-    place: row.place,
+    place,
     why: row.why,
     doThis: row.doThis,
-    href: `/discover?q=${encodeURIComponent(row.query)}&place=${encodeURIComponent(row.place)}&play=${play.id}`,
+    href: `/discover?q=${encodeURIComponent(row.query)}&place=${encodeURIComponent(place)}&play=${play.id}`,
     links: play.laneIds.slice(0, 5).map((id) => {
       const lane = huntLane(id);
-      return { id, name: lane?.name || id, url: huntSearchUrl(id, row.query, row.place) };
+      return { id, name: lane?.name || id, url: huntSearchUrl(id, row.query, place) };
     }),
   };
 }
 
-const UNCONTACTED = new Set(["Discovered", "Ready to Contact"]);
-
-export function deskCallBook(workspace: Workspace, limit = 20) {
-  return workspace.leads
-    .filter((lead) => !lead.archivedAt && isCallablePhone(lead.phone) && UNCONTACTED.has(lead.status))
-    .sort((a, b) => (b.freightScore || 0) - (a.freightScore || 0))
-    .slice(0, limit);
+export function deskCallBook(workspace: Workspace, limit = 40) {
+  return callableUncontacted(workspace, limit);
 }
 
 export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
@@ -69,7 +65,7 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
   const overdue = workspace.callbacks
     .filter((item) => item.status === "open" && Date.parse(item.dueAt) < now)
     .sort((a, b) => Date.parse(a.dueAt) - Date.parse(b.dueAt))[0];
-  const hunt = todayHunt(new Date(now));
+  const hunt = todayHunt(new Date(now), workspace);
   const moves: DeskMove[] = [];
 
   if (overdue) {
@@ -141,7 +137,7 @@ export const START_CONNECTIONS = [
   {
     name: "No API to buy",
     need: "None",
-    detail: "Haul does not connect to Facebook, DAT, Machinery Trader, or Maps as an integration. Open is a normal browser tab. That is enough to start today.",
+    detail: "Move' does not connect to Facebook, DAT, Machinery Trader, or Maps as an integration. Open is a normal browser tab. That is enough to start today.",
   },
   {
     name: "This computer",
@@ -156,7 +152,7 @@ export const START_CONNECTIONS = [
   {
     name: "LinkedIn",
     need: "Your login",
-    detail: "For people at yards. You run the search. Haul does not log in.",
+    detail: "For people at yards. You run the search. Move' does not log in.",
   },
   {
     name: "Ollama",

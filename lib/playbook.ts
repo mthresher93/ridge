@@ -57,7 +57,7 @@ export const PLAYBOOK: PlaybookSection[] = [
   {
     id: "prospect",
     title: "Finding shippers",
-    blurb: "Legal hunt. You open public pages. Haul ranks who looks like they actually ship.",
+    blurb: "Legal hunt. You open public pages. Move' ranks who looks like they actually ship.",
     blocks: [
       {
         type: "cards",

@@ -3,30 +3,30 @@
 @tailwind utilities;
 
 :root {
-  --ink: #f7f4ee;
-  --ink-2: #efeae1;
-  --panel: #ffffff;
-  --panel-2: #fffdf9;
-  --line: #e4ddd2;
-  --line-2: #d3cbbd;
-  --text: #101114;
-  --muted: #2f3640;
-  --faint: #3d4652;
-  --gold: #c2410c;
-  --gold-2: #9a3412;
-  --gold-dim: rgba(194, 65, 12, 0.1);
-  --up: #0f7a5a;
-  --warn: #b45309;
-  --down: #b42318;
-  --blue: #1d4e89;
-  --hover: rgba(194, 65, 12, 0.06);
-  --track: rgba(28, 25, 21, 0.08);
-  --volt: #c2410c;
-  --lift: 0 10px 28px rgba(28, 25, 21, 0.06);
-  --lift-2: 0 18px 40px rgba(28, 25, 21, 0.08);
-  --background: #f7f4ee;
-  --foreground: #1c1915;
-  --bg: #f7f4ee;
+  --ink: #07080c;
+  --ink-2: #101218;
+  --panel: #11151c;
+  --panel-2: #161b24;
+  --line: #232830;
+  --line-2: #323840;
+  --text: #f3f1ea;
+  --muted: #8e8a80;
+  --faint: #5c5a54;
+  --gold: #e2b84a;
+  --gold-2: #f0d08a;
+  --gold-dim: rgba(226, 184, 74, 0.16);
+  --up: #e2b84a;
+  --warn: #e0a54b;
+  --down: #f07167;
+  --blue: #7a92b0;
+  --hover: rgba(226, 184, 74, 0.1);
+  --track: rgba(255, 255, 255, 0.06);
+  --volt: #e2b84a;
+  --lift: 0 12px 32px rgba(0, 0, 0, 0.42);
+  --lift-2: 0 20px 48px rgba(0, 0, 0, 0.55);
+  --background: #07080c;
+  --foreground: #f3f1ea;
+  --bg: #07080c;
 }
 
 * {
@@ -44,7 +44,7 @@ body {
   font-weight: 500;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  color-scheme: light;
+  color-scheme: dark;
 }
 
 body {
