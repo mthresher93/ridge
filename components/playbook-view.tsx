@@ -2,7 +2,9 @@
 
 import { useMemo, useState } from "react";
 import { PLAYBOOK, searchPlaybook, type PlaybookBlock } from "@/lib/playbook";
-import { CALL_ASK, cheaperFails, deckGates, UNIT_PRESETS, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+import { CALL_ASK, cheaperFails, deckGates, UNIT_PRESETS, applySpecsToLead, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+import { useWorkspace } from "@/lib/workspace-context";
+import { nowIso } from "@/lib/format";
 
 const NAV_GROUPS = [
   { label: "Decide", ids: ["pick", "trailers", "loads", "units"] },
@@ -21,6 +23,7 @@ function fmt(n: number | null, suffix: string) {
 }
 
 export function PlaybookView() {
+  const { workspace, setWorkspace, selectedLeadId, setSelectedLeadId, log } = useWorkspace();
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("pick");
   const [unit, setUnit] = useState("");
@@ -31,6 +34,37 @@ export function PlaybookView() {
   const [paste, setPaste] = useState("");
   const [showAllDecks, setShowAllDecks] = useState(false);
   const [fromTraining, setFromTraining] = useState(false);
+  const [saveMsg, setSaveMsg] = useState("");
+
+  const liveClients = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
+  const targetId = selectedLeadId && liveClients.some((lead) => lead.id === selectedLeadId) ? selectedLeadId : "";
+
+  function saveSpecs() {
+    const person = workspace.leads.find((lead) => lead.id === targetId);
+    if (!person) {
+      setSaveMsg("Pick the yard these numbers belong to.");
+      return;
+    }
+    const result = applySpecsToLead(person, {
+      unit,
+      lengthFt: num(length),
+      widthFt: num(width),
+      heightFt: num(height),
+      weightLbs: num(weight),
+    });
+    if (!result.saved) {
+      setSaveMsg(result.reason);
+      return;
+    }
+    const stamp = nowIso();
+    setWorkspace((prev) => ({
+      ...prev,
+      leads: prev.leads.map((item) => (item.id === person.id ? result.lead : item)),
+      updatedAt: stamp,
+    }));
+    log("lead", person.id, "specs_saved", result.lead.dimensions);
+    setSaveMsg(`Saved on ${person.name}. ${result.lead.trailerHint}`);
+  }
 
   const sections = useMemo(() => searchPlaybook(query), [query]);
   const active = sections.find((item) => item.id === topic) || sections[0] || PLAYBOOK[0];
@@ -194,7 +228,28 @@ export function PlaybookView() {
                   />
                 </label>
               </div>
-              {fromTraining ? <p className="cd-mono">Training example — catalog sizes, not a live load.</p> : null}
+              {fromTraining ? <p className="cd-mono">Training example — catalog sizes, not a live load. Type the live numbers to save.</p> : null}
+              <div className="intel-save">
+                <label className="rec-field">
+                  Save onto client
+                  <select
+                    className="az-select"
+                    value={targetId}
+                    onChange={(event) => setSelectedLeadId(event.target.value || null)}
+                  >
+                    <option value="">Pick the yard you just measured</option>
+                    {liveClients.map((lead) => (
+                      <option key={lead.id} value={lead.id}>
+                        {lead.name}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <button className="az-btn pri sm" type="button" onClick={saveSpecs} disabled={!targetId}>
+                  Save specs
+                </button>
+                {saveMsg ? <p className="cd-mono">{saveMsg}</p> : null}
+              </div>
               {hasInput ? (
                 <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
               ) : (

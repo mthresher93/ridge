@@ -1,0 +1,37 @@
+export const NO_SPEND = [
+  {
+    n: "1",
+    title: "Call the published number",
+    detail: "Your cell. Their yard phone is already on the record. Ask who books outbound freight. Backup on the routing guide — not replace your guy.",
+  },
+  {
+    n: "2",
+    title: "If nobody picks up, copy the opener and send it",
+    detail: "LinkedIn or the listing from your real profile. Haul does not send. Soft cap about 25 a day.",
+  },
+  {
+    n: "3",
+    title: "Do not buy DAT, ads, or a dialer yet",
+    detail: "Load boards cost money and fill empty miles. This book is free public locators plus the calls you make.",
+  },
+  {
+    n: "4",
+    title: "Only hunt more if this call list is empty",
+    detail: "Open today’s public pages, paste name/phone/city. Bookmarklet is free. Stay in one metro.",
+  },
+];
+
+export const HOW_VOLUME_GROWS = [
+  {
+    title: "Yards beat ads",
+    detail: "One dealer who ships every week beats fifty Marketplace ads. Phone is free.",
+  },
+  {
+    title: "Load boards wait",
+    detail: "DAT and Truckstop cost money. Skip them until a yard is actually talking.",
+  },
+  {
+    title: "Bookmarklet is free",
+    detail: "If you hunt more, the bookmarklet copies the page. No API key.",
+  },
+];

@@ -147,7 +147,8 @@ export function sourceFromUrl(url: string) {
   if (host.includes("machinerytrader")) return "Machinery Trader";
   if (host.includes("equipmenttrader")) return "Equipment Trader";
   if (host.includes("tractorhouse")) return "TractorHouse";
-  if (host.includes("rbauction") || host.includes("ritchiebros") || host.includes("ironplanet") || host.includes("auction") || host.includes("govdeals")) return "Auction";
+  if (host.includes("rbauction") || host.includes("ritchiebros") || host.includes("ironplanet") || host.includes("auction") || host.includes("govdeals") || host.includes("copart") || host.includes("iaai") || host.includes("purplewave")) return "Auction";
+  if (host.includes("google") || host.includes("maps") || host.includes("cat.com") || host.includes("bobcat.com") || host.includes("deere.com") || host.includes("sunbelt") || host.includes("unitedrentals")) return "Google";
   if (url.trim()) return "Google";
   return "Manual";
 }
@@ -189,8 +190,9 @@ function parsePlace(location: string, city = "", state = "") {
 function extractPlaceFromText(text: string) {
   for (const line of String(text || "").split(/\n+/)) {
     const located = line.match(/\b(?:located in|pickup(?:\s+in)?)\s+([A-Z][a-zA-Z .']+),\s*([A-Z]{2})\b/i);
+    const withZip = line.match(/\b([A-Z][a-zA-Z.'-]+(?:[ ][A-Z][a-zA-Z.'-]+)*),\s*([A-Z]{2})\s+\d{5}(?:-\d{4})?\b/);
     const pair = line.match(/\b([A-Z][a-zA-Z.'-]+(?:[ ][A-Z][a-zA-Z.'-]+)*),\s*([A-Z]{2})\b/);
-    const match = located || pair;
+    const match = located || withZip || pair;
     if (!match) continue;
     const st = match[2].toUpperCase();
     if (!US_STATES.has(st)) continue;
@@ -228,6 +230,44 @@ function cleanSeller(value: string) {
   return name.slice(0, 80);
 }
 
+function looksLikeMapsChrome(line: string) {
+  return (
+    /^(directions|website|save|share|call|hours|open|closed|claim this|united states|suggest an edit|menu|overview|reviews|about)\b/i.test(line) ||
+    /^\d\.\d\b/.test(line) ||
+    /^\(\d[\d,]+\)$/.test(line) ||
+    /^\d+\s+reviews?$/i.test(line)
+  );
+}
+
+function looksLikeStreetAddress(line: string) {
+  return /^\d{1,6}\s+\S+/.test(line) && /\b(st|street|ave|avenue|rd|road|blvd|dr|drive|ln|hwy|pkwy|ct|way|suite|ste)\b/i.test(line);
+}
+
+function extractMapsBusiness(blob: string) {
+  const lines = blob.split(/\n+/).map((line) => line.trim().replace(/\s+/g, " ")).filter(Boolean);
+  for (const line of lines) {
+    if (looksLikeMapsChrome(line) || looksLikeStreetAddress(line)) continue;
+    if (extractPublishedPhone("", line)) continue;
+    if (/\b[A-Z]{2}\s+\d{5}\b/.test(line) || /^[A-Z][a-zA-Z.'-]+(?:[ ][A-Z][a-zA-Z.'-]+)*,\s*[A-Z]{2}\b/.test(line)) continue;
+    if (/https?:|www\./i.test(line) || /\.(com|net|org|biz)\b/i.test(line)) continue;
+    if (line.length < 3 || line.length > 70) continue;
+    if (/^(forklift|skid steer|excavator|equipment)?\s*(dealer|rental|sales)$/i.test(line)) continue;
+    const name = cleanSeller(line);
+    if (name) return name;
+  }
+  return "";
+}
+
+function extractWebsite(given: string, blob: string) {
+  if (given.trim()) return given.trim().slice(0, 400);
+  const hit = blob.match(/\b(?:https?:\/\/)?(?:www\.)?([a-z][a-z0-9-]*\.[a-z]{2,}(?:\.[a-z]{2,})*)(?:\/[^\s]*)?/i);
+  if (!hit) return "";
+  const host = String(hit[1] || "").toLowerCase();
+  if (/\b(google|gstatic|facebook|instagram|maps\.|youtube|twitter|linkedin|craigslist|apple\.com)\b/.test(host)) return "";
+  const raw = hit[0].replace(/[),.;]+$/, "");
+  return (raw.startsWith("http") ? raw : `https://${raw}`).slice(0, 400);
+}
+
 function extractSellerName(given: string, blob: string) {
   if (given.trim()) return given.trim().slice(0, 80);
   const posted = blob.match(/(?:posted by|listed by|seller(?: name)?|dealer|company|sold by)\s*[:\-]\s*([^\n]{3,70})/i);
@@ -237,6 +277,8 @@ function extractSellerName(given: string, blob: string) {
   }
   const company = blob.match(/\b([A-Z][A-Za-z0-9 .'&-]{1,50}\s(?:LLC|Inc\.?|Ltd|Corp\.?))\b/);
   if (company) return company[1].trim().slice(0, 80);
+  const maps = extractMapsBusiness(blob);
+  if (maps) return maps;
   const lines = blob.split(/\n+/).map((line) => line.trim().replace(/\s+/g, " ")).filter(Boolean);
   for (const line of lines) {
     if (line.length > 70) continue;
@@ -264,6 +306,7 @@ export function captureFacts(extracted: ExtractedListing) {
     extracted.sellerName ? { k: "Seller", v: extracted.sellerName } : null,
     extracted.city || extracted.state ? { k: "City", v: [extracted.city, extracted.state].filter(Boolean).join(", ") } : null,
     extracted.phone ? { k: "Phone", v: extracted.phone } : null,
+    extracted.website ? { k: "Site", v: extracted.website } : null,
     extracted.email ? { k: "Email", v: extracted.email } : null,
     extracted.dimensions ? { k: "Dims", v: extracted.dimensions } : null,
     extracted.weight ? { k: "Weight", v: extracted.weight } : null,
@@ -305,7 +348,7 @@ export function extractListingData(payload: CapturePayload): ExtractedListing {
     destination: payload.destination || "",
     phone: extractPublishedPhone(payload.phone || "", blob),
     email,
-    website: payload.website || "",
+    website: extractWebsite(payload.website || "", blob),
     notes: payload.notes || "",
   };
 }
@@ -607,32 +650,39 @@ function similarTitle(a: string, b: string) {
   return left === right || left.includes(right) || right.includes(left);
 }
 
+function samePhone(a: string, b: string) {
+  const left = normalizePhone(a);
+  const right = normalizePhone(b);
+  return left.length >= 10 && left === right;
+}
+
+function sameEmail(a: string, b: string) {
+  const left = a.trim().toLowerCase();
+  const right = b.trim().toLowerCase();
+  return Boolean(left) && left === right;
+}
+
 export function detectPossibleDuplicate(workspace: Workspace, extracted: ExtractedListing, ignoreLeadId = "") {
   const url = extracted.sourceUrl.trim().toLowerCase();
-  const seller = extracted.sellerUrl.trim().toLowerCase();
-  const phone = normalizePhone(extracted.phone);
-  const email = extracted.email.trim().toLowerCase();
-  const site = extracted.website.trim().toLowerCase();
-  const company = normName(extracted.sellerName);
+  const phone = extracted.phone;
+  const email = extracted.email;
 
   const listingHit = (workspace.listings || []).find((item) => {
-    if (url && item.sourceUrl.trim().toLowerCase() === url) return true;
-    if (seller && item.sellerUrl.trim().toLowerCase() === seller && similarTitle(item.title, extracted.title)) return true;
-    return false;
+    if (!url || item.sourceUrl.trim().toLowerCase() !== url) return false;
+    if (extracted.phone && item.phone && !samePhone(item.phone, phone)) return false;
+    return similarTitle(item.title, extracted.title) || samePhone(item.phone, phone);
   });
   if (listingHit) {
     const lead = workspace.leads.find((item) => item.id === listingHit.leadId);
-    if (lead && lead.id !== ignoreLeadId) return { kind: "listing" as const, lead, listing: listingHit };
+    if (lead && lead.id !== ignoreLeadId && !(extracted.phone && lead.phone && !samePhone(lead.phone, extracted.phone))) {
+      return { kind: "listing" as const, lead, listing: listingHit };
+    }
   }
 
   const leadHit = workspace.leads.find((item) => {
     if (item.id === ignoreLeadId || item.archivedAt) return false;
-    if (url && (item.listingUrl || "").trim().toLowerCase() === url) return true;
-    if (seller && (item.sellerUrl || "").trim().toLowerCase() === seller) return true;
-    if (phone.length >= 10 && normalizePhone(item.phone) === phone) return true;
-    if (email && item.email.trim().toLowerCase() === email) return true;
-    if (site && (item.website || "").trim().toLowerCase() === site) return true;
-    if (company && normName(companyName(item)) === company) return true;
+    if (samePhone(item.phone, phone)) return true;
+    if (sameEmail(item.email, email)) return true;
     return false;
   });
   if (leadHit) return { kind: "seller" as const, lead: leadHit, listing: (workspace.listings || []).find((item) => item.leadId === leadHit.id) };

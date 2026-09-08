@@ -17,10 +17,11 @@
   --tx4: #8a8174;
   --br: #e4ddd2;
   --brg: #1c191522;
-  --fh: var(--font-display), Fraunces, Georgia, serif;
-  --fb: var(--font-sans), Figtree, system-ui, sans-serif;
+  --fh: var(--font-display), "Instrument Serif", Georgia, serif;
+  --fb: var(--font-sans), "IBM Plex Sans", system-ui, sans-serif;
+  --fk: var(--font-brand), Syne, "IBM Plex Sans", sans-serif;
   --fm: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
-  --fs: var(--font-serif), Fraunces, Georgia, serif;
+  --fs: var(--font-display), "Instrument Serif", Georgia, serif;
   --ink: var(--bg);
   --ink-2: #efeae1;
   --panel: var(--bg2);

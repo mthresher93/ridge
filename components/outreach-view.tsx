@@ -308,6 +308,13 @@ export function OutreachView() {
           <aside className="az-panel freight-panel outreach-actions">
             <p className={`pace-${pace.level}`}>{pace.text}</p>
             <p className="cd-mono">Copy, then you send it. Haul does not message anyone. Leave the rate blank.</p>
+            {lead.phone ? (
+              <a className="az-btn pri" href={`tel:${lead.phone}`}>
+                Call {phonePretty(lead.phone)}
+              </a>
+            ) : (
+              <p className="cd-mono">No published phone. Copy the opener instead.</p>
+            )}
             <label className="rec-field">
               Message style
               <select className="az-select" value={style} onChange={(event) => setStyle(event.target.value as MessageStyle)}>

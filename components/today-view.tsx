@@ -1,14 +1,16 @@
 "use client";
 
-import { useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
-import { deskPlan, START_CONNECTIONS, todayHunt } from "@/lib/desk";
+import { deskCallBook, deskPlan, todayHunt } from "@/lib/desk";
+import { huntQueue } from "@/lib/hunt";
+import { HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
 import { companyName, leadLocation, outreachQueue } from "@/lib/freight";
 import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
-import { nowIso, relativeDue } from "@/lib/format";
+import { nowIso, phonePretty, relativeDue } from "@/lib/format";
 
 export function TodayView() {
   const router = useRouter();
@@ -16,7 +18,10 @@ export function TodayView() {
   const metrics = useMemo(() => derive(workspace), [workspace]);
   const move = useMemo(() => topMove(workspace), [workspace]);
   const hunt = useMemo(() => todayHunt(), []);
+  const queue = useMemo(() => huntQueue(), []);
   const plan = useMemo(() => deskPlan(workspace), [workspace]);
+  const callBook = useMemo(() => deskCallBook(workspace, 20), [workspace]);
+  const [bookmarklet, setBookmarklet] = useState("");
   const live = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
   const unlabeled = useMemo(() => live.filter((lead) => !lead.label).slice(0, 6), [live]);
   const toMessage = useMemo(() => outreachQueue(live).slice(0, 6), [live]);
@@ -24,11 +29,6 @@ export function TodayView() {
     () => [...metrics.overdueCallbacks, ...metrics.dueCallbacks.filter((item) => !metrics.overdueCallbacks.includes(item))].slice(0, 6),
     [metrics.dueCallbacks, metrics.overdueCallbacks],
   );
-  const yards = useMemo(
-    () => live.filter((lead) => lead.shipperRole === "Yard" || lead.label === "Dealer" || lead.label === "Rental").length,
-    [live],
-  );
-  const auctions = useMemo(() => live.filter((lead) => lead.shipperRole === "Auction" || lead.label === "Auction").length, [live]);
   const hotYards = useMemo(
     () =>
       live
@@ -37,6 +37,25 @@ export function TodayView() {
     [live],
   );
   const sentToday = useMemo(() => messagesSentOnDay(workspace.kpiEvents || []), [workspace.kpiEvents]);
+
+  useEffect(() => {
+    fetch("/api/ai/status")
+      .then((res) => res.json())
+      .then((json) => setBookmarklet(String(json.bookmarklet || "")))
+      .catch(() => setBookmarklet(""));
+  }, []);
+
+  async function copyBookmarklet() {
+    if (!bookmarklet) {
+      router.push("/settings");
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(bookmarklet);
+    } catch {
+      router.push("/settings");
+    }
+  }
 
   function complete(id: string) {
     setWorkspace((prev) => ({
@@ -65,14 +84,14 @@ export function TodayView() {
             <h1>Desk</h1>
             <p>
               {live.length
-                ? `${live.length} on file · ${yards} yards · ${auctions} auctions · ${sentToday} sent today`
-                : `${hunt.weekday} · ${hunt.play.title} · ${hunt.query} in ${hunt.place}. No fake clients — capture a live page.`}
+                ? `${live.length} yards on file · ${callBook.length} with a published phone still uncontacted · ${sentToday} sent · $0 spent`
+                : `${hunt.weekday} · ${hunt.play.title} · open the queue, then paste. No fake clients.`}
             </p>
           </div>
           <div className="home-stats">
             <div>
-              <b>{plan.length}</b>
-              <span>next</span>
+              <b>{callBook.length}</b>
+              <span>to call</span>
             </div>
             <div>
               <b>{unlabeled.length}</b>
@@ -89,29 +108,137 @@ export function TodayView() {
           </div>
         </header>
 
+        <section className="az-panel freight-panel desk-from-you">
+          <header>
+            <div>
+              <div className="home-kicker">Get paid without spending</div>
+              <h3>What to do today</h3>
+            </div>
+            <span className="cd-mono">{callBook.length} numbers you can dial from this phone</span>
+          </header>
+          <ol className="desk-from-list">
+            {NO_SPEND.map((item) => (
+              <li key={item.n}>
+                <b>{item.n}</b>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                </div>
+              </li>
+            ))}
+          </ol>
+        </section>
+
+        {callBook.length ? (
+          <section className="az-panel freight-panel desk-call-book">
+            <header>
+              <div>
+                <div className="home-kicker">Call book</div>
+                <h3>Published yard phones — you dial</h3>
+              </div>
+              <button className="az-btn sm" type="button" onClick={() => router.push("/people")}>
+                All {live.length} clients
+              </button>
+            </header>
+            <p className="desk-queue-note">
+              This is the list, not one next card. Each number was on that dealer’s public page. Haul does not place the call.
+            </p>
+            <div className="desk-call-grid">
+              {callBook.map((lead) => (
+                <div key={lead.id} className="desk-call-row">
+                  <button type="button" className="desk-call-who" onClick={() => openLead(lead.id, workPath(lead.id))}>
+                    <b>{lead.name}</b>
+                    <span>
+                      {lead.label || "Unlabeled"} · {leadLocation(lead) || "—"}
+                    </span>
+                  </button>
+                  <a className="az-btn pri sm" href={`tel:${lead.phone}`}>
+                    {phonePretty(lead.phone)}
+                  </a>
+                </div>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
         <section className="desk-today">
           <div className="desk-today-copy">
-            <div className="home-kicker">Do this next</div>
-            <h2>
-              {hunt.weekday}: {hunt.play.title}
-            </h2>
+            <div className="home-kicker">{hunt.weekday} hunt</div>
+            <h2>{hunt.play.title}</h2>
             <p>{hunt.why}</p>
             <p className="cd-mono">{hunt.doThis}</p>
             <div className="empty-desk-actions">
-              <button className="az-btn pri sm" type="button" onClick={() => router.push(hunt.href)}>
-                Open {hunt.query} · {hunt.place}
+              <button className="az-btn pri" type="button" onClick={() => router.push(hunt.href)}>
+                Hunt {hunt.query} · {hunt.place}
               </button>
-              <button className="az-btn sm" type="button" onClick={() => router.push("/playbook")}>
-                Check a deck
+              <button className="az-btn" type="button" onClick={() => void copyBookmarklet()}>
+                {bookmarklet ? "Copy bookmarklet" : "Get bookmarklet"}
+              </button>
+              <button className="az-btn" type="button" onClick={() => router.push("/discover?tab=paste")}>
+                Paste a page
               </button>
             </div>
           </div>
           <div className="desk-today-links">
+            <div className="home-kicker">Open, then paste</div>
             {hunt.links.map((item) => (
               <a key={item.id} className="desk-open-row" href={item.url} target="_blank" rel="noreferrer">
                 <span>{item.name}</span>
                 <em>Open</em>
               </a>
+            ))}
+            <button className="desk-open-row" type="button" onClick={() => router.push("/discover?tab=paste")}>
+              <span>Then paste the page you copied</span>
+              <em>Paste</em>
+            </button>
+          </div>
+        </section>
+
+        <section className="az-panel freight-panel desk-queue">
+          <header>
+            <div>
+              <div className="home-kicker">Keep hunting</div>
+              <h3>Today’s rotating searches</h3>
+            </div>
+            <button className="az-btn sm" type="button" onClick={() => router.push("/discover")}>
+              All plays
+            </button>
+          </header>
+          <p className="desk-queue-note">
+            Haul does not scrape. These 12 public pages rotate by calendar day across metros and unit types. Open one, capture it, then the next.
+          </p>
+          <div className="desk-queue-grid">
+            {queue.map((item) => (
+              <a key={item.id} className="desk-open-row desk-queue-row" href={item.url} target="_blank" rel="noreferrer">
+                <span>
+                  <strong>{item.name}</strong>
+                  <small>
+                    {item.playTitle} · {item.query} · {item.place}
+                  </small>
+                </span>
+                <em>Open</em>
+              </a>
+            ))}
+            <button className="desk-open-row" type="button" onClick={() => router.push("/discover?tab=paste")}>
+              <span>Paste the page you copied</span>
+              <em>Paste</em>
+            </button>
+          </div>
+        </section>
+
+        <section className="az-panel freight-panel desk-improve">
+          <header>
+            <div>
+              <div className="home-kicker">How to improve this</div>
+              <h3>What still raises capture — and what will not</h3>
+            </div>
+          </header>
+          <div className="desk-improve-grid">
+            {HOW_VOLUME_GROWS.map((item) => (
+              <div key={item.title}>
+                <b>{item.title}</b>
+                <p>{item.detail}</p>
+              </div>
             ))}
           </div>
         </section>
@@ -131,16 +258,6 @@ export function TodayView() {
             </li>
           ))}
         </ol>
-
-        <section className="desk-connect">
-          {START_CONNECTIONS.slice(0, 4).map((item) => (
-            <div key={item.name}>
-              <span className="az-chip">{item.need}</span>
-              <b>{item.name}</b>
-              <p>{item.detail}</p>
-            </div>
-          ))}
-        </section>
 
         {live.length > 0 ? (
           <>

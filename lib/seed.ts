@@ -32,6 +32,7 @@ export function emptyWorkspace(): Workspace {
     companies: [],
     quotes: [],
     shipments: [],
+    carriers: [],
     savedSearches: [],
     analyses: [],
     settings: {
@@ -805,6 +806,7 @@ export function createSeed(): Workspace {
     companies,
     quotes,
     shipments,
+    carriers: [],
     savedSearches,
     analyses,
     settings: {
@@ -840,6 +842,7 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
     companies: workspace.companies || [],
     quotes: workspace.quotes || [],
     shipments: workspace.shipments || [],
+    carriers: workspace.carriers || [],
     savedSearches: workspace.savedSearches || [],
     analyses: workspace.analyses || [],
   };

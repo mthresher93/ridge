@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { cheaperFails, checkTrailer, parseDimensions, parsePounds, recommendEquipment, trailerCap } from "./equipment";
+import { applySpecsToLead, cheaperFails, checkTrailer, parseDimensions, parsePounds, recommendEquipment, trailerCap } from "./equipment";
+import { blankProspect } from "./freight";
 
 describe("recommendEquipment", () => {
   it("treats 26x8.5x10 at 18k as hotshot TL", () => {
@@ -90,5 +91,27 @@ describe("recommendEquipment", () => {
     const fit = recommendEquipment({ text: "sleeper cab", lengthFt: 12, widthFt: 6, heightFt: 8, weightLbs: 9000 });
     expect(fit.trailer).toBe("HS");
     expect(fit.ask.join(" ")).toMatch(/numbers say/i);
+  });
+});
+
+describe("applySpecsToLead", () => {
+  it("refuses to save a catalog nickname as measured specs", () => {
+    const result = applySpecsToLead(blankProspect("Michael", { name: "Yard" }), { unit: "sleeper cab" });
+    expect(result.saved).toBe(false);
+    expect(result.lead.dimensions).toBe("");
+  });
+
+  it("writes typed L×W×H onto the client", () => {
+    const result = applySpecsToLead(blankProspect("Michael", { name: "Yard" }), {
+      lengthFt: 26,
+      widthFt: 8.5,
+      heightFt: 10,
+      weightLbs: 18000,
+      unit: "forklift",
+    });
+    expect(result.saved).toBe(true);
+    expect(result.lead.dimensions).toBe("26 x 8.5 x 10");
+    expect(result.lead.weight).toBe("18000");
+    expect(result.lead.trailerHint).toMatch(/Hot Shot/i);
   });
 });

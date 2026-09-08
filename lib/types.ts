@@ -152,6 +152,7 @@ export type Shipment = {
   leadId: string;
   accountId?: string;
   quoteId?: string;
+  carrierId?: string;
   customer: string;
   contact: string;
   origin: string;
@@ -170,6 +171,21 @@ export type Shipment = {
   notes: string;
   createdAt: string;
   updatedAt: string;
+};
+
+export type Carrier = {
+  id: string;
+  name: string;
+  mc: string;
+  dot: string;
+  phone: string;
+  email: string;
+  city: string;
+  state: string;
+  equipment: string;
+  sourceUrl: string;
+  notes: string;
+  createdAt: string;
 };
 
 export type SavedSearch = {
@@ -450,6 +466,7 @@ export type Workspace = {
   companies: Company[];
   quotes: Quote[];
   shipments: Shipment[];
+  carriers: Carrier[];
   savedSearches: SavedSearch[];
   analyses: FreightAnalysis[];
   settings: Settings;

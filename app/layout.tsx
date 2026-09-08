@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Figtree, Fraunces, IBM_Plex_Mono } from "next/font/google";
+import { IBM_Plex_Mono, IBM_Plex_Sans, Instrument_Serif, Syne } from "next/font/google";
 import { PRODUCT_NAME } from "@/lib/brand";
 import "./globals.css";
 import "./current.css";
@@ -10,29 +10,28 @@ import "./settings.css";
 import "./lumen.css";
 import { Providers } from "./providers";
 
-const sans = Figtree({
+const sans = IBM_Plex_Sans({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  weight: ["400", "500", "600"],
   variable: "--font-sans",
 });
 
-const display = Fraunces({
+const display = Instrument_Serif({
   subsets: ["latin"],
-  weight: ["500", "600", "700"],
+  weight: "400",
   style: ["normal", "italic"],
   variable: "--font-display",
 });
 
-const serif = Fraunces({
+const brand = Syne({
   subsets: ["latin"],
-  weight: ["400", "500"],
-  style: ["italic"],
-  variable: "--font-serif",
+  weight: ["500", "600", "700"],
+  variable: "--font-brand",
 });
 
 const mono = IBM_Plex_Mono({
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
+  weight: ["400", "500"],
   variable: "--font-mono",
 });
 
@@ -49,7 +48,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="en">
-      <body className={`${sans.variable} ${display.variable} ${serif.variable} ${mono.variable} font-sans antialiased`}>
+      <body className={`${sans.variable} ${display.variable} ${brand.variable} ${mono.variable} font-sans antialiased`}>
         <Providers>{children}</Providers>
       </body>
     </html>

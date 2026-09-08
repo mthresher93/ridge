@@ -11,6 +11,8 @@ describe("todayHunt", () => {
     expect(hunt.play.id).toBe("yards");
     expect(hunt.links.length).toBeGreaterThan(0);
     expect(hunt.links[0].url).toMatch(/^https:\/\//);
+    expect(hunt.href).toContain("play=yards");
+    expect(hunt.href).toContain("q=forklift");
     expect(HUNT_PLAYS.some((play) => play.id === hunt.play.id)).toBe(true);
   });
 });
@@ -30,5 +32,23 @@ describe("deskPlan", () => {
     const plan = deskPlan(workspace, Date.parse("2026-09-07T12:00:00"));
     expect(plan[0].href).toBe("/outreach?id=lead-1");
     expect(plan.some((item) => item.href.startsWith("/people"))).toBe(false);
+  });
+
+  it("puts a published yard phone first so the desk is a call list, not a hunt tutorial", () => {
+    const workspace = emptyWorkspace();
+    workspace.leads = [
+      blankProspect("Michael", {
+        id: "lead-1",
+        name: "HOLT CAT Dallas (North)",
+        phone: "214-342-6700",
+        status: "Discovered",
+        label: "Dealer",
+        freightScore: 100,
+      }),
+    ];
+    const plan = deskPlan(workspace, Date.parse("2026-09-08T12:00:00"));
+    expect(plan[0].title).toBe("HOLT CAT Dallas (North)");
+    expect(plan[0].kicker).toMatch(/Call/i);
+    expect(plan[0].why).toMatch(/214-342-6700/);
   });
 });

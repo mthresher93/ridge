@@ -1,3 +1,6 @@
+import type { Lead } from "./types";
+import { nowIso } from "./format";
+
 export type TrailerCode =
   | "HS"
   | "F"
@@ -494,5 +497,57 @@ function finish(
     alsoFits,
     usedGuess,
     legalNote,
+  };
+}
+
+export function measuredDimensions(lengthFt: number | null, widthFt: number | null, heightFt: number | null) {
+  if (lengthFt == null || widthFt == null || heightFt == null) return "";
+  return `${lengthFt} x ${widthFt} x ${heightFt}`;
+}
+
+export function applySpecsToLead(
+  lead: Lead,
+  input: {
+    lengthFt?: number | null;
+    widthFt?: number | null;
+    heightFt?: number | null;
+    weightLbs?: number | null;
+    unit?: string;
+  },
+) {
+  const lengthFt = input.lengthFt ?? null;
+  const widthFt = input.widthFt ?? null;
+  const heightFt = input.heightFt ?? null;
+  const weightLbs = input.weightLbs ?? null;
+  const measured = lengthFt != null || heightFt != null || weightLbs != null;
+  if (!measured) {
+    return {
+      lead,
+      fit: recommendEquipment({ text: input.unit }),
+      saved: false,
+      reason: "Type the numbers they told you. Catalog nicknames are not saved as specs.",
+    };
+  }
+  const fit = recommendEquipment({
+    text: input.unit,
+    lengthFt,
+    widthFt,
+    heightFt,
+    weightLbs,
+  });
+  const dims = measuredDimensions(fit.lengthFt, fit.widthFt, fit.heightFt);
+  return {
+    lead: {
+      ...lead,
+      dimensions: dims || lead.dimensions,
+      weight: fit.weightLbs != null ? String(fit.weightLbs) : lead.weight,
+      trailerHint: `${fit.trailerName} · ${fit.loadClass}`,
+      loadClass: fit.loadClass,
+      equipmentType: input.unit?.trim() || lead.equipmentType,
+      updatedAt: nowIso(),
+    },
+    fit,
+    saved: true,
+    reason: "Saved measured specs on this client.",
   };
 }

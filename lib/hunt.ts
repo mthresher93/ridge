@@ -31,26 +31,22 @@ export function huntPlaceParts(place: string) {
   const raw = loc(place);
   const stateMatch = raw.match(/\b([A-Za-z]{2})\b\s*$/) || raw.match(/\b(alabama|alaska|arizona|arkansas|california|colorado|connecticut|delaware|florida|georgia|hawaii|idaho|illinois|indiana|iowa|kansas|kentucky|louisiana|maine|maryland|massachusetts|michigan|minnesota|mississippi|missouri|montana|nebraska|nevada|hampshire|jersey|mexico|york|carolina|dakota|ohio|oklahoma|oregon|pennsylvania|rhode|tennessee|texas|utah|vermont|virginia|washington|wisconsin|wyoming)\b/i);
   const STATES: Record<string, string> = {
-    texas: "TX",
-    tx: "TX",
-    california: "CA",
-    ca: "CA",
-    florida: "FL",
-    fl: "FL",
-    illinois: "IL",
-    il: "IL",
-    "new york": "NY",
-    ny: "NY",
-    georgia: "GA",
-    ga: "GA",
-    arizona: "AZ",
-    az: "AZ",
-    ohio: "OH",
-    oh: "OH",
-    pennsylvania: "PA",
-    pa: "PA",
-    "north carolina": "NC",
-    nc: "NC",
+    alabama: "AL", alaska: "AK", arizona: "AZ", arkansas: "AR", california: "CA",
+    colorado: "CO", connecticut: "CT", delaware: "DE", florida: "FL", georgia: "GA",
+    hawaii: "HI", idaho: "ID", illinois: "IL", indiana: "IN", iowa: "IA",
+    kansas: "KS", kentucky: "KY", louisiana: "LA", maine: "ME", maryland: "MD",
+    massachusetts: "MA", michigan: "MI", minnesota: "MN", mississippi: "MS", missouri: "MO",
+    montana: "MT", nebraska: "NE", nevada: "NV", hampshire: "NH", jersey: "NJ",
+    mexico: "NM", york: "NY", carolina: "NC", dakota: "ND", ohio: "OH",
+    oklahoma: "OK", oregon: "OR", pennsylvania: "PA", rhode: "RI", tennessee: "TN",
+    texas: "TX", utah: "UT", vermont: "VT", virginia: "VA", washington: "WA",
+    wisconsin: "WI", wyoming: "WY",
+    al: "AL", ak: "AK", az: "AZ", ar: "AR", ca: "CA", co: "CO", ct: "CT", de: "DE",
+    fl: "FL", ga: "GA", hi: "HI", id: "ID", il: "IL", in: "IN", ia: "IA", ks: "KS",
+    ky: "KY", la: "LA", me: "ME", md: "MD", ma: "MA", mi: "MI", mn: "MN", ms: "MS",
+    mo: "MO", mt: "MT", ne: "NE", nv: "NV", nh: "NH", nj: "NJ", nm: "NM", ny: "NY",
+    nc: "NC", nd: "ND", oh: "OH", ok: "OK", or: "OR", pa: "PA", ri: "RI", sc: "SC",
+    sd: "SD", tn: "TN", tx: "TX", ut: "UT", vt: "VT", va: "VA", wa: "WA", wi: "WI", wy: "WY",
   };
   const key = (stateMatch?.[1] || "").toLowerCase();
   const state = STATES[key] || (key.length === 2 ? key.toUpperCase() : "TX");
@@ -379,6 +375,168 @@ export const HUNT_LANES: HuntLane[] = [
     how: "Post your truck or search matching equipment.",
     messageWhere: "Call the broker. You already know this drill.",
   },
+  {
+    id: "komatsu-locator",
+    name: "Komatsu locator",
+    rank: "Best",
+    fit: "Komatsu dealers ship construction iron. Same backup-freight ask as Cat.",
+    legal: "Manufacturer’s public locator.",
+    how: "Search United States, then the local dealer. Copy the store phone.",
+    messageWhere: "Call the dealer. Ask who books machine delivery.",
+  },
+  {
+    id: "kubota-locator",
+    name: "Kubota dealer finder",
+    rank: "Best",
+    fit: "Compact ag and construction. Dealers already deliver sold machines.",
+    legal: "Kubota USA public finder.",
+    how: "Enter city or ZIP. Capture the local dealer, not corporate.",
+    messageWhere: "Call the dealer phone on the page.",
+  },
+  {
+    id: "jcb-locator",
+    name: "JCB dealer search",
+    rank: "Best",
+    fit: "Skid steers, telehandlers, compact excavators. Recurring outbound.",
+    legal: "JCB public dealer search.",
+    how: "United States, then your area. Copy the published phone.",
+    messageWhere: "Call the store. Backup on customer deliveries.",
+  },
+  {
+    id: "case-locator",
+    name: "CASE dealer locator",
+    rank: "Best",
+    fit: "Construction dealers. They already move iron to jobsites.",
+    legal: "CASE public locator.",
+    how: "North America, then postal code. Capture the branch.",
+    messageWhere: "Call the dealership. Yard or product support.",
+  },
+  {
+    id: "volvo-locator",
+    name: "Volvo CE dealer locator",
+    rank: "Best",
+    fit: "Heavier construction iron. High-probability shippers.",
+    legal: "Volvo CE public locator.",
+    how: "United States map. Open the local dealer contact.",
+    messageWhere: "Call the dealer. Ask who books outbound freight.",
+  },
+  {
+    id: "jlg-locator",
+    name: "JLG sales and service",
+    rank: "Strong",
+    fit: "Boom and scissor dealers. Aerial moves constantly.",
+    legal: "JLG public locations page.",
+    how: "Find sales/service near you. Copy the local number.",
+    messageWhere: "Call the location. Dispatch or service books trucks.",
+  },
+  {
+    id: "herc",
+    name: "Herc Rentals branches",
+    rank: "Best",
+    fit: "National rental. Branches deliver and pick up every week.",
+    legal: "Public locations page.",
+    how: "Open a nearby branch. Capture that phone, not 1-800.",
+    messageWhere: "Branch manager or dispatch.",
+  },
+  {
+    id: "he-rental",
+    name: "H&E Equipment yards",
+    rank: "Best",
+    fit: "Regional rental and sales yards. Recurring by design.",
+    legal: "Public Maps results for H&E Equipment.",
+    how: "Open the local yard. Copy name and published phone.",
+    messageWhere: "Call the yard. Ask who books deliveries.",
+  },
+  {
+    id: "maps-excavating",
+    name: "Excavating contractors",
+    rank: "Best",
+    fit: "Site-work companies move machines between jobs. They are shippers, not ads.",
+    legal: "Public Maps search you open.",
+    how: "Open a contractor with a yard. Copy the business phone.",
+    messageWhere: "Ask for the owner or whoever moves iron between jobs.",
+  },
+  {
+    id: "maps-construction",
+    name: "General contractors",
+    rank: "Strong",
+    fit: "GCs rent and relocate equipment. One relationship covers many jobs.",
+    legal: "Public Maps search.",
+    how: "Prefer a company with a yard or shop, not a home office.",
+    messageWhere: "Superintendent or equipment manager.",
+  },
+  {
+    id: "maps-crane",
+    name: "Crane rental yards",
+    rank: "Best",
+    fit: "Crane companies already run heavy haul. They also need overflow trucks.",
+    legal: "Public Maps search.",
+    how: "Capture the local yard, not the 1-800 dispatch.",
+    messageWhere: "Dispatch or the yard. You send it.",
+  },
+  {
+    id: "maps-steel",
+    name: "Steel service centers",
+    rank: "Strong",
+    fit: "They receive coil and plate and ship processed steel. Flatbed and hotshot.",
+    legal: "Public Maps search.",
+    how: "Open a service center. Copy the published phone. Ask who books outbound.",
+    messageWhere: "Shipping or traffic at the plant.",
+  },
+  {
+    id: "maps-machine-shop",
+    name: "Machine shops / CNC",
+    rank: "Strong",
+    fit: "Shops buy and sell CNC machines. One move, then a yard relationship if they dealer.",
+    legal: "Public Maps search.",
+    how: "Open shops that look like a real plant. Skip hobby garages.",
+    messageWhere: "Owner or plant manager. Phone on Maps or their site.",
+  },
+  {
+    id: "machinio",
+    name: "Machinio used equipment",
+    rank: "Strong",
+    fit: "Used machinery search. Prefer a dealer name and a phone.",
+    legal: "Public listings you open.",
+    how: "Search your unit. Capture dealer listings, skip anonymous ads.",
+    messageWhere: "Number on the listing.",
+  },
+  {
+    id: "govdeals",
+    name: "GovDeals surplus",
+    rank: "Strong",
+    fit: "Cities and school districts selling iron. Pickup windows are real.",
+    legal: "Public surplus auctions. You open them.",
+    how: "Search heavy equipment in your state. Note pickup city and end time.",
+    messageWhere: "Contact on the lot, or the winning buyer after the sale.",
+  },
+  {
+    id: "publicsurplus",
+    name: "Public Surplus",
+    rank: "Strong",
+    fit: "Same game as GovDeals. Municipal iron with a removal deadline.",
+    legal: "Public auction site you open.",
+    how: "Search your state. Capture lots with a pickup address.",
+    messageWhere: "Lot contact. You send it.",
+  },
+  {
+    id: "gsa-auctions",
+    name: "GSA Auctions",
+    rank: "Strong",
+    fit: "Federal surplus. Pickup is usually a government yard with hours.",
+    legal: "Public GSA catalog.",
+    how: "Open heavy equipment. Copy location and dates from the lot.",
+    messageWhere: "Contact on the lot. You send it.",
+  },
+  {
+    id: "municibid",
+    name: "Municibid",
+    rank: "Strong",
+    fit: "Local government surplus. Smaller lots, real pickup cities.",
+    legal: "Public auction site.",
+    how: "Search equipment in your region. Note pickup.",
+    messageWhere: "Lot contact. You send it.",
+  },
 ];
 
 export const HUNT_PLAYS: HuntPlay[] = [
@@ -396,7 +554,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "The manufacturer already published the local dealer. That yard ships to customers. You are asking to be backup freight.",
     talkTo: "The store phone on the locator. Product support or the person who books deliveries.",
-    laneIds: ["cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator", "hyster-locator"],
+    laneIds: ["cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator", "hyster-locator", "komatsu-locator", "kubota-locator", "jcb-locator", "case-locator", "volvo-locator", "jlg-locator"],
   },
   {
     id: "rental",
@@ -404,7 +562,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "Rental houses move machines every week. Capture the branch, not the 1-800 number.",
     talkTo: "Branch manager or dispatch.",
-    laneIds: ["maps-rental", "sunbelt", "united-rentals"],
+    laneIds: ["maps-rental", "sunbelt", "united-rentals", "herc", "he-rental"],
   },
   {
     id: "listings",
@@ -412,7 +570,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "A listing is proof something might move. Prefer a dealer name and a phone over a private seller.",
     talkTo: "The number on the ad. If it is a dealer, treat it as a yard relationship, not a one-load bid.",
-    laneIds: ["machinery-trader", "equipment-trader", "tractorhouse", "fastline", "rock-dirt"],
+    laneIds: ["machinery-trader", "equipment-trader", "tractorhouse", "fastline", "rock-dirt", "machinio"],
   },
   {
     id: "trucks",
@@ -454,6 +612,22 @@ export const HUNT_PLAYS: HuntPlay[] = [
     talkTo: "The broker on the posting, from your own DAT / Truckstop / uShip login.",
     laneIds: ["uship", "dat", "truckstop"],
   },
+  {
+    id: "jobsites",
+    title: "Jobsite movers",
+    rank: "Best",
+    why: "Contractors, crane yards, steel plants, and machine shops already move iron. They are not Marketplace ads.",
+    talkTo: "Owner, superintendent, equipment manager, or shipping. Ask who books the truck when a machine changes jobs.",
+    laneIds: ["maps-excavating", "maps-crane", "maps-construction", "maps-steel", "maps-machine-shop"],
+  },
+  {
+    id: "surplus",
+    title: "City and federal surplus",
+    rank: "Strong",
+    why: "When a city or agency sells a machine, someone has a pickup window. That is timed freight, not a browsing list.",
+    talkTo: "Contact on the lot, or the buyer after they win. Note pickup city before you call.",
+    laneIds: ["govdeals", "publicsurplus", "gsa-auctions", "municibid", "govplanet"],
+  },
 ];
 
 export function huntSearchUrl(laneId: string, keywords = "forklift", location = "Texas") {
@@ -463,7 +637,7 @@ export function huntSearchUrl(laneId: string, keywords = "forklift", location = 
   const mapsDealer = `https://www.google.com/maps/search/${q(`${query} dealer ${place}`)}`;
   switch (laneId) {
     case "mt-dealers":
-      return `https://www.machinerytrader.com/dealer/directory/construction-equipment-dealers/`;
+      return `https://www.google.com/search?q=${q(`construction equipment dealers ${place} site:machinerytrader.com/dealer`)}`;
     case "maps-dealers":
       return mapsDealer;
     case "maps-rental":
@@ -480,10 +654,46 @@ export function huntSearchUrl(laneId: string, keywords = "forklift", location = 
       return "https://dealerlocator.deere.com/";
     case "hyster-locator":
       return "https://www.hyster.com/na/en-us/find-a-dealer/";
+    case "komatsu-locator":
+      return "https://www.komatsuamerica.com/en-us/komatsu-locator";
+    case "kubota-locator":
+      return "https://www.kubotausa.com/find-a-dealer";
+    case "jcb-locator":
+      return "https://www.jcb.com/en-US/dealer-search/";
+    case "case-locator":
+      return "https://www.casece.com/en-us/northamerica/resources/dealer-locator";
+    case "volvo-locator":
+      return "https://www.volvoce.com/united-states/en-us/contact-us/dealer-locator/us/";
+    case "jlg-locator":
+      return "https://www.jlg.com/en/find-a-location";
     case "sunbelt":
       return "https://www.sunbeltrentals.com/locations/";
     case "united-rentals":
       return "https://www.unitedrentals.com/locations";
+    case "herc":
+      return "https://www.hercrentals.com/locations.html";
+    case "he-rental":
+      return `https://www.google.com/maps/search/${q(`H&E Equipment ${place}`)}`;
+    case "maps-excavating":
+      return `https://www.google.com/maps/search/${q(`excavating contractor ${place}`)}`;
+    case "maps-construction":
+      return `https://www.google.com/maps/search/${q(`general contractor ${place}`)}`;
+    case "maps-crane":
+      return `https://www.google.com/maps/search/${q(`crane rental ${place}`)}`;
+    case "maps-steel":
+      return `https://www.google.com/maps/search/${q(`steel service center ${place}`)}`;
+    case "maps-machine-shop":
+      return `https://www.google.com/maps/search/${q(`CNC machine shop ${place}`)}`;
+    case "machinio":
+      return `https://www.machinio.com/search?q=${q(`${query} ${place}`)}`;
+    case "govdeals":
+      return `https://www.google.com/search?q=${q(`${query} ${state} site:govdeals.com`)}`;
+    case "publicsurplus":
+      return `https://www.google.com/search?q=${q(`${query} ${state} site:publicsurplus.com`)}`;
+    case "gsa-auctions":
+      return "https://gsaauctions.gov/";
+    case "municibid":
+      return "https://municibid.com/";
     case "truck-paper":
       return `https://www.truckpaper.com/listings/search?Keywords=${q(query)}`;
     case "commercial-truck":
@@ -544,8 +754,9 @@ export type HuntPackItem = {
   url: string;
 };
 
-export function huntPack(keywords = "forklift", location = "Texas"): HuntPackItem[] {
-  const topIds = ["mt-dealers", "maps-dealers", "machinery-trader", "maps-rental", "ritchie"];
+export function huntPack(keywords = "forklift", location = "Texas", playId = ""): HuntPackItem[] {
+  const play = playId ? HUNT_PLAYS.find((item) => item.id === playId) : null;
+  const topIds = play?.laneIds.slice(0, 5) || ["mt-dealers", "maps-dealers", "machinery-trader", "maps-rental", "ritchie"];
   return topIds.map((id) => {
     const lane = HUNT_LANES.find((item) => item.id === id)!;
     return {
@@ -559,14 +770,90 @@ export function huntPack(keywords = "forklift", location = "Texas"): HuntPackIte
   });
 }
 
-export function huntPackText(keywords = "forklift", location = "Texas") {
-  return huntPack(keywords, location)
+export function huntPackText(keywords = "forklift", location = "Texas", playId = "") {
+  return huntPack(keywords, location, playId)
     .map((item) => `${item.name}\n${item.url}`)
     .join("\n\n");
 }
 
 export function huntLane(id: string) {
   return HUNT_LANES.find((item) => item.id === id) || null;
+}
+
+export const HUNT_MARKETS = [
+  "Dallas TX",
+  "Houston TX",
+  "Austin TX",
+  "San Antonio TX",
+  "Fort Worth TX",
+  "Atlanta GA",
+  "Tampa FL",
+  "Orlando FL",
+  "Jacksonville FL",
+  "Miami FL",
+  "Phoenix AZ",
+  "Tucson AZ",
+  "Chicago IL",
+  "Indianapolis IN",
+  "Columbus OH",
+  "Cincinnati OH",
+  "Nashville TN",
+  "Charlotte NC",
+  "Raleigh NC",
+  "Birmingham AL",
+  "Sacramento CA",
+  "Fresno CA",
+  "Riverside CA",
+  "Denver CO",
+  "Oklahoma City OK",
+  "Kansas City MO",
+  "Salt Lake City UT",
+];
+
+export const HUNT_UNITS = ["forklift", "skid steer", "mini excavator", "telehandler", "scissor lift", "boom lift", "dump truck", "backhoe", "wheel loader"];
+
+const QUEUE_PLAY_IDS = ["yards", "jobsites", "oem", "rental", "listings", "surplus", "auctions", "trucks"] as const;
+
+export const CAPTURE_TARGET = 5;
+
+export type HuntQueueItem = {
+  id: string;
+  playId: string;
+  playTitle: string;
+  name: string;
+  query: string;
+  place: string;
+  url: string;
+  why: string;
+};
+
+export function huntDayKey(now = new Date()) {
+  return Math.floor(Date.UTC(now.getFullYear(), now.getMonth(), now.getDate()) / 86400000);
+}
+
+export function huntQueue(now = new Date(), count = 12): HuntQueueItem[] {
+  const day = huntDayKey(now);
+  const items: HuntQueueItem[] = [];
+  for (let i = 0; i < count; i += 1) {
+    const play = HUNT_PLAYS.find((item) => item.id === QUEUE_PLAY_IDS[(day + i) % QUEUE_PLAY_IDS.length]);
+    if (!play) continue;
+    const laneId = play.laneIds[(day + i) % play.laneIds.length];
+    const lane = huntLane(laneId);
+    if (!lane) continue;
+    const place = HUNT_MARKETS[(day + i * 2) % HUNT_MARKETS.length];
+    const query = HUNT_UNITS[(day + i * 3) % HUNT_UNITS.length];
+    items.push({
+      id: `${laneId}-${place}-${query}-${i}`,
+      playId: play.id,
+      playTitle: play.title,
+      name: lane.name,
+      query,
+      place,
+      url: huntSearchUrl(laneId, query, place),
+      why: lane.fit,
+    });
+  }
+  return items;
 }
 
 function clSubdomain(location: string) {
@@ -585,6 +872,22 @@ export function captureBookmarklet(origin = "http://localhost:6793", token = "")
   const header = token ? `,'x-capture-token':'${token.replace(/'/g, "")}'` : "";
   return `javascript:(function(){var t=document.title||'';var u=location.href;var s=(window.getSelection&&String(window.getSelection())||document.body.innerText||'').slice(0,7000);fetch('${origin}/api/prospects/capture',{method:'POST',headers:{'Content-Type':'application/json'${header}},body:JSON.stringify({source:'Capture',url:u,title:t,pageText:s,description:s})}).then(function(r){return r.json()}).then(function(j){alert(j.ok?('Haul saved · score '+(j.score||'?')+'/100. Work it: ${origin}/outreach?id='+(j.leadId||'')):(j.error||'Capture failed'))}).catch(function(){alert('Haul is not running at ${origin}')});})();`;
 }
+
+export function sourceFromLane(laneId: string) {
+  if (laneId === "facebook") return "Facebook Marketplace";
+  if (laneId === "craigslist") return "Craigslist";
+  if (laneId === "mt-dealers" || laneId === "machinery-trader") return "Machinery Trader";
+  if (laneId === "equipment-trader") return "Equipment Trader";
+  if (laneId === "tractorhouse" || laneId === "fastline") return "TractorHouse";
+  if (["ritchie", "purple-wave", "govplanet", "copart", "iaa", "manheim", "auctiontime", "bigiron", "govdeals", "publicsurplus", "gsa-auctions", "municibid"].includes(laneId)) return "Auction";
+  return "Google";
+}
+
+export const HUNT_STEPS = [
+  "Open one public search. Haul does not scrape it.",
+  "Copy the dealer or listing (or click the bookmarklet on that page).",
+  "Paste it. Name, published phone, and city only if they were on the page.",
+];
 
 export const HUNT_RULES = [
   "You open the page. You capture it. Haul never logs into Facebook, Craigslist, DAT, or LinkedIn for you.",

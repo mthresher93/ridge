@@ -5,6 +5,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { money, nowIso, uid } from "@/lib/format";
 import { companyName, leadLocation, shipmentMargin } from "@/lib/freight";
 import { parseMoney, SHIPMENT_STATUSES } from "@/lib/validate";
+import { extractCarrierFacts, ingestCarrier } from "@/lib/carriers";
 import type { Lead, Shipment, ShipmentStatus } from "@/lib/types";
 
 const STATUSES = SHIPMENT_STATUSES;
@@ -38,6 +39,7 @@ const EMPTY: Omit<Shipment, "id" | "createdAt" | "updatedAt"> = {
   dimensions: "",
   equipmentType: "",
   carrier: "",
+  carrierId: "",
   carrierRate: 0,
   customerRate: 0,
   status: "Quote",
@@ -50,6 +52,9 @@ export function ShipmentsView() {
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState(EMPTY);
   const [formError, setFormError] = useState("");
+  const [carrierPaste, setCarrierPaste] = useState("");
+  const [carrierUrl, setCarrierUrl] = useState("");
+  const [carrierMsg, setCarrierMsg] = useState("");
   const rows = workspace.shipments || [];
   const totals = useMemo(() => {
     const live = rows.filter((item) => item.status !== "Canceled");
@@ -57,6 +62,25 @@ export function ShipmentsView() {
     const carrier = live.reduce((sum, item) => sum + (Number(item.carrierRate) || 0), 0);
     return { customer, carrier, margin: customer - carrier };
   }, [rows]);
+
+  function saveCarrierPaste() {
+    const facts = extractCarrierFacts(carrierPaste, carrierUrl);
+    if (!facts.mc && !facts.dot && !facts.phone) {
+      setCarrierMsg("Need an MC, DOT, or a published local phone from the page. Do not invent one.");
+      return;
+    }
+    setWorkspace((prev) => {
+      const result = ingestCarrier(prev, facts);
+      setCarrierMsg(
+        result.duplicate
+          ? `Updated ${result.carrier.name}${result.carrier.mc ? ` · MC ${result.carrier.mc}` : ""}.`
+          : `Saved ${result.carrier.name}${result.carrier.mc ? ` · MC ${result.carrier.mc}` : ""}.`,
+      );
+      setDraft((prevDraft) => ({ ...prevDraft, carrierId: result.carrier.id, carrier: result.carrier.name }));
+      return result.workspace;
+    });
+    setCarrierPaste("");
+  }
 
   function openNew() {
     setEditing("new");
@@ -114,7 +138,7 @@ export function ShipmentsView() {
             <h1>Shipments</h1>
             <p>
               {rows.length === 0
-                ? "No shipments yet. Quote only after you have a real customer rate."
+                ? "No shipments yet. Quote only after you have a real customer rate. Paste a carrier page below when you cover a load."
                 : `Customer ${money(totals.customer)} · carrier ${money(totals.carrier)} · gross margin ${money(totals.margin)}`}
             </p>
           </div>
@@ -122,6 +146,27 @@ export function ShipmentsView() {
             New shipment
           </button>
         </header>
+        <section className="az-panel freight-panel">
+          <header>
+            <div>
+              <div className="home-kicker">Carrier file</div>
+              <h3>Paste a real page — MC / DOT / published phone</h3>
+            </div>
+          </header>
+          <p className="cd-mono">FMCSA snapshot or their site. No invented trucks. {(workspace.carriers || []).length} on file.</p>
+          <textarea
+            className="az-area"
+            rows={4}
+            value={carrierPaste}
+            onChange={(event) => setCarrierPaste(event.target.value)}
+            placeholder="Paste the page. Need MC, DOT, or a local dispatch phone that was actually printed."
+          />
+          <input className="az-input" value={carrierUrl} onChange={(event) => setCarrierUrl(event.target.value)} placeholder="Page URL (optional)" />
+          <button className="az-btn pri sm" type="button" onClick={saveCarrierPaste}>
+            Save carrier
+          </button>
+          {carrierMsg ? <p className="cd-mono">{carrierMsg}</p> : null}
+        </section>
         <div className="az-panel overflow-auto min-h-0 crm-table-wrap">
           <table className="az-table min-w-[1100px]">
             <thead>
@@ -269,7 +314,30 @@ export function ShipmentsView() {
                     : "Leave rates blank until a customer or carrier gives you a number. Listing ask is not your rate."}
                 </p>
                 <label className="rec-field">
-                  Carrier
+                  Carrier on file
+                  <select
+                    className="az-select"
+                    value={draft.carrierId || ""}
+                    onChange={(event) => {
+                      const picked = (workspace.carriers || []).find((item) => item.id === event.target.value);
+                      setDraft((prev) => ({
+                        ...prev,
+                        carrierId: picked?.id || "",
+                        carrier: picked?.name || prev.carrier,
+                      }));
+                    }}
+                  >
+                    <option value="">None yet — paste a page above</option>
+                    {(workspace.carriers || []).map((item) => (
+                      <option key={item.id} value={item.id}>
+                        {item.name}
+                        {item.mc ? ` · MC ${item.mc}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="rec-field">
+                  Carrier name
                   <input className="az-input" value={draft.carrier} onChange={(event) => setDraft((prev) => ({ ...prev, carrier: event.target.value }))} />
                 </label>
                 <label className="rec-field">

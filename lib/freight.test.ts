@@ -55,6 +55,56 @@ describe("ingestCapture", () => {
     expect(second.workspace.listings.length).toBeGreaterThanOrEqual(2);
   });
 
+  it("keeps same-brand yards with different phones as separate clients", () => {
+    const first = ingestCapture(emptyWorkspace(), {
+      title: "Shoppa's Material Handling — Dallas / Fort Worth",
+      sellerName: "Shoppa's Material Handling — Dallas / Fort Worth",
+      phone: "817-359-1100",
+      location: "Fort Worth, TX",
+      url: "https://www.shoppasmaterialhandling.com/locations/",
+      website: "https://www.shoppasmaterialhandling.com/",
+    });
+    const second = ingestCapture(first.workspace, {
+      title: "Shoppa's Material Handling — Amarillo",
+      sellerName: "Shoppa's Material Handling — Amarillo",
+      phone: "806-358-1391",
+      location: "Amarillo, TX",
+      url: "https://www.shoppasmaterialhandling.com/locations/",
+      website: "https://www.shoppasmaterialhandling.com/",
+    });
+    expect(second.duplicate).toBe(false);
+    expect(second.lead.id).not.toBe(first.lead.id);
+    expect(second.workspace.leads).toHaveLength(2);
+  });
+
+  it("does not reuse a collapsed brand lead when the yard phone is different", () => {
+    const first = ingestCapture(emptyWorkspace(), {
+      title: "Bobcat of Austin",
+      sellerName: "Bobcat of Austin",
+      phone: "512-251-3415",
+      location: "Round Rock, TX",
+      url: "https://www.bobcatcce.com/dealer-info/locations/bobcat-of-austin",
+      website: "https://www.bobcatcce.com/",
+    });
+    const collapsed = {
+      ...first.workspace,
+      leads: first.workspace.leads.map((lead) =>
+        lead.id === first.lead.id ? { ...lead, name: "Bobcat of San Antonio", phone: "210-337-6136", city: "San Antonio" } : lead,
+      ),
+    };
+    const second = ingestCapture(collapsed, {
+      title: "Bobcat of Austin",
+      sellerName: "Bobcat of Austin",
+      phone: "512-251-3415",
+      location: "Round Rock, TX",
+      url: "https://www.bobcatcce.com/dealer-info/locations/bobcat-of-austin",
+      website: "https://www.bobcatcce.com/",
+    });
+    expect(second.duplicate).toBe(false);
+    expect(second.lead.phone).toBe("512-251-3415");
+    expect(second.workspace.leads).toHaveLength(2);
+  });
+
   it("does not invent a freight rate from the listing asking price", () => {
     const result = ingestCapture(emptyWorkspace(), {
       title: "Toyota forklift",
@@ -131,6 +181,29 @@ describe("extractListingData", () => {
     expect(extracted.weight).toMatch(/9000/);
     expect(extracted.askingPrice).toBe(12500);
     expect(captureFacts(extracted).some((item) => item.k === "Phone")).toBe(false);
+  });
+
+  it("reads a Maps dealer card without inventing a phone", () => {
+    const extracted = extractListingData({
+      pageText: `Hill Country Lift
+4.8
+(128)
+Forklift dealer
+4411 S Congress Ave
+Austin, TX 78745
+United States
+(512) 555-0199
+hillcountrylift.com
+Directions
+Website`,
+      url: "https://www.google.com/maps/place/Hill+Country+Lift",
+    });
+    expect(extracted.sellerName).toBe("Hill Country Lift");
+    expect(extracted.city).toBe("Austin");
+    expect(extracted.state).toBe("TX");
+    expect(extracted.phone).toMatch(/512/);
+    expect(extracted.website).toMatch(/hillcountrylift\.com/i);
+    expect(extracted.source).toBe("Google");
   });
 
   it("reads a company from Posted by and unitless LxWxH", () => {

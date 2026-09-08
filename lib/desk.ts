@@ -1,6 +1,7 @@
 import { outreachQueue } from "./freight";
 import { HUNT_PLAYS, huntLane, huntSearchUrl, type HuntPlay } from "./hunt";
 import { workPath } from "./nav";
+import { isCallablePhone } from "./carriers";
 import type { Workspace } from "./types";
 
 export type DayHunt = {
@@ -51,9 +52,19 @@ export function todayHunt(now = new Date()): DayHunt {
   };
 }
 
+const UNCONTACTED = new Set(["Discovered", "Ready to Contact"]);
+
+export function deskCallBook(workspace: Workspace, limit = 20) {
+  return workspace.leads
+    .filter((lead) => !lead.archivedAt && isCallablePhone(lead.phone) && UNCONTACTED.has(lead.status))
+    .sort((a, b) => (b.freightScore || 0) - (a.freightScore || 0))
+    .slice(0, limit);
+}
+
 export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
   const live = workspace.leads.filter((lead) => !lead.archivedAt);
   const unlabeled = live.find((lead) => !lead.label);
+  const callNext = deskCallBook(workspace, 1)[0];
   const nextMessage = outreachQueue(live)[0];
   const overdue = workspace.callbacks
     .filter((item) => item.status === "open" && Date.parse(item.dueAt) < now)
@@ -71,7 +82,15 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
       cta: "Open follow-ups",
     });
   }
-  if (unlabeled) {
+  if (callNext) {
+    moves.push({
+      kicker: "Call — costs nothing",
+      title: callNext.name,
+      why: `${callNext.phone} is on their page. Ask who books outbound freight. No DAT. No ads.`,
+      href: workPath(callNext.id),
+      cta: "Open + call",
+    });
+  } else if (unlabeled) {
     moves.push({
       kicker: "Work this",
       title: unlabeled.name,
