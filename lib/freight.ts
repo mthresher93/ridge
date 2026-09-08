@@ -634,6 +634,9 @@ function guessItemFromOpeners(analysis: FreightAnalysis) {
 
 export function generateFollowUp(lead: Lead, reason = "") {
   const item = (lead.equipmentType || lead.listingTitle || "listing").toLowerCase();
+  if (reason.toLowerCase().includes("voicemail") || reason.toLowerCase().includes("no pickup")) {
+    return `Left a note yesterday on the ${item}. Who books outbound if it sells out of town?`;
+  }
   if (reason.toLowerCase().includes("quote")) return `Wanted to check back — still need a number to move the ${item}?`;
   if (reason.toLowerCase().includes("no reply") || reason.toLowerCase().includes("reply")) {
     return `Just bumping this in case it got buried. If the ${item} sells out of town, do you already have transport covered?`;
@@ -801,8 +804,17 @@ export function blankProspect(owner: string, overlay: Partial<Lead> = {}): Lead 
     dimensions: overlay.dimensions || "",
     weight: overlay.weight || "",
     quantity: overlay.quantity ?? null,
+    companyId: overlay.companyId,
+    dimensions: overlay.dimensions || "",
+    weight: overlay.weight || "",
+    quantity: overlay.quantity ?? null,
     archivedAt: overlay.archivedAt,
     label: overlay.label || "",
+    shipperRole: overlay.shipperRole,
+    trailerHint: overlay.trailerHint,
+    loadClass: overlay.loadClass,
+    booker: overlay.booker || "",
+    bookerPhone: overlay.bookerPhone || "",
   };
 }
 

@@ -2,6 +2,7 @@ import type { Opportunity, Urgency, Workspace } from "./types";
 import { CLOSED_STAGES, WON_STAGES } from "./stages";
 import { daysBetween } from "./format";
 import { funnelCounts, outreachQueue, shipmentMargin } from "./freight";
+import { callableUncontacted } from "./metro";
 import { workPath } from "./nav";
 
 export function isOpen(stage: string) {
@@ -159,6 +160,18 @@ export function topMove(workspace: Workspace, now = Date.now()) {
       href: "/callbacks",
       cta: "Open follow-ups",
       leadId: overdue.leadId,
+    };
+  }
+
+  const callNext = callableUncontacted(workspace, 1)[0];
+  if (callNext) {
+    return {
+      kicker: "Call — costs nothing",
+      title: callNext.name,
+      reason: `${callNext.phone} is on their page. Ask who books outbound freight.`,
+      href: workPath(callNext.id),
+      cta: "Open + call",
+      leadId: callNext.id,
     };
   }
 

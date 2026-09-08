@@ -40,6 +40,8 @@ type Draft = {
   origin: string;
   destination: string;
   label: string;
+  booker: string;
+  bookerPhone: string;
 };
 
 function draftFrom(lead: Lead): Draft {
@@ -64,6 +66,8 @@ function draftFrom(lead: Lead): Draft {
     origin: lead.origin || "",
     destination: lead.destination || "",
     label: lead.label || "Unlabeled",
+    booker: lead.booker || "",
+    bookerPhone: lead.bookerPhone || "",
   };
 }
 
@@ -130,6 +134,8 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
               equipmentType: draft.equipmentType,
               origin: draft.origin,
               destination: draft.destination,
+              booker: draft.booker,
+              bookerPhone: draft.bookerPhone,
               label: draft.label === "Unlabeled" ? "" : draft.label,
               updatedAt: stamp,
             }
@@ -458,6 +464,10 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
             <div className="rec-grid">
               <Field label="City" value={draft.city} onChange={(value) => set("city", value)} />
               <Field label="State" value={draft.state} onChange={(value) => set("state", value)} />
+            </div>
+            <div className="rec-grid">
+              <Field label="Who books freight" value={draft.booker || ""} onChange={(value) => set("booker", value)} />
+              <Field label="Booker phone" value={draft.bookerPhone || ""} onChange={(value) => set("bookerPhone", value)} />
             </div>
             <div className="rec-grid">
               <Field label="Category" value={draft.category} onChange={(value) => set("category", value)} />

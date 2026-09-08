@@ -3,10 +3,12 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { phonePretty } from "@/lib/format";
+import { nowIso, phonePretty } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv, type ImportDraft } from "@/lib/contacts";
 import { LeadDrawer } from "./lead-drawer";
 import { companyName, ingestCapture, leadLocation, matchesProspectFilter, type ProspectFilter } from "@/lib/freight";
+import { groupByMetro, metroOf } from "@/lib/metro";
+import { labelObviousYards, obviousYardCount } from "@/lib/prospect";
 
 const FILTERS: { id: ProspectFilter; label: string }[] = [
   { id: "all", label: "All" },
@@ -33,7 +35,8 @@ export function PeopleView() {
   const [adding, setAdding] = useState(false);
   const [addForm, setAddForm] = useState({ name: "", phone: "", city: "", state: "" });
   const [addError, setAddError] = useState("");
-  const minScore = Number(searchParams.get("score") || 0);
+  const [metroId, setMetroId] = useState("all");
+  const obvious = useMemo(() => obviousYardCount(workspace.leads), [workspace.leads]);
 
   useEffect(() => {
     const id = searchParams.get("id");
@@ -49,11 +52,11 @@ export function PeopleView() {
       const archived = Boolean(lead.archivedAt);
       if (shelf === "live" ? archived : !archived) return false;
       if (!matchesProspectFilter(lead, filter)) return false;
-      if (minScore && (lead.freightScore || 0) < minScore) return false;
+      if (metroId !== "all" && metroOf(lead)?.id !== metroId) return false;
       const hay = [lead.name, companyName(lead), lead.label, lead.city, lead.state, lead.phone, lead.email, lead.owner, lead.source, lead.category, lead.equipmentType, lead.listingTitle].join(" ").toLowerCase();
       return !query || hay.includes(query.toLowerCase());
     });
-  }, [workspace.leads, query, filter, shelf, minScore]);
+  }, [workspace.leads, query, filter, shelf, metroId]);
 
   const selected = workspace.leads.find((lead) => lead.id === selectedId) || null;
 
@@ -159,6 +162,19 @@ export function PeopleView() {
                 }}
               />
             </label>
+            {obvious ? (
+              <button
+                className="az-btn pri sm"
+                type="button"
+                onClick={() => {
+                  const stamp = nowIso();
+                  setWorkspace((prev) => ({ ...prev, leads: labelObviousYards(prev.leads, stamp), updatedAt: stamp }));
+                  log("lead", "book", "labeled", "Labeled obvious yards from Clients");
+                }}
+              >
+                Label {obvious} obvious yards
+              </button>
+            ) : null}
             <button className="az-btn pri sm" type="button" onClick={() => setAdding(true)}>
               Add client
             </button>
@@ -171,6 +187,21 @@ export function PeopleView() {
             {FILTERS.map((item) => (
               <button key={item.id} type="button" className={`az-btn sm ${filter === item.id ? "pri" : ""}`} onClick={() => setFilter(item.id)}>
                 {item.label}
+              </button>
+            ))}
+          </div>
+          <div className="metro-chips">
+            <button type="button" className={`az-btn sm ${metroId === "all" ? "pri" : ""}`} onClick={() => setMetroId("all")}>
+              All cities
+            </button>
+            {groupByMetro(workspace.leads.filter((lead) => !lead.archivedAt)).map((group) => (
+              <button
+                key={group.id}
+                type="button"
+                className={`az-btn sm ${metroId === group.id ? "pri" : ""}`}
+                onClick={() => setMetroId(group.id)}
+              >
+                {group.label} {group.leads.length}
               </button>
             ))}
           </div>
@@ -207,9 +238,11 @@ export function PeopleView() {
               <tr>
                 <th>Client</th>
                 <th>Label</th>
+                <th>Booker</th>
                 <th>Source</th>
                 <th>Screen</th>
                 <th>Stage</th>
+                <th>Tried</th>
                 <th>Phone</th>
                 <th>Next</th>
               </tr>
@@ -217,7 +250,7 @@ export function PeopleView() {
             <tbody>
               {leads.length === 0 ? (
                 <tr className="cursor-default">
-                  <td colSpan={7} className="py-10">
+                  <td colSpan={9} className="py-10">
                     <div className="empty-desk" style={{ margin: 0, boxShadow: "none" }}>
                       <h2>No clients yet</h2>
                       <p>Paste a live listing, or type a real seller name. Move' will not invent a contact.</p>
@@ -249,11 +282,13 @@ export function PeopleView() {
                     </div>
                   </td>
                   <td>{lead.label || "Unlabeled"}</td>
+                  <td>{lead.booker || "—"}</td>
                   <td>{lead.source}</td>
                   <td className="az-num">{lead.freightScore ?? "—"}</td>
                   <td>
                     <span className="az-chip">{lead.status}</span>
                   </td>
+                  <td className="az-num">{lead.attempts || 0}</td>
                   <td className="az-num">{lead.phone ? phonePretty(lead.phone) : "—"}</td>
                   <td className="text-[12px] text-[var(--muted)] max-w-[240px]">
                     <div className="truncate">{lead.nextAction || "—"}</div>

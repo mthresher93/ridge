@@ -109,31 +109,31 @@ body::before {
 .az-rail .az-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 18px 14px 20px;
+  gap: 10px;
+  padding: 16px 14px 14px;
   text-decoration: none;
 }
 
 .az-brand-mark {
-  width: 44px;
-  height: 44px;
+  width: 28px;
+  height: 28px;
   color: var(--gold);
-  background: #08090b;
-  border: 1px solid rgba(226, 184, 74, 0.28);
-  border-radius: 12px;
+  background: transparent;
+  border: 1px solid rgba(226, 184, 74, 0.22);
+  border-radius: 7px;
   box-shadow: none;
-  padding: 4px;
+  padding: 3px;
   display: block;
   flex: none;
   overflow: visible;
 }
 
 .az-brand-name {
-  font-family: var(--fk);
-  font-size: 38px;
-  font-weight: 800;
-  letter-spacing: -0.055em;
-  line-height: 0.82;
+  font-family: var(--fb);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  line-height: 1.15;
   text-transform: uppercase;
   background: none;
   -webkit-background-clip: unset;
@@ -143,16 +143,17 @@ body::before {
 
 .az-brand-tick {
   color: var(--gold);
-  font-weight: 800;
+  font-weight: 700;
+  margin-left: 1px;
 }
 
 .az-brand-sub {
   font-family: var(--fm);
-  font-size: 10px;
-  letter-spacing: 0.22em;
+  font-size: 9px;
+  letter-spacing: 0.2em;
   text-transform: uppercase;
   color: var(--gold);
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .az-rail-nav {
@@ -2470,14 +2471,17 @@ button.desk-open-row {
 .login-card .az-brand {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 
 .login-card .az-brand-mark {
+  width: 32px;
+  height: 32px;
   color: var(--gold);
 }
 
 .login-card .az-brand-name {
+  font-size: 18px;
   color: var(--tx);
 }
 
@@ -2967,6 +2971,13 @@ button.desk-open-row {
 .cd-search::placeholder {
   color: var(--tx4);
   opacity: 1;
+}
+
+.desk-booker {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin: 10px 0;
 }
 
 .metro-chips {

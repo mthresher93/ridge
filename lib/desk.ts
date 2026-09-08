@@ -103,6 +103,18 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
       cta: "Open",
     });
   }
+  if (callNext) {
+    if (moves.length < 3) {
+      moves.push({
+        kicker: "Before you quote",
+        title: "Check the deck in Intel",
+        why: "Enter L × W × H and pounds. If hotshot fails, you will see why.",
+        href: "/playbook",
+        cta: "Open Intel",
+      });
+    }
+    return moves.slice(0, 3);
+  }
   if (moves.length < 3) {
     moves.push({
       kicker: `${hunt.weekday} hunt`,

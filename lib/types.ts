@@ -57,6 +57,8 @@ export type Lead = {
   shipperRole?: ShipperRole;
   trailerHint?: string;
   loadClass?: string;
+  booker?: string;
+  bookerPhone?: string;
 };
 
 export type FreightType =

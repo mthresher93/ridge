@@ -58,5 +58,6 @@ describe("deskPlan", () => {
     expect(plan[0].title).toBe("HOLT CAT Dallas (North)");
     expect(plan[0].kicker).toMatch(/Call/i);
     expect(plan[0].why).toMatch(/214-342-6700/);
+    expect(plan.some((item) => item.href.includes("/discover"))).toBe(false);
   });
 });

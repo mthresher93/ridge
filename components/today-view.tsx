@@ -6,10 +6,10 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
 import { deskCallBook, deskPlan, todayHunt } from "@/lib/desk";
 import { huntQueue } from "@/lib/hunt";
-import { HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
+import { DESK_JOB, HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
 import { companyName, leadLocation, outreachQueue, suggestClientKind } from "@/lib/freight";
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
-import { applyCallOutcome, firstCall } from "@/lib/prospect";
+import { firstCall, labelObviousYards, obviousYardCount, recordCallAttempt, type CallOutcome } from "@/lib/prospect";
 import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
 import { nowIso, phonePretty, relativeDue } from "@/lib/format";
@@ -36,7 +36,12 @@ export function TodayView() {
   const [copiedId, setCopiedId] = useState("");
   const [copyError, setCopyError] = useState("");
   const live = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
-  const unlabeled = useMemo(() => live.filter((lead) => !lead.label).slice(0, 6), [live]);
+  const unlabeledAll = useMemo(() => live.filter((lead) => !lead.label), [live]);
+  const unlabeled = unlabeledAll.slice(0, 6);
+  const obvious = useMemo(() => obviousYardCount(live), [live]);
+  const stillCalling = callBook.length > 0;
+  const [booker, setBooker] = useState("");
+  const [bookerPhone, setBookerPhone] = useState("");
   const toMessage = useMemo(() => outreachQueue(live).slice(0, 6), [live]);
   const followUps = useMemo(
     () => [...metrics.overdueCallbacks, ...metrics.dueCallbacks.filter((item) => !metrics.overdueCallbacks.includes(item))].slice(0, 6),
@@ -98,16 +103,25 @@ export function TodayView() {
     }
   }
 
-  function noteCall(lead: Lead, outcome: "no_pickup" | "voicemail" | "wrong_number") {
+  function noteCall(lead: Lead, outcome: CallOutcome, extra?: { booker: string; bookerPhone?: string }) {
+    setWorkspace((prev) => recordCallAttempt(prev, lead.id, outcome, nowIso(), extra));
+    log(
+      "lead",
+      lead.id,
+      "call_attempt",
+      outcome === "talked" ? "Talked from Desk" : outcome === "voicemail" ? "Voicemail from Desk" : outcome === "wrong_number" ? "Wrong number from Desk" : "No pickup from Desk",
+    );
+    if (outcome === "no_pickup" || outcome === "voicemail") void copyOpener(lead);
+    if (outcome === "talked") {
+      setBooker("");
+      setBookerPhone("");
+    }
+  }
+
+  function labelObvious() {
     const stamp = nowIso();
-    const due = new Date(Date.now() + 86400000).toISOString();
-    setWorkspace((prev) => ({
-      ...prev,
-      leads: prev.leads.map((item) => (item.id === lead.id ? applyCallOutcome(item, outcome, stamp, due) : item)),
-      updatedAt: stamp,
-    }));
-    log("lead", lead.id, "call_attempt", outcome === "voicemail" ? "Voicemail from Desk" : outcome === "wrong_number" ? "Wrong number from Desk" : "No pickup from Desk");
-    if (outcome !== "wrong_number") void copyOpener(lead);
+    setWorkspace((prev) => ({ ...prev, leads: labelObviousYards(prev.leads, stamp), updatedAt: stamp }));
+    log("lead", "book", "labeled", "Labeled obvious yards from Desk");
   }
 
   function applySuggestedLabel(lead: Lead) {
@@ -154,7 +168,7 @@ export function TodayView() {
               <span>to call</span>
             </div>
             <div>
-              <b>{unlabeled.length}</b>
+              <b>{unlabeledAll.length}</b>
               <span>unlabeled</span>
             </div>
             <div>
@@ -183,6 +197,16 @@ export function TodayView() {
             <p className="desk-why">{nextScript.why}</p>
             <blockquote className="desk-opener">{nextScript.opener}</blockquote>
             {copyError ? <p className="rec-warn">{copyError}</p> : null}
+            <div className="desk-booker">
+              <label className="rec-field">
+                Who books freight
+                <input className="az-input" value={booker} onChange={(event) => setBooker(event.target.value)} placeholder="Name they gave you" />
+              </label>
+              <label className="rec-field">
+                Direct line (if they gave it)
+                <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if published or they told you" />
+              </label>
+            </div>
             <div className="desk-next-actions">
               <a className="az-btn pri" href={`tel:${nextCall.phone}`}>
                 Call {phonePretty(nextCall.phone)}
@@ -190,8 +214,11 @@ export function TodayView() {
               <button className="az-btn" type="button" onClick={() => void copyOpener(nextCall)}>
                 {copiedId === nextCall.id ? "Copied" : "Copy opener"}
               </button>
+              <button className="az-btn pri" type="button" onClick={() => noteCall(nextCall, "talked", { booker: booker.trim(), bookerPhone: bookerPhone.trim() })}>
+                Talked{booker.trim() ? ` — ${booker.trim()}` : ""}
+              </button>
               <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "no_pickup")}>
-                No pickup — next yard
+                No pickup
               </button>
               <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "voicemail")}>
                 Voicemail
@@ -235,21 +262,36 @@ export function TodayView() {
         <section className="az-panel freight-panel desk-from-you">
           <header>
             <div>
-              <div className="home-kicker">Get paid without spending</div>
-              <h3>What to do today</h3>
+              <div className="home-kicker">The job</div>
+              <h3>{stillCalling ? "Call this list. Do not hunt more yet." : "Get paid without spending"}</h3>
             </div>
-            <span className="cd-mono">{callBook.length} published phones still uncontacted</span>
+            {obvious ? (
+              <button className="az-btn pri sm" type="button" onClick={labelObvious}>
+                Label {obvious} obvious yards
+              </button>
+            ) : (
+              <span className="cd-mono">{callBook.length} published phones still uncontacted</span>
+            )}
           </header>
           <ol className="desk-from-list">
-            {NO_SPEND.map((item) => (
-              <li key={item.n}>
-                <b>{item.n}</b>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
-                </div>
-              </li>
-            ))}
+            {stillCalling
+              ? DESK_JOB.map((detail, index) => (
+                  <li key={detail}>
+                    <b>{index + 1}</b>
+                    <div>
+                      <p>{detail}</p>
+                    </div>
+                  </li>
+                ))
+              : NO_SPEND.map((item) => (
+                  <li key={item.n}>
+                    <b>{item.n}</b>
+                    <div>
+                      <strong>{item.title}</strong>
+                      <p>{item.detail}</p>
+                    </div>
+                  </li>
+                ))}
           </ol>
         </section>
 
@@ -321,7 +363,9 @@ export function TodayView() {
           </section>
         ) : null}
 
-        <section className="desk-today">
+        {!stillCalling ? (
+          <>
+          <section className="desk-today">
           <div className="desk-today-copy">
             <div className="home-kicker">{hunt.weekday} hunt</div>
             <h2>{hunt.play.title}</h2>
@@ -418,17 +462,23 @@ export function TodayView() {
             </li>
           ))}
         </ol>
+          </>
+        ) : null}
 
         {live.length > 0 ? (
           <>
+            {!stillCalling ? (
             <section className="freight-hero" onClick={() => openLead(move.leadId, move.href)}>
               <div className="home-kicker">{move.kicker}</div>
               <h2>{move.title}</h2>
               <p>{move.reason}</p>
               <span className="az-btn pri sm">{move.cta}</span>
             </section>
+            ) : null}
 
             <div className="desk-work-grid">
+              {!stillCalling ? (
+              <>
               <section className="az-panel freight-panel">
                 <header>
                   <h3>Needs a label</h3>
@@ -437,17 +487,26 @@ export function TodayView() {
                   </button>
                 </header>
                 {unlabeled.length === 0 ? <p className="rec-empty">Every client is labeled.</p> : null}
-                {unlabeled.map((lead) => (
-                  <button key={lead.id} type="button" className="work-row text-left" onClick={() => openLead(lead.id, workPath(lead.id))}>
-                    <div>
+                {unlabeled.map((lead) => {
+                  const suggested = suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website });
+                  return (
+                  <div key={lead.id} className="work-row">
+                    <button type="button" className="desk-call-who" onClick={() => openLead(lead.id, workPath(lead.id))}>
                       <b>{lead.name}</b>
                       <div className="cd-mono">
                         {lead.source} · {leadLocation(lead) || "—"}
                       </div>
-                    </div>
-                    <span className="az-chip">Unlabeled</span>
-                  </button>
-                ))}
+                    </button>
+                    {suggested ? (
+                      <button className="az-btn sm" type="button" onClick={() => applySuggestedLabel(lead)}>
+                        Label {suggested}
+                      </button>
+                    ) : (
+                      <span className="az-chip">Unlabeled</span>
+                    )}
+                  </div>
+                  );
+                })}
               </section>
 
               <section className="az-panel freight-panel">
@@ -473,6 +532,8 @@ export function TodayView() {
                   </button>
                 ))}
               </section>
+              </>
+              ) : null}
 
               <section className="az-panel freight-panel">
                 <header>
@@ -506,7 +567,7 @@ export function TodayView() {
               </section>
             </div>
 
-            {hotYards.length ? (
+            {hotYards.length > 0 && !stillCalling ? (
               <section className="az-panel freight-panel">
                 <header>
                   <h3>High-probability yards</h3>

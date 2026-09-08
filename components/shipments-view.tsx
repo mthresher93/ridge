@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { money, nowIso, uid } from "@/lib/format";
 import { companyName, leadLocation, shipmentMargin } from "@/lib/freight";
@@ -16,7 +17,7 @@ function fillFromLead(person: Lead | undefined, prev: Omit<Shipment, "id" | "cre
     ...prev,
     leadId: person.id,
     customer: companyName(person) || person.name,
-    contact: person.name,
+    contact: person.booker || person.name,
     origin: person.origin || leadLocation(person) || "",
     destination: person.destination || "",
     commodity: person.listingTitle || person.equipmentType || "",
@@ -48,7 +49,8 @@ const EMPTY: Omit<Shipment, "id" | "createdAt" | "updatedAt"> = {
 };
 
 export function ShipmentsView() {
-  const { workspace, setWorkspace, log, loading } = useWorkspace();
+  const { workspace, setWorkspace, log, loading, selectedLeadId } = useWorkspace();
+  const searchParams = useSearchParams();
   const [editing, setEditing] = useState<string | "new" | null>(null);
   const [draft, setDraft] = useState(EMPTY);
   const [formError, setFormError] = useState("");
@@ -56,6 +58,16 @@ export function ShipmentsView() {
   const [carrierUrl, setCarrierUrl] = useState("");
   const [carrierMsg, setCarrierMsg] = useState("");
   const rows = workspace.shipments || [];
+
+  useEffect(() => {
+    const id = searchParams.get("id");
+    if (!id) return;
+    const row = (workspace.shipments || []).find((item) => item.id === id);
+    if (row) {
+      setEditing(row.id);
+      setDraft({ ...row });
+    }
+  }, [searchParams, workspace.shipments]);
   const totals = useMemo(() => {
     const live = rows.filter((item) => item.status !== "Canceled");
     const customer = live.reduce((sum, item) => sum + (Number(item.customerRate) || 0), 0);
@@ -83,8 +95,9 @@ export function ShipmentsView() {
   }
 
   function openNew() {
+    const person = workspace.leads.find((item) => item.id === selectedLeadId);
     setEditing("new");
-    setDraft({ ...EMPTY });
+    setDraft(fillFromLead(person, { ...EMPTY }));
     setFormError("");
   }
 

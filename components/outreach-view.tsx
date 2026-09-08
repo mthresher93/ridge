@@ -6,10 +6,11 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, leadLocation, outreachQueue, suggestClientKind, type ClientKind, type MessageStyle } from "@/lib/freight";
 import { CALL_ASK, recommendEquipment } from "@/lib/equipment";
 import { metroOf, sameMetroQueue } from "@/lib/metro";
-import { analysisFromLead, applyCallOutcome, firstCall, type CallOutcome } from "@/lib/prospect";
+import { analysisFromLead, firstCall, recordCallAttempt, type CallOutcome } from "@/lib/prospect";
 import { messagesSentOnDay, pacingNote } from "@/lib/pacing";
 import { daysUntilNextWeekday, nowIso, phonePretty, uid } from "@/lib/format";
 import { workPath } from "@/lib/nav";
+import type { Shipment } from "@/lib/types";
 
 export function OutreachView() {
   const router = useRouter();
@@ -22,6 +23,9 @@ export function OutreachView() {
   const [copyError, setCopyError] = useState("");
   const [note, setNote] = useState("");
   const [pinned, setPinned] = useState(true);
+  const [booker, setBooker] = useState("");
+  const [bookerPhone, setBookerPhone] = useState("");
+  const [dest, setDest] = useState("");
 
   const wantedId = searchParams.get("id") || selectedLeadId;
   const thursdayIn = daysUntilNextWeekday(4);
@@ -50,6 +54,12 @@ export function OutreachView() {
   const follow = lead ? (workspace.callbacks || []).find((item) => item.leadId === lead.id && item.status === "open") : null;
   const suggested = lead && !lead.label ? suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website }) : "";
   const metroNext = lead ? sameMetroQueue(workspace.leads, lead, 6) : [];
+  useEffect(() => {
+    if (!lead) return;
+    setBooker(lead.booker || "");
+    setBookerPhone(lead.bookerPhone || "");
+    setDest(lead.destination || "");
+  }, [lead?.id]);
   const fit = lead
     ? recommendEquipment({
         text: [lead.equipmentType, lead.listingTitle, lead.listingDescription].filter(Boolean).join(" "),
@@ -90,15 +100,14 @@ export function OutreachView() {
   }, [lead, listing]);
 
   const noteCall = useCallback(
-    (outcome: CallOutcome, advance = true) => {
+    (outcome: CallOutcome, advance = false) => {
       if (!lead) return;
-      const stamp = nowIso();
-      const due = new Date(Date.now() + 86400000).toISOString();
-      setWorkspace((prev) => ({
-        ...prev,
-        leads: prev.leads.map((item) => (item.id === lead.id ? applyCallOutcome(item, outcome, stamp, due) : item)),
-        updatedAt: stamp,
-      }));
+      setWorkspace((prev) =>
+        recordCallAttempt(prev, lead.id, outcome, nowIso(), {
+          booker: booker.trim() || lead.booker,
+          bookerPhone: bookerPhone.trim() || lead.bookerPhone,
+        }),
+      );
       log(
         "lead",
         lead.id,
@@ -108,7 +117,7 @@ export function OutreachView() {
       if (outcome === "no_pickup" || outcome === "voicemail") void copy();
       if (advance) go(1);
     },
-    [copy, go, lead, log, setWorkspace],
+    [booker, bookerPhone, copy, go, lead, log, setWorkspace],
   );
 
   const mark = useCallback((status: string, detail: string, followDays?: number, advance = false) => {
@@ -300,7 +309,7 @@ export function OutreachView() {
                   <li key={item.id}>{item.ask}</li>
                 ))}
               </ol>
-              <button className="az-btn sm" type="button" onClick={() => router.push("/playbook")}>
+              <button className="az-btn sm" type="button" onClick={() => { if (lead) setSelectedLeadId(lead.id); router.push("/playbook"); }}>
                 Open Intel
               </button>
             </div>
@@ -319,6 +328,16 @@ export function OutreachView() {
             ) : (
               <p className="cd-mono">No published phone. Copy the opener instead.</p>
             )}
+            <div className="desk-booker">
+              <label className="rec-field">
+                Who books freight
+                <input className="az-input" value={booker} onChange={(event) => setBooker(event.target.value)} placeholder="Name they gave you" />
+              </label>
+              <label className="rec-field">
+                Direct line
+                <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if they gave it" />
+              </label>
+            </div>
             <div className="call-disposition">
               <button className="az-btn" type="button" onClick={() => noteCall("no_pickup")}>
                 No pickup
@@ -326,14 +345,75 @@ export function OutreachView() {
               <button className="az-btn" type="button" onClick={() => noteCall("voicemail")}>
                 Voicemail
               </button>
-              <button className="az-btn" type="button" onClick={() => noteCall("talked", false)}>
+              <button className="az-btn pri" type="button" onClick={() => noteCall("talked", false)}>
                 Talked
               </button>
               <button className="az-btn" type="button" onClick={() => noteCall("wrong_number")}>
                 Wrong number
               </button>
             </div>
-            <p className="cd-mono">Call outcomes do not count as a sent message. Copy the opener if nobody picks up.</p>
+            <p className="cd-mono">Voicemail stays here and sets a follow-up for tomorrow. Not a sent message.</p>
+            {lead.status === "Contacted" || lead.booker || booker ? (
+              <div className="desk-booker">
+                <label className="rec-field">
+                  Destination (typed — never invented)
+                  <input className="az-input" value={dest} onChange={(event) => setDest(event.target.value)} placeholder="City they named" />
+                </label>
+                <button
+                  className="az-btn pri"
+                  type="button"
+                  onClick={() => {
+                    const stamp = nowIso();
+                    const destination = (dest || lead.destination || "").trim();
+                    const item: Shipment = {
+                      id: uid("shp"),
+                      leadId: lead.id,
+                      customer: companyName(lead) || lead.name,
+                      contact: (booker || lead.booker || lead.name).trim(),
+                      origin: lead.origin || leadLocation(lead) || "",
+                      destination,
+                      pickupDate: "",
+                      deliveryDate: "",
+                      commodity: lead.listingTitle || lead.equipmentType || "",
+                      weight: lead.weight || "",
+                      dimensions: lead.dimensions || "",
+                      equipmentType: lead.trailerHint || "",
+                      carrier: "",
+                      carrierId: "",
+                      carrierRate: 0,
+                      customerRate: 0,
+                      status: "Quote",
+                      reference: "",
+                      notes: "",
+                      createdAt: stamp,
+                      updatedAt: stamp,
+                    };
+                    setWorkspace((prev) => ({
+                      ...prev,
+                      leads: prev.leads.map((row) =>
+                        row.id === lead.id
+                          ? {
+                              ...row,
+                              destination,
+                              booker: (booker || row.booker || "").trim(),
+                              bookerPhone: (bookerPhone || row.bookerPhone || "").trim(),
+                              nextAction: "Blank quote open. Rates stay 0 until they give a number.",
+                              updatedAt: stamp,
+                            }
+                          : row,
+                      ),
+                      shipments: [item, ...(prev.shipments || [])],
+                      updatedAt: stamp,
+                    }));
+                    setSelectedLeadId(lead.id);
+                    log("shipment", item.id, "created", `Blank quote for ${lead.name}`);
+                    router.push(`/shipments?id=${item.id}`);
+                  }}
+                >
+                  Blank quote — rates $0
+                </button>
+              </div>
+            ) : null}
             <label className="rec-field">
               Message style
               <select className="az-select" value={style} onChange={(event) => setStyle(event.target.value as MessageStyle)}>

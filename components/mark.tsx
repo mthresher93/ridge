@@ -2,7 +2,7 @@ import { PRODUCT_NAME, PRODUCT_SUB, PRODUCT_WORD } from "@/lib/brand";
 
 export function BrandMark({ className = "az-brand-mark" }: { className?: string }) {
   return (
-    <svg className={className} viewBox="0 0 32 32" width={36} height={36} aria-hidden="true">
+    <svg className={className} viewBox="0 0 32 32" width={28} height={28} aria-hidden="true">
       <path d="M2.4 9.6 8 16 2.4 22.4" fill="none" stroke="currentColor" strokeWidth="2.15" strokeLinejoin="miter" />
       <path
         d="M7.1 9.6 12.7 16 7.1 22.4"

@@ -1,3 +1,10 @@
+export const DESK_JOB = [
+  "Call the next untried published number in one metro.",
+  "If they pick up: save who books outbound freight. Then dest, specs, blank quote. Rates stay $0 until they give you a number.",
+  "If voicemail or no pickup: copy the opener, you send it. Follow-up lands tomorrow. That is not a sent message until you mark sent.",
+  "Label obvious yards in one click. Only hunt more when this metro’s untried list is thin.",
+];
+
 export const NO_SPEND = [
   {
     n: "1",
