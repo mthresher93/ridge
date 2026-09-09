@@ -7,12 +7,13 @@ import { CLIENT_KINDS, LEAD_SOURCES, captureFacts, extractListingData, ingestCap
 import { workPath } from "@/lib/nav";
 import { todayHunt } from "@/lib/desk";
 import { HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, HUNT_STEPS, huntLane, huntPack, huntPackText, huntSearchUrl, sourceFromLane, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import { bookCensus } from "@/lib/book";
 import { densestHuntPlace, leadsInPlace, METROS } from "@/lib/metro";
 import { firstCall } from "@/lib/prospect";
 import { isCallablePhone } from "@/lib/carriers";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
-import type { SavedSearch } from "@/lib/types";
+import type { FinderHit } from "@/lib/finder";
 
 type AiStatus = { ready?: boolean; provider?: string; ollama?: { detail?: string }; pull?: string; bookmarklet?: string };
 
@@ -31,7 +32,7 @@ export function DiscoverView() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { workspace, setWorkspace, reload, loading, setSelectedLeadId } = useWorkspace();
-  const [tab, setTab] = useState<"hunt" | "paste" | "csv" | "searches" | "logins">("hunt");
+  const [tab, setTab] = useState<"hunt" | "finder" | "paste" | "csv" | "searches" | "logins">("hunt");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [result, setResult] = useState("");
@@ -44,6 +45,8 @@ export function DiscoverView() {
   const [blockedPack, setBlockedPack] = useState<HuntPackItem[]>([]);
   const [lastCapture, setLastCapture] = useState<LastCapture | null>(null);
   const [lastLane, setLastLane] = useState<{ id: string; name: string } | null>(null);
+  const [finderHits, setFinderHits] = useState<FinderHit[]>([]);
+  const [finderNote, setFinderNote] = useState("");
   const [form, setForm] = useState({
     source: "Manual",
     url: "",
@@ -80,7 +83,7 @@ export function DiscoverView() {
     if (q) setHuntQuery(q);
     if (place) setHuntPlace(place);
     if (play && HUNT_PLAYS.some((item) => item.id === play)) setPlayFilter(play);
-    if (nextTab === "paste" || nextTab === "csv" || nextTab === "searches" || nextTab === "logins" || nextTab === "hunt") {
+    if (nextTab === "paste" || nextTab === "csv" || nextTab === "searches" || nextTab === "logins" || nextTab === "hunt" || nextTab === "finder") {
       setTab(nextTab);
     }
   }, [searchParams]);
@@ -153,6 +156,48 @@ export function DiscoverView() {
     } finally {
       setBusy(false);
     }
+  }
+
+  async function runFinder() {
+    setBusy(true);
+    setError("");
+    setResult("");
+    try {
+      const res = await fetch(`/api/finder?q=${encodeURIComponent(huntQuery)}&place=${encodeURIComponent(activePlace)}`);
+      const json = (await res.json()) as { ok?: boolean; error?: string; hits?: FinderHit[]; note?: string };
+      if (!res.ok) {
+        setError(json.error || "Customer finder failed.");
+        setFinderHits([]);
+        return;
+      }
+      setFinderHits(json.hits || []);
+      setFinderNote(json.note || "");
+      setResult(json.hits?.length ? `${json.hits.length} OSM hits in ${activePlace}.` : json.note || "No OSM hits.");
+    } catch {
+      setError("Customer finder could not reach the API.");
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  function saveFinderHit(hit: FinderHit) {
+    const already = workspace.leads.some(
+      (lead) => !lead.archivedAt && lead.name.trim().toLowerCase() === hit.name.trim().toLowerCase() && (lead.city || "").toLowerCase() === (hit.city || "").toLowerCase(),
+    );
+    if (already) {
+      setResult(`${hit.name} is already on file.`);
+      return;
+    }
+    void capture({
+      source: "OpenStreetMap",
+      sellerName: hit.name,
+      phone: hit.phone,
+      website: hit.website,
+      location: [hit.street, hit.city, hit.state].filter(Boolean).join(", "),
+      url: hit.osmUrl,
+      title: hit.name,
+      notes: hit.phone ? "OSM tagged a phone. Confirm on their site before you treat it as gospel." : "OSM had no phone. Open their site or Maps page and paste if you find a published number.",
+    });
   }
 
   function applyLabel(leadId: string, label: ClientKind) {
@@ -371,6 +416,7 @@ export function DiscoverView() {
     return (workspace.listings || []).filter((item) => Date.parse(item.discoveredAt) >= t).length;
   }, [workspace.listings]);
   const capturedLead = lastCapture ? workspace.leads.find((item) => item.id === lastCapture.leadId) : null;
+  const census = useMemo(() => bookCensus(workspace.leads), [workspace.leads]);
   const pastePreview = useMemo(
     () =>
       extractListingData({
@@ -396,7 +442,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Stay in one metro. Open a public search. Paste the page. The next yard stays on this screen.</p>
+            <p>Stay in one metro. Open a public search. Paste the page. Label dealer vs private seller. Haul does not scrape the sites.</p>
           </div>
           <div className="freight-row-actions">
             <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
@@ -409,9 +455,19 @@ export function DiscoverView() {
         <div className="discover-desk">
           <div className="discover-main">
             <div className="work-tabs wrap">
-              {(["hunt", "paste", "csv", "searches", "logins"] as const).map((item) => (
+              {(["hunt", "finder", "paste", "csv", "searches", "logins"] as const).map((item) => (
                 <button key={item} type="button" className={`az-btn sm ${tab === item ? "pri" : ""}`} onClick={() => setTab(item)}>
-                  {item === "hunt" ? "Hunt" : item === "paste" ? "Paste" : item === "csv" ? "CSV" : item === "searches" ? "Saved searches" : "What you need"}
+                  {item === "hunt"
+                    ? "Hunt"
+                    : item === "finder"
+                      ? "Customer finder"
+                      : item === "paste"
+                        ? "Paste"
+                        : item === "csv"
+                          ? "CSV"
+                          : item === "searches"
+                            ? "Saved searches"
+                            : "What you need"}
                 </button>
               ))}
             </div>
@@ -492,6 +548,24 @@ export function DiscoverView() {
                     </li>
                   ))}
                 </ol>
+                {census.live ? (
+                  <div className="hunt-census">
+                    <span>{census.live} on file</span>
+                    <span>{census.withPhone} callable</span>
+                    <span>{census.yards} yards</span>
+                    <span>{census.sellers} private / marketplace</span>
+                    {census.sources.slice(0, 6).map((item) => (
+                      <span key={item.name}>
+                        {item.name} {item.count}
+                      </span>
+                    ))}
+                    {census.metros.slice(0, 6).map((metro) => (
+                      <span key={metro.id}>
+                        {metro.label} {metro.count}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
 
                 <div className="hunt-play-grid">
                   {HUNT_PLAYS.map((play) => (
@@ -597,7 +671,7 @@ export function DiscoverView() {
                 <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={(event) => void onPaste(event, false)}>
                   <div className="home-kicker">{lastLane ? `Paste from ${lastLane.name}` : "Then capture"}</div>
                   <h3>Paste the page you copied</h3>
-                  <p>Move' pulls name, published phone, and city. Leave the phone blank if it was not on the page.</p>
+                  <p>Haul pulls name, published phone, and city. Leave the phone blank if it was not on the page.</p>
                   <label className="rec-field">
                     Listing or Maps card
                     <textarea className="az-area" rows={7} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page.` : "Paste the whole dealer or listing page."} />
@@ -644,14 +718,78 @@ export function DiscoverView() {
               </div>
             ) : null}
 
+            {tab === "finder" ? (
+              <div className="hunt-desk">
+                <section className="hunt-command">
+                  <div className="home-kicker">Customer finder</div>
+                  <h2>OpenStreetMap Overpass</h2>
+                  <p>
+                    Free Nominatim, Photon, and Overpass. No paid shipper database. Haul does not invent phones — if OSM has no phone, you still open their site and paste.
+                  </p>
+                  <div className="rec-grid hunt-command-fields">
+                    <label className="rec-field">
+                      What to hunt
+                      <input className="az-input" value={huntQuery} onChange={(event) => setHuntQuery(event.target.value)} placeholder="forklift, equipment rental" />
+                    </label>
+                    <label className="rec-field">
+                      Area
+                      <input className="az-input" value={activePlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Dallas TX" />
+                    </label>
+                  </div>
+                  <div className="metro-chips">
+                    {METROS.map((metro) => (
+                      <button
+                        key={metro.id}
+                        type="button"
+                        className={`az-btn sm ${activePlace === metro.hunt ? "pri" : ""}`}
+                        onClick={() => setHuntPlace(metro.hunt)}
+                      >
+                        {metro.label}
+                      </button>
+                    ))}
+                  </div>
+                  <button className="az-btn pri" type="button" disabled={busy} onClick={() => void runFinder()}>
+                    {busy ? "Searching OSM…" : "Find customers"}
+                  </button>
+                  {finderNote ? <p className="cd-mono">{finderNote}</p> : null}
+                </section>
+                <div className="finder-list">
+                  {finderHits.map((hit) => (
+                    <div key={hit.id} className="work-row">
+                      <div>
+                        <b>{hit.name}</b>
+                        <div className="cd-mono">
+                          {[hit.street, hit.city, hit.state].filter(Boolean).join(" · ") || "No address tagged"}
+                          {hit.phone ? ` · ${phonePretty(hit.phone)}` : " · no phone on OSM"}
+                        </div>
+                      </div>
+                      <div className="freight-row-actions">
+                        <a className="az-btn sm" href={hit.osmUrl} target="_blank" rel="noreferrer">
+                          OSM
+                        </a>
+                        {hit.website ? (
+                          <a className="az-btn sm" href={hit.website} target="_blank" rel="noreferrer">
+                            Site
+                          </a>
+                        ) : null}
+                        <button className="az-btn pri sm" type="button" disabled={busy} onClick={() => saveFinderHit(hit)}>
+                          Save
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : null}
+
             {tab === "paste" ? (
               <form className="az-panel freight-panel paste-stage" onSubmit={(event) => void onPaste(event, true)}>
                 <div className="home-kicker">Capture</div>
                 <h2>Paste the listing</h2>
-                <p>Copy a dealer card or listing you already opened. Move' only keeps facts that were on the page.</p>
+                <p>Copy a dealer card or listing you already opened. Haul only keeps facts that were on the page.</p>
                 <label className="rec-field">
                   Paste the listing
-                  <textarea className="az-area" rows={8} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page. Move' pulls name, published phone, city.` : "Paste the whole dealer or listing page. Move' pulls name, published phone, city, dims, and weight."} />
+                  <textarea className="az-area" rows={8} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page. Haul pulls name, published phone, city.` : "Paste the whole dealer or listing page. Haul pulls name, published phone, city, dims, and weight."} />
                 </label>
                 {form.description.trim() ? (
                   <div className="paste-preview">
@@ -664,7 +802,7 @@ export function DiscoverView() {
                     ) : (
                       <span>Nothing parsed yet — a name, city, or dims help.</span>
                     )}
-                    {!pastePreview.phone ? <span>No phone on the page — that's fine.</span> : null}
+                    {!pastePreview.phone ? <span>No phone on the page — that&apos;s fine.</span> : null}
                   </div>
                 ) : null}
                 <div className="rec-grid">
@@ -790,7 +928,7 @@ export function DiscoverView() {
                   ))}
                 </div>
                 <p className="st-fine">
-                  Machinery Trader, Google, Cat/Toyota/Bobcat/Deere locators, Sunbelt, United, TruckPaper, Copart, IAA, Ritchie — those are websites you already open. Paste or bookmarklet on a page you are allowed to view. Move' never stores a Facebook or DAT token.
+                  Machinery Trader, Google, Cat/Toyota/Bobcat/Deere locators, Sunbelt, United, TruckPaper, Copart, IAA, Ritchie — those are websites you already open. Paste or bookmarklet on a page you are allowed to view. Haul never stores a Facebook or DAT token.
                 </p>
               </div>
             ) : null}

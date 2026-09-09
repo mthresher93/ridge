@@ -570,7 +570,7 @@ export function FloorView() {
       ) : null}
 
       {scriptMode !== "collapsed" ? (
-        <ScriptPanel lead={active} design={design} beat={beat} onBeat={setBeat} large mode={scriptMode} />
+        <ScriptPanel lead={active} beat={beat} onBeat={setBeat} large mode={scriptMode} />
       ) : null}
 
       {state === "wrap" && active ? (

@@ -6,12 +6,12 @@ describe("mergeExtracted", () => {
     const extracted = mergeExtracted(
       {
         title: "Toyota forklift",
-        description: "Call 214-555-0199 for this 5,000 lb forklift in Dallas TX",
+        description: "Call 214-351-4511 for this 5,000 lb forklift in Dallas TX",
         location: "Dallas, TX",
       },
-      { phone: "214-555-0199", sellerName: "Westside Machinery", email: "fake@not-in-listing.com" },
+      { phone: "214-351-4511", sellerName: "Westside Machinery", email: "fake@not-in-listing.com" },
     );
-    expect(extracted.phone.replace(/\D/g, "")).toContain("2145550199");
+    expect(extracted.phone.replace(/\D/g, "")).toContain("2143514511");
     expect(extracted.email).toBe("");
   });
 

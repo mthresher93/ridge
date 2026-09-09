@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { applySpecsToLead, cheaperFails, checkTrailer, parseDimensions, parsePounds, recommendEquipment, trailerCap } from "./equipment";
+import { applySpecsToLead, cheaperFails, checkTrailer, parseDimensions, parsePounds, recommendEquipment, specsFromLead, trailerCap } from "./equipment";
 import { blankProspect } from "./freight";
 
 describe("recommendEquipment", () => {
@@ -113,5 +113,21 @@ describe("applySpecsToLead", () => {
     expect(result.lead.dimensions).toBe("26 x 8.5 x 10");
     expect(result.lead.weight).toBe("18000");
     expect(result.lead.trailerHint).toMatch(/Hot Shot/i);
+  });
+
+  it("reads saved L×W×H back off the client", () => {
+    const saved = applySpecsToLead(blankProspect("Michael", { name: "Yard" }), {
+      lengthFt: 26,
+      widthFt: 8.5,
+      heightFt: 10,
+      weightLbs: 18000,
+      unit: "forklift",
+    }).lead;
+    const specs = specsFromLead(saved);
+    expect(specs.lengthFt).toBe(26);
+    expect(specs.widthFt).toBe(8.5);
+    expect(specs.heightFt).toBe(10);
+    expect(specs.weightLbs).toBe(18000);
+    expect(specs.unit).toBe("forklift");
   });
 });

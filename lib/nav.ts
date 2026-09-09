@@ -3,7 +3,7 @@ export type NavItem = { href: string; label: string };
 export type NavGroup = { id: string; label: string; items: NavItem[] };
 
 export const DESK_NAV: NavItem[] = [
-  { href: "/", label: "Desk" },
+  { href: "/", label: "Dashboard" },
   { href: "/discover", label: "Discover" },
   { href: "/playbook", label: "Intel" },
   { href: "/people", label: "Clients" },
@@ -11,6 +11,7 @@ export const DESK_NAV: NavItem[] = [
   { href: "/callbacks", label: "Follow-ups" },
   { href: "/board", label: "Pipeline" },
   { href: "/shipments", label: "Shipments" },
+  { href: "/carriers", label: "Carriers" },
 ];
 
 export function workPath(leadId?: string | null) {
@@ -24,7 +25,7 @@ export const MORE_NAV: NavItem[] = [
 ];
 
 export const NAV_GROUPS: NavGroup[] = [
-  { id: "desk", label: "Desk", items: DESK_NAV },
+  { id: "desk", label: "Dashboard", items: DESK_NAV },
   { id: "more", label: "More", items: MORE_NAV },
 ];
 

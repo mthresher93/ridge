@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
 import { blankProspect } from "./freight";
 import { emptyWorkspace } from "./seed";
-import { firstCall, labelObviousYards, openerForLead, recordCallAttempt, yardRole } from "./prospect";
+import { firstCall, labelObviousYards, openerForLead, recordCallAttempt, wrapCall, yardRole } from "./prospect";
 
 describe("firstCall", () => {
   it("tells you who to ask and gives a short opener for a dealer yard", () => {
@@ -38,6 +38,18 @@ describe("recordCallAttempt", () => {
     expect(next.callbacks[0].reason).toMatch(/voicemail/i);
     expect(next.leads[0].status).toBe("Discovered");
     expect(next.callLogs[0].outcome).toBe("voicemail");
+  });
+});
+
+describe("wrapCall", () => {
+  it("writes an activity and a dial event that survive on the workspace", () => {
+    const workspace = emptyWorkspace();
+    workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Briggs Equipment — Dallas", phone: "214-351-4511" })];
+    const next = wrapCall(workspace, "lead-1", "talked", { notes: "Maria books freight", booker: "Maria" });
+    expect(next.activities[0].type).toBe("call");
+    expect(next.activities[0].detail).toMatch(/talked/i);
+    expect(next.kpiEvents.some((event) => event.type === "dial_attempt")).toBe(true);
+    expect(next.kpiEvents.some((event) => event.type === "connected_call")).toBe(true);
   });
 });
 

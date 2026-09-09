@@ -1,50 +1,50 @@
 :root {
-  --bg: #07080c;
-  --bg2: #101218;
-  --bg3: #0b0c10;
-  --bg4: #171c26;
-  --cy: #e2b84a;
-  --cy2: #e2b84a33;
-  --bl: #7a92b0;
-  --vi: #e2b84a;
-  --tl: #e2b84a;
-  --am: #e0a54b;
-  --rd: #f07167;
-  --pk: #8b93a0;
-  --tx: #f3f1ea;
-  --tx2: #c8c4b8;
-  --tx3: #8e8a80;
-  --tx4: #5c5a54;
-  --br: #232830;
-  --brg: #323840;
+  --bg: #ffffff;
+  --bg2: #ffffff;
+  --bg3: #f7f7f5;
+  --bg4: #efeee9;
+  --cy: #c49a32;
+  --cy2: rgba(196, 154, 50, 0.18);
+  --bl: #5d7388;
+  --vi: #c49a32;
+  --tl: #c49a32;
+  --am: #c48a2a;
+  --rd: #c45c52;
+  --pk: #7a808a;
+  --tx: #1c1e24;
+  --tx2: #3d414a;
+  --tx3: #6a6f78;
+  --tx4: #8a8e96;
+  --br: #ddd9d0;
+  --brg: #cfcabe;
   --fh: var(--font-display), "Big Shoulders Display", Impact, sans-serif;
   --fb: var(--font-sans), Barlow, system-ui, sans-serif;
   --fk: var(--font-display), "Big Shoulders Display", Impact, sans-serif;
   --fm: var(--font-mono), "IBM Plex Mono", ui-monospace, monospace;
   --fs: var(--font-display), "Big Shoulders Display", Impact, sans-serif;
-  --ink: var(--bg);
-  --ink-2: #101218;
-  --panel: var(--bg2);
-  --panel-2: var(--bg3);
-  --line: var(--br);
-  --line-2: #323840;
+  --ink: #1c1e24;
+  --ink-2: #2a3038;
+  --panel: #ffffff;
+  --panel-2: #ffffff;
+  --line: #e4e0d8;
+  --line-2: #d4d0c6;
   --text: var(--tx);
   --muted: var(--tx3);
   --faint: var(--tx4);
   --gold: var(--cy);
-  --gold-2: #f0d08a;
-  --gold-dim: rgba(226, 184, 74, 0.16);
+  --gold-2: #8f6e1f;
+  --gold-dim: rgba(196, 154, 50, 0.12);
   --up: var(--tl);
   --warn: var(--am);
   --down: var(--rd);
   --blue: var(--bl);
   --volt: var(--cy);
-  --hover: rgba(226, 184, 74, 0.1);
-  --track: rgba(255, 255, 255, 0.06);
-  --lift: 0 12px 32px rgba(0, 0, 0, 0.42);
-  --background: var(--bg);
+  --hover: rgba(196, 154, 50, 0.1);
+  --track: rgba(28, 30, 36, 0.08);
+  --lift: 0 10px 28px rgba(28, 30, 36, 0.08);
+  --background: #ffffff;
   --foreground: var(--tx);
-  --bg-token: var(--bg);
+  --bg-token: #ffffff;
 }
 
 html,
@@ -93,30 +93,30 @@ body {
 }
 
 .az-brand-mark {
-  width: 32px;
-  height: 32px;
-  padding: 2px;
-  border-radius: 9px;
-  background: transparent;
-  border: 1px solid rgba(226, 184, 74, 0.28);
+  width: 56px;
+  height: 56px;
+  padding: 0;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1px solid var(--br);
   box-shadow: none;
 }
 
 .az-brand-name {
   font-family: var(--fh);
-  font-size: 12px;
+  font-size: 32px;
   font-weight: 800;
   letter-spacing: -0.04em;
-  text-transform: uppercase;
+  text-transform: none;
   color: var(--tx);
 }
 
 .az-brand-sub {
   font-family: var(--fm);
-  font-size: 8.5px;
-  letter-spacing: 0.22em;
-  color: var(--tx4);
-  margin-top: 2px;
+  font-size: 11px;
+  letter-spacing: 0.18em;
+  color: var(--gold);
+  margin-top: 4px;
 }
 
 .az-nav {

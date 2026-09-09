@@ -149,6 +149,36 @@ export type ShipmentStatus =
   | "Problem"
   | "Canceled";
 
+export type TrackingKind =
+  | "Pickup scheduled"
+  | "Driver confirmed"
+  | "Driver en route"
+  | "At pickup"
+  | "Loaded"
+  | "In transit"
+  | "Check call"
+  | "At delivery"
+  | "Delivered"
+  | "POD received";
+
+export type TrackingEvent = {
+  id: string;
+  at: string;
+  kind: TrackingKind;
+  note?: string;
+  location?: string;
+};
+
+export type CargoUnit = {
+  id: string;
+  qty: number;
+  lengthFt: number | null;
+  widthFt: number | null;
+  heightFt: number | null;
+  weightLbs: number | null;
+  notes: string;
+};
+
 export type Shipment = {
   id: string;
   leadId: string;
@@ -173,6 +203,25 @@ export type Shipment = {
   notes: string;
   createdAt: string;
   updatedAt: string;
+  loadNumber?: string;
+  podReceived?: boolean;
+  tracking?: TrackingEvent[];
+  cargoUnits?: CargoUnit[];
+  pickupNotes?: string;
+  destNotes?: string;
+  appointmentPickup?: boolean;
+};
+
+export type VetState = "unchecked" | "pass" | "warn" | "fail";
+
+export type CarrierVetItem = {
+  id: string;
+  label: string;
+  state: VetState;
+  at?: string;
+  by?: string;
+  note?: string;
+  expiresAt?: string;
 };
 
 export type Carrier = {
@@ -188,6 +237,9 @@ export type Carrier = {
   sourceUrl: string;
   notes: string;
   createdAt: string;
+  preferred?: boolean;
+  blocked?: boolean;
+  vetting?: CarrierVetItem[];
 };
 
 export type SavedSearch = {
@@ -437,6 +489,9 @@ export type Settings = {
   dialWindowEnd?: string;
   accent?: Accent;
   confirmBeforeDial?: boolean;
+  companyApiUrl?: string;
+  companyApiKey?: string;
+  companyApiAuth?: "none" | "bearer" | "query";
 };
 
 export const SETTINGS_DEFAULTS = {
@@ -446,6 +501,9 @@ export const SETTINGS_DEFAULTS = {
   dialWindowEnd: "20:00",
   accent: "cyan" as Accent,
   confirmBeforeDial: false,
+  companyApiUrl: "",
+  companyApiKey: "",
+  companyApiAuth: "none" as const,
 };
 
 export function settingsWithDefaults(settings: Settings) {

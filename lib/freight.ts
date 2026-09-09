@@ -1,4 +1,5 @@
 import type {
+  CargoUnit,
   Company,
   FreightAnalysis,
   FreightType,
@@ -6,15 +7,17 @@ import type {
   Listing,
   RecurringPotential,
   ScoreConfidence,
+  Shipment,
   ShipperRole,
   Workspace,
 } from "./types";
 import { CONTACTED_STAGES, PHONE_STAGES, QUALIFIED_STAGES, QUOTE_STAGES, REPLIED_STAGES, UNCONTACTED_STAGES, WON_STAGES } from "./stages";
 import { normalizePhone, nowIso, uid } from "./format";
-import { parseDimensions, recommendEquipment } from "./equipment";
+import { parseDimensions, parsePounds, recommendEquipment } from "./equipment";
 import { looksLikeYardName } from "./yard";
 import { workQueue } from "./metro";
 import { variantIndex } from "./pacing";
+import { isCallablePhone } from "./carriers";
 
 export const LEAD_SOURCES = [
   "Facebook Marketplace",
@@ -29,6 +32,9 @@ export const LEAD_SOURCES = [
   "Manual",
   "CSV",
   "Capture",
+  "OfferUp",
+  "eBay",
+  "OpenStreetMap",
   "Other",
 ] as const;
 
@@ -44,7 +50,7 @@ export function suggestClientKind(input: { source?: string; sellerName?: string;
   if (/\b(ritchie|ironplanet|auction|govdeals|purple wave)\b/.test(hay)) return "Auction";
   if (/\brental/.test(hay)) return "Rental";
   if (/\b(dealer|dealership)\b/.test(hay) || /\b(llc|inc|ltd|corp)\b/.test(seller) || looksLikeYardName(input.sellerName || "") || looksLikeYardName(input.website || "")) return "Dealer";
-  if (/\b(facebook marketplace|craigslist)\b/.test(source) && !/\b(llc|inc|dealer)\b/.test(seller) && !looksLikeYardName(input.sellerName || "")) return "Private seller";
+  if (/\b(facebook marketplace|craigslist|offerup|ebay)\b/.test(source) && !/\b(llc|inc|dealer)\b/.test(seller) && !looksLikeYardName(input.sellerName || "")) return "Private seller";
   return "";
 }
 
@@ -142,6 +148,124 @@ export function shipmentMargin(customerRate: number, carrierRate: number) {
   return (Number(customerRate) || 0) - (Number(carrierRate) || 0);
 }
 
+function cargoUnitsFromLead(lead: Lead): CargoUnit[] {
+  const parsed = parseDimensions(lead.dimensions || "");
+  const weightLbs = parsePounds(lead.weight);
+  if (parsed.lengthFt == null && weightLbs == null) return [];
+  return [
+    {
+      id: uid("cu"),
+      qty: 1,
+      lengthFt: parsed.lengthFt,
+      widthFt: parsed.widthFt,
+      heightFt: parsed.heightFt,
+      weightLbs,
+      notes: lead.listingTitle || lead.equipmentType || "",
+    },
+  ];
+}
+
+export function blankLoadFromLead(
+  lead: Lead,
+  overlay: { destination?: string; contact?: string; carrier?: string; carrierId?: string } = {},
+): Omit<Shipment, "id" | "createdAt" | "updatedAt"> {
+  return {
+    leadId: lead.id,
+    customer: companyName(lead) || lead.name,
+    contact: overlay.contact?.trim() || lead.booker || lead.name,
+    origin: lead.origin || leadLocation(lead) || "",
+    destination: String(overlay.destination ?? lead.destination ?? "").trim(),
+    pickupDate: "",
+    deliveryDate: "",
+    commodity: lead.listingTitle || lead.equipmentType || "",
+    weight: lead.weight || "",
+    dimensions: lead.dimensions || "",
+    equipmentType: lead.trailerHint || lead.equipmentType || "",
+    carrier: overlay.carrier || "",
+    carrierId: overlay.carrierId || "",
+    carrierRate: 0,
+    customerRate: 0,
+    status: "Quote",
+    reference: "",
+    notes: "",
+    loadNumber: "",
+    podReceived: false,
+    tracking: [],
+    cargoUnits: cargoUnitsFromLead(lead),
+    pickupNotes: "",
+    destNotes: "",
+    appointmentPickup: false,
+  };
+}
+
+export function openQuoteShipment(workspace: Workspace, leadId: string) {
+  return (workspace.shipments || []).find((item) => item.leadId === leadId && item.status === "Quote") || null;
+}
+
+export function upsertBlankQuote(workspace: Workspace, lead: Lead, overlay: { destination?: string; contact?: string } = {}) {
+  const stamp = nowIso();
+  const existing = openQuoteShipment(workspace, lead.id);
+  const blank = blankLoadFromLead(lead, overlay);
+  const shipment: Shipment = existing
+    ? {
+        ...existing,
+        ...blank,
+        id: existing.id,
+        createdAt: existing.createdAt,
+        updatedAt: stamp,
+        customerRate: existing.customerRate || 0,
+        carrierRate: existing.carrierRate || 0,
+        carrier: existing.carrier,
+        carrierId: existing.carrierId,
+        pickupDate: existing.pickupDate,
+        deliveryDate: existing.deliveryDate,
+        notes: existing.notes,
+        reference: existing.reference,
+        loadNumber: existing.loadNumber,
+        podReceived: existing.podReceived,
+        tracking: existing.tracking,
+        cargoUnits: existing.cargoUnits,
+        pickupNotes: existing.pickupNotes,
+        destNotes: existing.destNotes,
+        appointmentPickup: existing.appointmentPickup,
+      }
+    : { ...blank, id: uid("shp"), createdAt: stamp, updatedAt: stamp };
+  const keepStage = (status: string) => QUOTE_STAGES.has(status) || WON_STAGES.has(status) || status === "Load Lost";
+  return {
+    shipment,
+    created: !existing,
+    workspace: {
+      ...workspace,
+      shipments: existing
+        ? (workspace.shipments || []).map((row) => (row.id === shipment.id ? shipment : row))
+        : [shipment, ...(workspace.shipments || [])],
+      leads: workspace.leads.map((row) =>
+        row.id === lead.id
+          ? {
+              ...row,
+              destination: shipment.destination || row.destination,
+              nextAction: "Blank quote open. Rates stay 0 until they give a number.",
+              status: keepStage(row.status) ? row.status : "Quote Requested",
+              updatedAt: stamp,
+            }
+          : row,
+      ),
+      opportunities: workspace.opportunities.map((item) =>
+        item.leadId === lead.id
+          ? {
+              ...item,
+              origin: shipment.origin,
+              destination: shipment.destination,
+              stage: keepStage(item.stage) ? item.stage : "Quote Requested",
+              updatedAt: stamp,
+            }
+          : item,
+      ),
+      updatedAt: stamp,
+    },
+  };
+}
+
 export function sourceFromUrl(url: string) {
   const host = url.toLowerCase();
   if (host.includes("facebook") || host.includes("fb.com") || host.includes("marketplace")) return "Facebook Marketplace";
@@ -207,19 +331,16 @@ function extractPlaceFromText(text: string) {
 }
 
 function extractPublishedPhone(given: string, blob: string) {
-  if (given.trim()) return given.trim();
+  if (given.trim() && isCallablePhone(given)) return given.trim();
   const tel = blob.match(/tel:\+?1?(\d{10})/i);
-  if (tel) {
+  if (tel && isCallablePhone(tel[1])) {
     const d = tel[1];
     return `(${d.slice(0, 3)}) ${d.slice(3, 6)}-${d.slice(6)}`;
   }
   const stripped = blob.replace(/\b\d+(?:\.\d+)?\s*[x×]\s*\d+(?:\.\d+)?(?:\s*[x×]\s*\d+(?:\.\d+)?)?/gi, " ");
   const matches = stripped.matchAll(/(?:\+?1[\s.-]?)?\(?\d{3}\)?[\s.-]\d{3}[\s.-]\d{4}\b/g);
   for (const hit of matches) {
-    const digits = hit[0].replace(/\D/g, "");
-    const ten = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
-    if (ten.length !== 10) continue;
-    if (/^(\d)\1{9}$/.test(ten) || ten.startsWith("000") || ten.startsWith("111")) continue;
+    if (!isCallablePhone(hit[0])) continue;
     return hit[0];
   }
   return "";
@@ -800,10 +921,6 @@ export function blankProspect(owner: string, overlay: Partial<Lead> = {}): Lead 
     destination: overlay.destination || "",
     listingTitle: overlay.listingTitle || "",
     listingDescription: overlay.listingDescription || "",
-    companyId: overlay.companyId,
-    dimensions: overlay.dimensions || "",
-    weight: overlay.weight || "",
-    quantity: overlay.quantity ?? null,
     companyId: overlay.companyId,
     dimensions: overlay.dimensions || "",
     weight: overlay.weight || "",

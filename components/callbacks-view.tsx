@@ -118,7 +118,7 @@ export function CallbacksView() {
           {workspace.leads.filter((item) => !item.archivedAt).length === 0 ? (
             <div className="empty-desk" style={{ padding: 18 }}>
               <h2>No follow-ups until you have a client</h2>
-              <p>Capture a listing, send a message, then schedule the next touch. Move' will not invent a callback.</p>
+              <p>Capture a listing, send a message, then schedule the next touch. Haul will not invent a callback.</p>
               <div className="empty-desk-actions">
                 <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
                   Discover

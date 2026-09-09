@@ -3,14 +3,17 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, leadLocation, outreachQueue, suggestClientKind, type ClientKind, type MessageStyle } from "@/lib/freight";
-import { CALL_ASK, recommendEquipment } from "@/lib/equipment";
+import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, hasMeasuredSpecs, leadLocation, outreachQueue, suggestClientKind, upsertBlankQuote, type ClientKind, type MessageStyle } from "@/lib/freight";
+import { recommendEquipment } from "@/lib/equipment";
 import { metroOf, sameMetroQueue } from "@/lib/metro";
-import { analysisFromLead, firstCall, recordCallAttempt, type CallOutcome } from "@/lib/prospect";
+import { analysisFromLead, firstCall, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { messagesSentOnDay, pacingNote } from "@/lib/pacing";
 import { daysUntilNextWeekday, nowIso, phonePretty, uid } from "@/lib/format";
 import { workPath } from "@/lib/nav";
-import type { Shipment } from "@/lib/types";
+import { browserTelephony } from "@/lib/telephony";
+import { inCallingWindow } from "@/lib/us-time";
+import { ScriptPanel } from "./script-panel";
+import { settingsWithDefaults } from "@/lib/types";
 
 export function OutreachView() {
   const router = useRouter();
@@ -26,6 +29,7 @@ export function OutreachView() {
   const [booker, setBooker] = useState("");
   const [bookerPhone, setBookerPhone] = useState("");
   const [dest, setDest] = useState("");
+  const [beat, setBeat] = useState(0);
 
   const wantedId = searchParams.get("id") || selectedLeadId;
   const thursdayIn = daysUntilNextWeekday(4);
@@ -53,12 +57,15 @@ export function OutreachView() {
   const pace = pacingNote(sentToday);
   const follow = lead ? (workspace.callbacks || []).find((item) => item.leadId === lead.id && item.status === "open") : null;
   const suggested = lead && !lead.label ? suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website }) : "";
+  const prefs = settingsWithDefaults(workspace.settings);
+  const hours = lead ? inCallingWindow(lead.state, prefs.dialWindowStart, prefs.dialWindowEnd) : null;
   const metroNext = lead ? sameMetroQueue(workspace.leads, lead, 6) : [];
   useEffect(() => {
     if (!lead) return;
     setBooker(lead.booker || "");
     setBookerPhone(lead.bookerPhone || "");
     setDest(lead.destination || "");
+    setBeat(0);
   }, [lead?.id]);
   const fit = lead
     ? recommendEquipment({
@@ -103,9 +110,10 @@ export function OutreachView() {
     (outcome: CallOutcome, advance = false) => {
       if (!lead) return;
       setWorkspace((prev) =>
-        recordCallAttempt(prev, lead.id, outcome, nowIso(), {
+        wrapCall(prev, lead.id, outcome, {
           booker: booker.trim() || lead.booker,
           bookerPhone: bookerPhone.trim() || lead.bookerPhone,
+          notes: note.trim(),
         }),
       );
       log(
@@ -117,7 +125,7 @@ export function OutreachView() {
       if (outcome === "no_pickup" || outcome === "voicemail") void copy();
       if (advance) go(1);
     },
-    [booker, bookerPhone, copy, go, lead, log, setWorkspace],
+      [booker, bookerPhone, copy, go, lead, log, note, setWorkspace],
   );
 
   const mark = useCallback((status: string, detail: string, followDays?: number, advance = false) => {
@@ -218,7 +226,7 @@ export function OutreachView() {
           </header>
           <section className="empty-desk">
             <h2>Nothing to work yet</h2>
-            <p>Paste or bookmarklet a live page. Move' copies an opener. You send it. No bots. Soft cap about 25 sent per day.</p>
+            <p>Paste or bookmarklet a live page. Haul copies an opener. You send it. No bots. Soft cap about 25 sent per day.</p>
             <div className="empty-start">
               <article>
                 <h3>Capture first</h3>
@@ -267,6 +275,11 @@ export function OutreachView() {
               {lead.label || suggested || "Unlabeled"} · {companyName(lead)} · {leadLocation(lead) || metroOf(lead)?.label || "Location unset"}
               {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : " · untried"}
             </p>
+            {hours ? (
+              <p className={hours.ok ? "cd-mono" : "rec-warn"}>
+                {hours.label}. {hours.why}
+              </p>
+            ) : null}
             {script ? <p className="desk-ask">{script.ask}</p> : null}
             {suggested ? <p className="cd-mono">Looks like a {suggested}. Label it so the opener stays a yard ask.</p> : <p className="cd-mono">Label first. The opener changes for a yard vs a private seller.</p>}
             <div className="label-chips">
@@ -287,32 +300,22 @@ export function OutreachView() {
               </div>
               <div>
                 <span>Dims</span>
-                <b>{lead.dimensions || listing?.dimensions || "Ask on the call"}</b>
+                <b>{lead.dimensions || "Ask on the call"}</b>
               </div>
               <div>
                 <span>Weight</span>
-                <b>{lead.weight || listing?.weight || "Ask on the call"}</b>
+                <b>{lead.weight || "Ask on the call"}</b>
               </div>
               <div>
                 <span>Trailer guess</span>
-                <b>{lead.dimensions || lead.weight ? lead.trailerHint || (fit ? `${fit.trailerName} · ${fit.loadClass}` : "—") : "Ask on the call"}</b>
+                <b>{hasMeasuredSpecs(lead) ? lead.trailerHint || (fit ? `${fit.trailerName} · ${fit.loadClass}` : "—") : "Ask on the call"}</b>
               </div>
               <div>
                 <span>Screen</span>
                 <b>{lead.freightScore ?? "—"}/100</b>
               </div>
             </div>
-            <div className="call-ask-block">
-              <div className="home-kicker">On the call — then Intel</div>
-              <ol className="call-ask">
-                {CALL_ASK.map((item) => (
-                  <li key={item.id}>{item.ask}</li>
-                ))}
-              </ol>
-              <button className="az-btn sm" type="button" onClick={() => { if (lead) setSelectedLeadId(lead.id); router.push("/playbook"); }}>
-                Open Intel
-              </button>
-            </div>
+            <ScriptPanel lead={lead} beat={beat} onBeat={setBeat} large mode="split" />
             {follow ? <p className="cd-mono">Follow-up already set: {follow.reason}</p> : null}
             <h3>Listing</h3>
             <p>{lead.listingTitle || listing?.title || "No title"}</p>
@@ -320,11 +323,11 @@ export function OutreachView() {
           </article>
           <aside className="az-panel freight-panel outreach-actions">
             <p className={`pace-${pace.level}`}>{pace.text}</p>
-            <p className="cd-mono">Copy, then you send it. Move' does not message anyone. Leave the rate blank.</p>
+            <p className="cd-mono">Copy, then you send it. Haul does not message anyone. Leave the rate blank.</p>
             {lead.phone ? (
-              <a className="az-btn pri" href={`tel:${lead.phone}`}>
+              <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
                 Call {phonePretty(lead.phone)}
-              </a>
+              </button>
             ) : (
               <p className="cd-mono">No published phone. Copy the opener instead.</p>
             )}
@@ -338,6 +341,10 @@ export function OutreachView() {
                 <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if they gave it" />
               </label>
             </div>
+            <label className="rec-field">
+              Wrap note
+              <input className="az-input" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Saved on the call event" />
+            </label>
             <div className="call-disposition">
               <button className="az-btn" type="button" onClick={() => noteCall("no_pickup")}>
                 No pickup
@@ -363,51 +370,27 @@ export function OutreachView() {
                   className="az-btn pri"
                   type="button"
                   onClick={() => {
-                    const stamp = nowIso();
                     const destination = (dest || lead.destination || "").trim();
-                    const item: Shipment = {
-                      id: uid("shp"),
-                      leadId: lead.id,
-                      customer: companyName(lead) || lead.name,
-                      contact: (booker || lead.booker || lead.name).trim(),
-                      origin: lead.origin || leadLocation(lead) || "",
-                      destination,
-                      pickupDate: "",
-                      deliveryDate: "",
-                      commodity: lead.listingTitle || lead.equipmentType || "",
-                      weight: lead.weight || "",
-                      dimensions: lead.dimensions || "",
-                      equipmentType: lead.trailerHint || "",
-                      carrier: "",
-                      carrierId: "",
-                      carrierRate: 0,
-                      customerRate: 0,
-                      status: "Quote",
-                      reference: "",
-                      notes: "",
-                      createdAt: stamp,
-                      updatedAt: stamp,
-                    };
-                    setWorkspace((prev) => ({
-                      ...prev,
-                      leads: prev.leads.map((row) =>
+                    const contact = (booker || lead.booker || lead.name).trim();
+                    const result = upsertBlankQuote(workspace, lead, { destination, contact });
+                    const stamp = result.shipment.updatedAt;
+                    setWorkspace({
+                      ...result.workspace,
+                      leads: result.workspace.leads.map((row) =>
                         row.id === lead.id
                           ? {
                               ...row,
                               destination,
                               booker: (booker || row.booker || "").trim(),
                               bookerPhone: (bookerPhone || row.bookerPhone || "").trim(),
-                              nextAction: "Blank quote open. Rates stay 0 until they give a number.",
                               updatedAt: stamp,
                             }
                           : row,
                       ),
-                      shipments: [item, ...(prev.shipments || [])],
-                      updatedAt: stamp,
-                    }));
+                    });
                     setSelectedLeadId(lead.id);
-                    log("shipment", item.id, "created", `Blank quote for ${lead.name}`);
-                    router.push(`/shipments?id=${item.id}`);
+                    log("shipment", result.shipment.id, result.created ? "created" : "updated", `Blank quote for ${lead.name}`);
+                    router.push(`/shipments?id=${result.shipment.id}`);
                   }}
                 >
                   Blank quote — rates $0

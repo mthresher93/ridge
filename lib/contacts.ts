@@ -103,8 +103,16 @@ export function contactTimeline(workspace: Workspace, leadId: string): TimelineI
       id: row.id,
       at: row.createdAt,
       kind: "shipment",
-      detail: `${row.status} · ${row.origin} → ${row.destination} · ${row.commodity}`,
+      detail: `${row.loadNumber || row.status} · ${row.origin} → ${row.destination} · ${row.commodity}`,
     });
+    for (const event of row.tracking || []) {
+      items.push({
+        id: event.id,
+        at: event.at,
+        kind: "tracking",
+        detail: `${row.loadNumber || row.status} · ${event.kind}${event.note ? ` · ${event.note}` : ""}`,
+      });
+    }
   }
   for (const row of workspace.analyses || []) {
     if (row.leadId !== leadId) continue;

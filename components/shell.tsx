@@ -8,6 +8,7 @@ import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
 import { DESK_NAV, MORE_NAV } from "@/lib/nav";
 import { settingsWithDefaults } from "@/lib/types";
+import { deskClocks } from "@/lib/us-time";
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -20,10 +21,17 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [palette, setPalette] = useState(false);
   const moreActive = MORE_NAV.some((item) => isActive(pathname, item.href));
   const [moreOpen, setMoreOpen] = useState(moreActive);
+  const [now, setNow] = useState(() => new Date());
+  const clocks = deskClocks(now);
 
   useEffect(() => {
     if (moreActive) setMoreOpen(true);
   }, [moreActive]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -73,9 +81,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
           </div>
         </nav>
 
-        <Link href="/settings" className={`az-rail-settings${isActive(pathname, "/settings") ? " active" : ""}`}>
-          Settings
-        </Link>
+        <div className="az-rail-foot">
+          <Link href="/settings" className={`az-rail-settings${isActive(pathname, "/settings") ? " active" : ""}`}>
+            Settings
+          </Link>
+        </div>
       </aside>
 
       <div className="az-main">
@@ -85,6 +95,14 @@ export function Shell({ children }: { children: React.ReactNode }) {
             <kbd>⌘K</kbd>
           </button>
           <div className="az-top-right">
+            <div className="az-clocks" title={`${clocks.broker.zone} · ${clocks.book.zone}`}>
+              <span>
+                <em>PH</em> {clocks.broker.clock}
+              </span>
+              <span>
+                <em>CT</em> {clocks.book.clock}
+              </span>
+            </div>
             <span className="cd-stat">
               <span className={`livedot ${loadError ? "off" : ""}`} />
               {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : saveStatus === "saving" ? "Saving" : "Ready"}
@@ -95,8 +113,8 @@ export function Shell({ children }: { children: React.ReactNode }) {
               </button>
             ) : null}
             <span className="az-num az-top-open">{workspace.leads.filter((lead) => !lead.archivedAt).length} clients</span>
-            <button className="az-btn pri" type="button" onClick={() => router.push("/discover")}>
-              Capture
+            <button className="az-btn az-add-prospect" type="button" onClick={() => router.push("/discover")}>
+              Add prospect
             </button>
           </div>
         </header>

@@ -5,7 +5,8 @@ describe("huntSearchUrl", () => {
   it("builds public search URLs the user opens themselves", () => {
     expect(huntSearchUrl("machinery-trader", "skid steer", "Texas")).toContain("machinerytrader.com");
     expect(huntSearchUrl("mt-dealers", "forklift", "TX")).toContain("machinerytrader.com");
-    expect(huntSearchUrl("facebook", "forklift", "TX")).toContain("facebook.com/marketplace");
+    expect(huntSearchUrl("offerup", "forklift", "Dallas TX")).toContain("offerup.com");
+    expect(huntSearchUrl("ebay-motors", "forklift", "TX")).toContain("ebay.com");
     expect(huntSearchUrl("maps-dealers", "forklift dealer", "Dallas TX")).toContain("google.com/maps");
     expect(huntSearchUrl("maps-rental", "forklift", "Dallas TX")).toContain("equipment%20rental");
     expect(huntSearchUrl("craigslist", "forklift", "Dallas")).toContain("craigslist.org/search/hvy");
@@ -18,7 +19,8 @@ describe("huntSearchUrl", () => {
     expect(huntSearchUrl("herc")).toContain("hercrentals.com");
     expect(huntSearchUrl("maps-excavating", "forklift", "Dallas TX")).toContain("excavating");
     expect(huntSearchUrl("govdeals", "forklift", "Texas")).toContain("govdeals.com");
-    expect(huntSearchUrl("gsa-auctions")).toContain("gsaauctions.gov");
+    expect(huntSearchUrl("vermeer-locator")).toContain("vermeer.com");
+    expect(huntSearchUrl("yale-locator")).toContain("yale.com");
   });
 });
 
@@ -40,6 +42,7 @@ describe("huntPack", () => {
   it("narrows the pack to the selected play", () => {
     const pack = huntPack("skid steer", "Florida", "rental");
     expect(pack.map((item) => item.id)).toEqual(["maps-rental", "sunbelt", "united-rentals", "herc", "he-rental"]);
+    expect(huntPack("forklift", "Dallas TX", "sellers").map((item) => item.id).slice(0, 3)).toEqual(["facebook", "offerup", "craigslist"]);
   });
 });
 
@@ -77,6 +80,7 @@ describe("sourceFromLane", () => {
     expect(sourceFromLane("machinery-trader")).toBe("Machinery Trader");
     expect(sourceFromLane("ritchie")).toBe("Auction");
     expect(sourceFromLane("facebook")).toBe("Facebook Marketplace");
+    expect(sourceFromLane("offerup")).toBe("OfferUp");
   });
 });
 
@@ -86,7 +90,7 @@ describe("captureBookmarklet", () => {
     expect(code.startsWith("javascript:")).toBe(true);
     expect(code).toContain("/api/prospects/capture");
     expect(code).toContain("pageText");
-    expect(code).toContain("Move' saved");
+    expect(code).toContain("Haul saved");
     expect(code).toContain("/outreach?id=");
   });
 });

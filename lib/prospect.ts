@@ -94,12 +94,42 @@ export function applyCallOutcome(lead: Lead, outcome: CallOutcome, stamp: string
   };
 }
 
+export function wrapCall(
+  workspace: Workspace,
+  leadId: string,
+  outcome: CallOutcome,
+  extra?: { booker?: string; bookerPhone?: string; notes?: string },
+) {
+  const stamp = nowIso();
+  const next = recordCallAttempt(workspace, leadId, outcome, stamp, extra);
+  const notes = [extra?.notes, extra?.booker && `Booker ${extra.booker}`].filter(Boolean).join(" · ");
+  return {
+    ...next,
+    activities: [
+      {
+        id: uid("act"),
+        entityType: "lead",
+        entityId: leadId,
+        type: "call",
+        detail: `${outcome.replaceAll("_", " ")}${notes ? ` · ${notes}` : ""}`,
+        at: stamp,
+      },
+      ...(next.activities || []),
+    ],
+    kpiEvents: [
+      { id: uid("kpi"), type: "dial_attempt", leadId, at: stamp, detail: outcome },
+      ...(outcome === "talked" ? [{ id: uid("kpi"), type: "connected_call", leadId, at: stamp, detail: extra?.booker || "" }] : []),
+      ...(next.kpiEvents || []),
+    ],
+  };
+}
+
 export function recordCallAttempt(
   workspace: Workspace,
   leadId: string,
   outcome: CallOutcome,
   stamp = nowIso(),
-  extra?: { booker?: string; bookerPhone?: string },
+  extra?: { booker?: string; bookerPhone?: string; notes?: string },
 ): Workspace {
   const lead = workspace.leads.find((item) => item.id === leadId);
   if (!lead) return workspace;
@@ -114,7 +144,7 @@ export function recordCallAttempt(
           dueAt: due,
           reason: outcome === "voicemail" ? "Voicemail — send the opener" : "No pickup — send the opener",
           assignedUser: workspace.settings.operator,
-          notes: extra?.booker || "",
+          notes: extra?.booker || extra?.notes || "",
           status: "open" as const,
           createdAt: stamp,
         }
@@ -123,7 +153,10 @@ export function recordCallAttempt(
     ...workspace,
     leads: workspace.leads.map((item) => (item.id === leadId ? next : item)),
     callbacks: follow ? [follow, ...workspace.callbacks.filter((item) => !(item.leadId === leadId && item.status === "open"))] : workspace.callbacks,
-    callLogs: [{ id: uid("call"), leadId, outcome, duration: 0, notes: extra?.booker || extra?.bookerPhone || "", at: stamp }, ...(workspace.callLogs || [])],
+    callLogs: [
+      { id: uid("call"), leadId, outcome, duration: 0, notes: extra?.notes || extra?.booker || extra?.bookerPhone || "", at: stamp },
+      ...(workspace.callLogs || []),
+    ],
     updatedAt: stamp,
   };
 }

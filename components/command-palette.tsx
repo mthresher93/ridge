@@ -28,6 +28,13 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         run: () => router.push(item.href),
       }),
     );
+    const actions: Result[] = [
+      { id: "act-quote", title: "New Quote", detail: "Open Work", run: () => router.push("/outreach") },
+      { id: "act-next", title: "Call next prospect", detail: "Dashboard", run: () => router.push("/") },
+      { id: "act-hunt", title: "Add prospect", detail: "Discover", run: () => router.push("/discover") },
+      { id: "act-load", title: "New Load", detail: "Shipments", run: () => router.push("/shipments") },
+      { id: "act-carrier", title: "Search Carrier", detail: "Carriers", run: () => router.push("/carriers") },
+    ].filter((item) => !q || item.title.toLowerCase().includes(q));
     const people: Result[] = [];
     for (const lead of workspace.leads) {
       if (!q) break;
@@ -43,8 +50,34 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       );
       if (people.length >= 16) break;
     }
-    return [...(q ? people : []), ...(q ? pages : pages)];
-  }, [query, workspace.leads, router, setSelectedLeadId]);
+    const loads: Result[] = [];
+    for (const row of workspace.shipments || []) {
+      if (!q) break;
+      const hay = [row.loadNumber, row.customer, row.origin, row.destination, row.commodity, row.carrier, row.reference].join(" ").toLowerCase();
+      if (!hay.includes(q)) continue;
+      loads.push({
+        id: `shp-${row.id}`,
+        title: `${row.loadNumber || "Quote"} · ${row.customer}`,
+        detail: `${row.status} · ${row.origin} → ${row.destination}`,
+        run: () => router.push(`/shipments?id=${encodeURIComponent(row.id)}`),
+      });
+      if (loads.length >= 8) break;
+    }
+    const carriers: Result[] = [];
+    for (const row of workspace.carriers || []) {
+      if (!q) break;
+      const hay = [row.name, row.mc, row.dot, row.phone, row.equipment].join(" ").toLowerCase();
+      if (!hay.includes(q)) continue;
+      carriers.push({
+        id: `cr-${row.id}`,
+        title: row.name,
+        detail: [row.mc && `MC ${row.mc}`, row.dot && `DOT ${row.dot}`].filter(Boolean).join(" · ") || "Carrier",
+        run: () => router.push("/carriers"),
+      });
+      if (carriers.length >= 8) break;
+    }
+    return [...(q ? people : []), ...(q ? loads : []), ...(q ? carriers : []), ...(q ? actions : actions), ...(q ? pages : pages)];
+  }, [query, workspace.leads, workspace.shipments, workspace.carriers, router, setSelectedLeadId]);
 
   useEffect(() => {
     setActive(0);
@@ -77,7 +110,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
         <input
           autoFocus
           className="az-input border-0 rounded-none h-14 px-5 text-[16px]"
-          placeholder="Search clients or pages"
+          placeholder="Search clients, loads, MC, DOT, or pages"
           value={query}
           onChange={(event) => setQuery(event.target.value)}
         />

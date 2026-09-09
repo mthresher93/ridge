@@ -43,6 +43,8 @@ export function AnalyticsView() {
   const responseRate = contacted ? Math.round((funnel.replied / contacted) * 100) : 0;
   const closeRate = funnel.quotes ? Math.round((funnel.won / funnel.quotes) * 100) : 0;
   const repeat = leads.filter((lead) => lead.status === "Recurring Account").length;
+  const events = scoped.kpiEvents || [];
+  const counted = (type: string) => events.filter((event) => event.type === type).length;
 
   const bySource = useMemo(() => {
     const map = new Map<string, { n: number; contacted: number; replies: number; quotes: number; loads: number; margin: number }>();
@@ -160,6 +162,9 @@ export function AnalyticsView() {
             <div className="ms-d">{repeat} repeat shippers</div>
           </div>
         </div>
+        <p className="cd-mono" style={{ margin: "0 0 16px" }}>
+          Recorded events: {counted("quote_accepted")} quotes accepted · {counted("load_booked")} loads booked · {counted("delivery")} deliveries · {counted("pod_received")} PODs. Nothing else is inferred.
+        </p>
         <section className="az-panel freight-panel">
           <header>
             <h3>Lead source performance</h3>

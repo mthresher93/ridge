@@ -8,6 +8,7 @@ import { contactsToCsv, downloadText, parseContactCsv, type ImportDraft } from "
 import { LeadDrawer } from "./lead-drawer";
 import { companyName, ingestCapture, leadLocation, matchesProspectFilter, type ProspectFilter } from "@/lib/freight";
 import { groupByMetro, metroOf } from "@/lib/metro";
+import { bookCensus } from "@/lib/book";
 import { labelObviousYards, obviousYardCount } from "@/lib/prospect";
 
 const FILTERS: { id: ProspectFilter; label: string }[] = [
@@ -36,6 +37,8 @@ export function PeopleView() {
   const [addForm, setAddForm] = useState({ name: "", phone: "", city: "", state: "" });
   const [addError, setAddError] = useState("");
   const [metroId, setMetroId] = useState("all");
+  const [sourceName, setSourceName] = useState("all");
+  const census = useMemo(() => bookCensus(workspace.leads), [workspace.leads]);
   const obvious = useMemo(() => obviousYardCount(workspace.leads), [workspace.leads]);
 
   useEffect(() => {
@@ -53,10 +56,11 @@ export function PeopleView() {
       if (shelf === "live" ? archived : !archived) return false;
       if (!matchesProspectFilter(lead, filter)) return false;
       if (metroId !== "all" && metroOf(lead)?.id !== metroId) return false;
+      if (sourceName !== "all" && (lead.source || "Unknown") !== sourceName) return false;
       const hay = [lead.name, companyName(lead), lead.label, lead.city, lead.state, lead.phone, lead.email, lead.owner, lead.source, lead.category, lead.equipmentType, lead.listingTitle].join(" ").toLowerCase();
       return !query || hay.includes(query.toLowerCase());
     });
-  }, [workspace.leads, query, filter, shelf, metroId]);
+  }, [workspace.leads, query, filter, shelf, metroId, sourceName]);
 
   const selected = workspace.leads.find((lead) => lead.id === selectedId) || null;
 
@@ -139,7 +143,7 @@ export function PeopleView() {
           <div>
             <h1>Clients</h1>
             <p>
-              {leads.length} {shelf} · typed name, published phone, city. Hunt a listing when you can paste the page.
+              {leads.length} {shelf} · {census.yards} yards · {census.sellers} private / marketplace · typed name, published phone, city.
             </p>
           </div>
           <div className="rec-head-actions">
@@ -205,6 +209,21 @@ export function PeopleView() {
               </button>
             ))}
           </div>
+          <div className="metro-chips">
+            <button type="button" className={`az-btn sm ${sourceName === "all" ? "pri" : ""}`} onClick={() => setSourceName("all")}>
+              All sources
+            </button>
+            {census.sources.map((item) => (
+              <button
+                key={item.name}
+                type="button"
+                className={`az-btn sm ${sourceName === item.name ? "pri" : ""}`}
+                onClick={() => setSourceName(item.name)}
+              >
+                {item.name} {item.count}
+              </button>
+            ))}
+          </div>
           <div className="work-tabs">
             {(["live", "archived"] as const).map((item) => (
               <button key={item} type="button" className={`az-btn sm ${shelf === item ? "pri" : ""}`} onClick={() => setShelf(item)}>
@@ -253,7 +272,7 @@ export function PeopleView() {
                   <td colSpan={9} className="py-10">
                     <div className="empty-desk" style={{ margin: 0, boxShadow: "none" }}>
                       <h2>No clients yet</h2>
-                      <p>Paste a live listing, or type a real seller name. Move' will not invent a contact.</p>
+                      <p>Paste a live listing, or type a real seller name. Haul will not invent a contact.</p>
                       <div className="empty-desk-actions">
                         <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover?tab=paste")}>
                           Paste a listing

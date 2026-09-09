@@ -22,6 +22,7 @@ function groundedPhone(value: string, source: string) {
   const digits = normalizePhone(value).replace(/\D/g, "");
   if (digits.length < 10) return "";
   const last10 = digits.slice(-10);
+  if (last10.slice(3, 6) === "555") return "";
   const hay = source.replace(/\D/g, "");
   return hay.includes(last10) ? value.trim() : "";
 }

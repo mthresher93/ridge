@@ -1,7 +1,5 @@
-"use client";
-
-import { OutreachView } from "@/components/outreach-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <OutreachView />;
+  redirect("/outreach");
 }

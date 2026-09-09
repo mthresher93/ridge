@@ -4,18 +4,23 @@ import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { STAGES } from "@/lib/stages";
-import { formatWhen, money, nowIso, phonePretty } from "@/lib/format";
+import { formatWhen, money, nowIso, phonePretty, uid } from "@/lib/format";
 import { cascadeDeleteLead } from "@/lib/crm";
 import { archiveLead, contactTimeline, findDuplicateLeads, relatedFor, restoreLead } from "@/lib/contacts";
-import { companyName, generateFollowUp, generateOpeningMessage, leadLocation, shipmentMargin, summarizeProspect, CLIENT_KINDS } from "@/lib/freight";
-import { recommendEquipment } from "@/lib/equipment";
-import type { Lead, Priority, ShipmentStatus } from "@/lib/types";
+import { blankLoadFromLead, companyName, generateFollowUp, generateOpeningMessage, hasMeasuredSpecs, leadLocation, openQuoteShipment, shipmentMargin, summarizeProspect, CLIENT_KINDS } from "@/lib/freight";
+import { applySpecsToLead, parseDimensions, parsePounds, recommendEquipment } from "@/lib/equipment";
+import { attachCarrierToShipment, carrierLabel } from "@/lib/carriers";
+import { wrapCall, type CallOutcome } from "@/lib/prospect";
+import { browserTelephony } from "@/lib/telephony";
+import { parseMoney } from "@/lib/validate";
+import type { Lead, Priority, Shipment } from "@/lib/types";
 
-type Tab = "intel" | "record" | "activity";
+type Tab = "intel" | "record" | "quote" | "activity";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "intel", label: "Intelligence" },
   { id: "record", label: "Record" },
+  { id: "quote", label: "Quote" },
   { id: "activity", label: "Activity" },
 ];
 
@@ -42,6 +47,8 @@ type Draft = {
   label: string;
   booker: string;
   bookerPhone: string;
+  dimensions: string;
+  weight: string;
 };
 
 function draftFrom(lead: Lead): Draft {
@@ -68,6 +75,27 @@ function draftFrom(lead: Lead): Draft {
     label: lead.label || "Unlabeled",
     booker: lead.booker || "",
     bookerPhone: lead.bookerPhone || "",
+    dimensions: lead.dimensions || "",
+    weight: lead.weight || "",
+  };
+}
+
+function sheetFromLead(lead: Lead, shipment: Shipment | null) {
+  const blank = blankLoadFromLead(lead);
+  const src = shipment || blank;
+  return {
+    origin: src.origin,
+    destination: src.destination,
+    dimensions: src.dimensions || lead.dimensions || "",
+    weight: src.weight || lead.weight || "",
+    equipmentType: src.equipmentType || lead.trailerHint || "",
+    customerRate: src.customerRate ? String(src.customerRate) : "",
+    carrierRate: src.carrierRate ? String(src.carrierRate) : "",
+    carrierId: src.carrierId || "",
+    notes: src.notes || "",
+    pickupNotes: src.pickupNotes || "",
+    destNotes: src.destNotes || "",
+    appointmentPickup: Boolean(src.appointmentPickup),
   };
 }
 
@@ -79,9 +107,13 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
   const [draft, setDraft] = useState<Draft>(() => draftFrom(live));
   const [callNote, setCallNote] = useState("");
   const [callOutcome, setCallOutcome] = useState("connected");
+  const [quoteMsg, setQuoteMsg] = useState("");
+  const [sheet, setSheet] = useState(() => sheetFromLead(live, openQuoteShipment(workspace, live.id)));
 
   useEffect(() => {
     setDraft(draftFrom(live));
+    setSheet(sheetFromLead(live, openQuoteShipment(workspace, live.id)));
+    setQuoteMsg("");
     setTab("intel");
   }, [live.id]);
 
@@ -110,37 +142,49 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
     const stamp = nowIso();
     setWorkspace((prev) => ({
       ...prev,
-      leads: prev.leads.map((item) =>
-        item.id === live.id
-          ? {
-              ...item,
-              name: draft.name.trim() || item.name,
-              property: draft.property,
-              company: draft.property,
-              phone: draft.phone,
-              email: draft.email,
-              city: draft.city,
-              state: draft.state,
-              website: draft.website,
-              listingUrl: draft.listingUrl,
-              sellerUrl: draft.sellerUrl,
-              status: draft.status,
-              priority: draft.priority,
-              owner: draft.owner,
-              source: draft.source,
-              nextAction: draft.nextAction,
-              notes: draft.notes,
-              category: draft.category,
-              equipmentType: draft.equipmentType,
-              origin: draft.origin,
-              destination: draft.destination,
-              booker: draft.booker,
-              bookerPhone: draft.bookerPhone,
-              label: draft.label === "Unlabeled" ? "" : draft.label,
-              updatedAt: stamp,
-            }
-          : item,
-      ),
+      leads: prev.leads.map((item) => {
+        if (item.id !== live.id) return item;
+        const next = {
+          ...item,
+          name: draft.name.trim() || item.name,
+          property: draft.property,
+          company: draft.property,
+          phone: draft.phone,
+          email: draft.email,
+          city: draft.city,
+          state: draft.state,
+          website: draft.website,
+          listingUrl: draft.listingUrl,
+          sellerUrl: draft.sellerUrl,
+          status: draft.status,
+          priority: draft.priority,
+          owner: draft.owner,
+          source: draft.source,
+          nextAction: draft.nextAction,
+          notes: draft.notes,
+          category: draft.category,
+          equipmentType: draft.equipmentType,
+          origin: draft.origin,
+          destination: draft.destination,
+          booker: draft.booker,
+          bookerPhone: draft.bookerPhone,
+          label: draft.label === "Unlabeled" ? "" : draft.label,
+          updatedAt: stamp,
+        };
+        const parsed = parseDimensions(draft.dimensions);
+        const weightLbs = parsePounds(draft.weight);
+        if (parsed.lengthFt != null || parsed.heightFt != null || weightLbs != null) {
+          const result = applySpecsToLead(next, {
+            unit: draft.equipmentType,
+            lengthFt: parsed.lengthFt,
+            widthFt: parsed.widthFt,
+            heightFt: parsed.heightFt,
+            weightLbs,
+          });
+          return result.saved ? result.lead : { ...next, dimensions: draft.dimensions, weight: draft.weight };
+        }
+        return { ...next, dimensions: draft.dimensions.trim(), weight: draft.weight.trim() };
+      }),
       opportunities: prev.opportunities.map((item) =>
         item.leadId === live.id
           ? { ...item, stage: draft.status, name: draft.name.trim() || item.name, property: draft.property, origin: draft.origin, destination: draft.destination, updatedAt: stamp }
@@ -172,84 +216,92 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
   }
 
   function logCall() {
-    const stamp = nowIso();
-    setWorkspace((prev) => ({
-      ...prev,
-      callLogs: [
-        { id: `call-${Date.now()}`, leadId: live.id, outcome: callOutcome, duration: 0, notes: callNote, at: stamp },
-        ...(prev.callLogs || []),
-      ],
-      leads: prev.leads.map((item) => (item.id === live.id ? { ...item, lastContactAt: stamp, attempts: (item.attempts || 0) + 1, updatedAt: stamp } : item)),
-      updatedAt: stamp,
-    }));
+    const map: Record<string, CallOutcome> = {
+      connected: "talked",
+      no_answer: "no_pickup",
+      voicemail: "voicemail",
+      not_interested: "no_pickup",
+      wrong_number: "wrong_number",
+    };
+    const outcome = map[callOutcome] || "talked";
+    setWorkspace((prev) => wrapCall(prev, live.id, outcome, { notes: callNote }));
     log("lead", live.id, "call", `Call logged: ${callOutcome}${callNote ? ` · ${callNote}` : ""}`);
     setCallNote("");
   }
 
-  function addQuote() {
+  function saveQuoteSheet(event?: React.FormEvent) {
+    event?.preventDefault();
+    const customerRate = parseMoney(sheet.customerRate === "" ? 0 : sheet.customerRate);
+    const carrierRate = parseMoney(sheet.carrierRate === "" ? 0 : sheet.carrierRate);
+    if (customerRate == null || carrierRate == null) {
+      setQuoteMsg("Rates must be numbers. Leave them blank until you have a real quote.");
+      return;
+    }
     const stamp = nowIso();
+    const existing = openQuoteShipment(workspace, live.id);
+    const attached = (workspace.carriers || []).find((item) => item.id === sheet.carrierId);
+    let item: Shipment = {
+      ...blankLoadFromLead(live, { destination: sheet.destination, contact: live.booker || live.name }),
+      origin: sheet.origin.trim(),
+      destination: sheet.destination.trim(),
+      dimensions: sheet.dimensions.trim(),
+      weight: sheet.weight.trim(),
+      equipmentType: sheet.equipmentType.trim(),
+      notes: sheet.notes.trim(),
+      customerRate,
+      carrierRate,
+      id: existing?.id || uid("shp"),
+      createdAt: existing?.createdAt || stamp,
+      updatedAt: stamp,
+      pickupDate: existing?.pickupDate || "",
+      deliveryDate: existing?.deliveryDate || "",
+      reference: existing?.reference || "",
+      loadNumber: existing?.loadNumber || "",
+      podReceived: existing?.podReceived || false,
+      tracking: existing?.tracking || [],
+      pickupNotes: sheet.pickupNotes.trim(),
+      destNotes: sheet.destNotes.trim(),
+      appointmentPickup: sheet.appointmentPickup,
+      status: existing?.status && existing.status !== "Quote" ? existing.status : "Quote",
+    };
+    if (attached) item = attachCarrierToShipment(item, attached);
+    const quoted = customerRate > 0;
     setWorkspace((prev) => ({
       ...prev,
-      quotes: [
-        {
-          id: `qt-${Date.now()}`,
-          leadId: live.id,
-          origin: live.origin || live.city,
-          destination: live.destination || "",
-          commodity: live.listingTitle || live.equipmentType || "",
-          equipmentType: live.equipmentType || "",
-          customerRate: 0,
-          carrierCost: 0,
-          status: "requested",
-          notes: "",
-          createdAt: stamp,
-        },
-        ...(prev.quotes || []),
-      ],
-      leads: prev.leads.map((item) => (item.id === live.id ? { ...item, status: "Quote Requested", updatedAt: stamp } : item)),
-      opportunities: prev.opportunities.map((item) =>
-        item.leadId === live.id
-          ? { ...item, stage: "Quote Requested", stageEnteredAt: stamp, updatedAt: stamp, history: [{ from: item.stage, to: "Quote Requested", at: stamp, source: "profile" }, ...item.history] }
-          : item,
+      shipments: existing
+        ? (prev.shipments || []).map((row) => (row.id === item.id ? item : row))
+        : [item, ...(prev.shipments || [])],
+      kpiEvents: quoted
+        ? [{ id: uid("kpi"), type: "quote_sent", leadId: live.id, at: stamp, detail: String(customerRate) }, ...(prev.kpiEvents || [])]
+        : prev.kpiEvents,
+      leads: prev.leads.map((row) =>
+        row.id === live.id
+          ? {
+              ...row,
+              origin: sheet.origin.trim() || row.origin,
+              destination: sheet.destination.trim() || row.destination,
+              status: quoted ? "Quote Sent" : row.status === "Quote Sent" ? row.status : "Quote Requested",
+              nextAction: quoted ? "Quoted. Cover with a carrier on file." : "Blank quote open. Rates stay 0 until they give a number.",
+              updatedAt: stamp,
+            }
+          : row,
+      ),
+      opportunities: prev.opportunities.map((row) =>
+        row.leadId === live.id
+          ? {
+              ...row,
+              origin: item.origin,
+              destination: item.destination,
+              value: quoted ? customerRate : 0,
+              stage: quoted ? "Quote Sent" : "Quote Requested",
+              updatedAt: stamp,
+            }
+          : row,
       ),
       updatedAt: stamp,
     }));
-    log("lead", live.id, "quote_requested", "Quote request created");
-  }
-
-  function addShipment(status: ShipmentStatus = "Quote") {
-    const stamp = nowIso();
-    setWorkspace((prev) => ({
-      ...prev,
-      shipments: [
-        {
-          id: `shp-${Date.now()}`,
-          leadId: live.id,
-          customer: companyName(live),
-          contact: live.name,
-          origin: live.origin || leadLocation(live),
-          destination: live.destination || "",
-          pickupDate: "",
-          deliveryDate: "",
-          commodity: live.listingTitle || live.equipmentType || "",
-          weight: live.weight || "",
-          dimensions: live.dimensions || "",
-          equipmentType: live.equipmentType || "",
-          carrier: "",
-          carrierRate: 0,
-          customerRate: 0,
-          status,
-          reference: "",
-          notes: "",
-          createdAt: stamp,
-          updatedAt: stamp,
-        },
-        ...(prev.shipments || []),
-      ],
-      updatedAt: stamp,
-    }));
-    log("lead", live.id, "shipment_created", `Shipment ${status}`);
-    router.push("/shipments");
+    setQuoteMsg(quoted ? `Saved ${money(customerRate)} on this yard. Listing ask was not used.` : "Blank quote saved. Rates still $0.");
+    log("shipment", item.id, existing ? "updated" : "created", quoted ? `Quoted ${customerRate}` : "Blank quote");
   }
 
   const opener = analysis ? generateOpeningMessage(analysis, "Casual", live.id) : generateFollowUp(live);
@@ -290,18 +342,21 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
             </a>
           ) : null}
           {live.phone ? (
-            <a className="az-btn sm" href={`tel:${live.phone}`}>
+            <button className="az-btn sm" type="button" onClick={() => browserTelephony().startCall(live.phone)}>
               Call {phonePretty(live.phone)}
-            </a>
+            </button>
           ) : null}
-          <button className="az-btn sm" type="button" onClick={addQuote}>
-            Quote request
+          <button className="az-btn sm" type="button" onClick={() => { setSheet(sheetFromLead(live, openQuoteShipment(workspace, live.id))); setTab("quote"); }}>
+            Blank quote
           </button>
         </div>
 
         <div className="rec-tabs" role="tablist">
           {TABS.map((item) => (
-            <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} className={tab === item.id ? "on" : ""} onClick={() => setTab(item.id)}>
+            <button key={item.id} type="button" role="tab" aria-selected={tab === item.id} className={tab === item.id ? "on" : ""} onClick={() => {
+              setTab(item.id);
+              if (item.id === "quote") setSheet(sheetFromLead(live, openQuoteShipment(workspace, live.id)));
+            }}>
               {item.label}
               {item.id === "activity" ? ` ${timeline.length}` : ""}
             </button>
@@ -345,7 +400,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
               </div>
               <div>
                 <span>Trailer</span>
-                <b>{live.dimensions || live.weight ? live.trailerHint || `${fit.trailerName} · ${fit.loadClass}` : "Ask on the call"}</b>
+                <b>{hasMeasuredSpecs(live) ? live.trailerHint || `${fit.trailerName} · ${fit.loadClass}` : "Ask on the call"}</b>
               </div>
               <div>
                 <span>Recurring</span>
@@ -359,9 +414,9 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
               </div>
             </div>
             <p className="cd-mono">
-              {live.dimensions || live.weight
+              {hasMeasuredSpecs(live)
                 ? fit.why
-                : "Ask length, height on the deck, and pounds before you pick a trailer."}
+                : "Ask length, height on the deck, and pounds before you pick a trailer. Save them on Intel or this record."}
             </p>
             {analysis ? (
               <>
@@ -417,29 +472,134 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
             <button className="az-btn sm" type="button" onClick={logCall}>
               Save call
             </button>
-            <h3>Quotes / shipments</h3>
-            {(related.quotes || []).map((item) => (
-              <div key={item.id} className="rec-row">
-                <b>
-                  {item.origin} → {item.destination}
-                </b>
-                <p>
-                  Customer {item.customerRate ? money(item.customerRate) : "—"} · carrier {item.carrierCost ? money(item.carrierCost) : "—"} · margin {item.customerRate || item.carrierCost ? money(shipmentMargin(item.customerRate, item.carrierCost)) : "—"}
-                </p>
-              </div>
-            ))}
-            {(related.shipments || []).map((item) => (
+            <h3>Quote</h3>
+            <p className="cd-mono">
+              One worksheet on this yard. Rates start empty. Saved Intel specs come with it. Listing ask is never the rate.
+            </p>
+            <button className="az-btn pri sm" type="button" onClick={() => { setSheet(sheetFromLead(live, openQuoteShipment(workspace, live.id))); setTab("quote"); }}>
+              Open quote sheet
+            </button>
+            {(related.shipments || []).slice(0, 3).map((item) => (
               <div key={item.id} className="rec-row">
                 <b>{item.status}</b>
                 <p>
-                  {item.origin} → {item.destination} · {item.commodity}
+                  {item.origin} → {item.destination} · {item.customerRate ? money(item.customerRate) : "rate unset"}
                 </p>
               </div>
             ))}
-            <button className="az-btn sm" type="button" onClick={() => addShipment("Quote")}>
-              Create shipment
-            </button>
           </section>
+        ) : null}
+
+        {tab === "quote" ? (
+          <form className="rec-form" onSubmit={saveQuoteSheet}>
+            <p className="cd-mono">
+              Type a number you actually quoted. {live.askingPrice != null ? `Their listing ask ${money(live.askingPrice)} stays on the listing — it is not this rate.` : "No listing ask on file."}
+            </p>
+            {hasMeasuredSpecs(live) ? (
+              <p className="cd-mono">Pulled saved Intel specs. Change them here only if the load changed.</p>
+            ) : (
+              <p className="rec-warn">No saved L × W × H yet. Type what they told you, or leave blank and save specs in Intel.</p>
+            )}
+            <div className="rec-grid">
+              <Field label="Origin" value={sheet.origin} onChange={(value) => setSheet((prev) => ({ ...prev, origin: value }))} />
+              <Field label="Destination" value={sheet.destination} onChange={(value) => setSheet((prev) => ({ ...prev, destination: value }))} />
+            </div>
+            <div className="rec-grid">
+              <Field label="Pickup notes" value={sheet.pickupNotes} onChange={(value) => setSheet((prev) => ({ ...prev, pickupNotes: value }))} />
+              <Field label="Delivery notes" value={sheet.destNotes} onChange={(value) => setSheet((prev) => ({ ...prev, destNotes: value }))} />
+            </div>
+            <label className="rec-field">
+              <input type="checkbox" checked={sheet.appointmentPickup} onChange={(event) => setSheet((prev) => ({ ...prev, appointmentPickup: event.target.checked }))} /> Pickup appointment required
+            </label>
+            <div className="rec-grid">
+              <Field label="Dims (L × W × H)" value={sheet.dimensions} onChange={(value) => setSheet((prev) => ({ ...prev, dimensions: value }))} />
+              <Field label="Weight (lb)" value={sheet.weight} onChange={(value) => setSheet((prev) => ({ ...prev, weight: value }))} />
+            </div>
+            <Field label="Trailer" value={sheet.equipmentType} onChange={(value) => setSheet((prev) => ({ ...prev, equipmentType: value }))} />
+            <p className="cd-mono">{fit.trailerName} · {fit.loadClass}. {fit.why}</p>
+            <div className="rec-grid">
+              <label className="rec-field">
+                Customer rate
+                <input
+                  className="az-input"
+                  type="number"
+                  min={0}
+                  value={sheet.customerRate}
+                  placeholder="Blank until you quoted"
+                  onChange={(event) => setSheet((prev) => ({ ...prev, customerRate: event.target.value }))}
+                />
+              </label>
+              <label className="rec-field">
+                Carrier cost
+                <input
+                  className="az-input"
+                  type="number"
+                  min={0}
+                  value={sheet.carrierRate}
+                  placeholder="Blank until you have a cost"
+                  onChange={(event) => setSheet((prev) => ({ ...prev, carrierRate: event.target.value }))}
+                />
+              </label>
+            </div>
+            <p className="cd-mono">
+              {Number(sheet.customerRate) || Number(sheet.carrierRate)
+                ? `Gross margin ${money(shipmentMargin(Number(sheet.customerRate) || 0, Number(sheet.carrierRate) || 0))}`
+                : "Margin stays empty until both sides have a number you were given."}
+            </p>
+            <label className="rec-field">
+              Carrier on file
+              <select
+                className="az-select"
+                value={sheet.carrierId}
+                onChange={(event) => setSheet((prev) => ({ ...prev, carrierId: event.target.value }))}
+              >
+                <option value="">None yet — paste a page on Shipments</option>
+                {(workspace.carriers || []).map((item) => (
+                  <option key={item.id} value={item.id}>
+                    {carrierLabel(item)}
+                  </option>
+                ))}
+              </select>
+            </label>
+            <label className="rec-field">
+              Notes
+              <textarea className="az-area" value={sheet.notes} onChange={(event) => setSheet((prev) => ({ ...prev, notes: event.target.value }))} />
+            </label>
+            {quoteMsg ? <p className="cd-mono">{quoteMsg}</p> : null}
+            <div className="rec-save">
+              <button className="az-btn pri" type="submit">
+                Save quote
+              </button>
+              {openQuoteShipment(workspace, live.id)?.status === "Quote" ? (
+                <button
+                  className="az-btn"
+                  type="button"
+                  onClick={() => {
+                    const current = openQuoteShipment(workspace, live.id);
+                    if (!current) {
+                      setQuoteMsg("Save the quote first.");
+                      return;
+                    }
+                    setWorkspace((prev) => {
+                      const result = convertQuoteToLoad(prev, current.id);
+                      if (!result.ok) {
+                        setQuoteMsg(result.error);
+                        return prev;
+                      }
+                      setQuoteMsg(`${result.shipment.loadNumber} is a load. Cover it on Shipments.`);
+                      log("shipment", result.shipment.id, "converted", result.shipment.loadNumber || "");
+                      return result.workspace;
+                    });
+                  }}
+                >
+                  Customer accepted — open load
+                </button>
+              ) : null}
+              <button className="az-btn" type="button" onClick={() => { setSelectedLeadId(live.id); router.push("/shipments"); }}>
+                Open Shipments
+              </button>
+            </div>
+          </form>
         ) : null}
 
         {tab === "record" ? (
@@ -476,6 +636,10 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
             <div className="rec-grid">
               <Field label="Origin" value={draft.origin} onChange={(value) => set("origin", value)} />
               <Field label="Destination" value={draft.destination} onChange={(value) => set("destination", value)} />
+            </div>
+            <div className="rec-grid">
+              <Field label="Dims (L × W × H)" value={draft.dimensions} onChange={(value) => set("dimensions", value)} />
+              <Field label="Weight (lb)" value={draft.weight} onChange={(value) => set("weight", value)} />
             </div>
             <Field label="Website" value={draft.website} onChange={(value) => set("website", value)} />
             <Field label="Listing URL" value={draft.listingUrl} onChange={(value) => set("listingUrl", value)} />

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { extractCarrierFacts, ingestCarrier, isCallablePhone } from "./carriers";
+import { attachCarrierToShipment, extractCarrierFacts, ingestCarrier, isCallablePhone } from "./carriers";
 import { emptyWorkspace } from "./seed";
 
 describe("isCallablePhone", () => {
@@ -41,5 +41,69 @@ describe("ingestCarrier", () => {
     const second = ingestCarrier(first.workspace, extractCarrierFacts("Acme LLC MC-111222 806-745-4201"));
     expect(second.duplicate).toBe(true);
     expect(second.workspace.carriers).toHaveLength(1);
+  });
+});
+
+describe("attachCarrierToShipment", () => {
+  it("puts the saved carrier id on the load", () => {
+    const ingested = ingestCarrier(emptyWorkspace(), extractCarrierFacts("Acme LLC MC-111222 DOT 333444 806-745-4201"));
+    const shipment = attachCarrierToShipment(
+      {
+        id: "shp-1",
+        leadId: "",
+        customer: "Yard",
+        contact: "",
+        origin: "",
+        destination: "",
+        pickupDate: "",
+        deliveryDate: "",
+        commodity: "",
+        weight: "",
+        dimensions: "",
+        equipmentType: "",
+        carrier: "",
+        carrierRate: 0,
+        customerRate: 0,
+        status: "Quote",
+        reference: "",
+        notes: "",
+        createdAt: "",
+        updatedAt: "",
+      },
+      ingested.carrier,
+    );
+    expect(shipment.carrierId).toBe(ingested.carrier.id);
+    expect(shipment.carrier).toBe(ingested.carrier.name);
+    expect(shipment.status).toBe("Quote");
+  });
+
+  it("covers a load that already needed a truck", () => {
+    const ingested = ingestCarrier(emptyWorkspace(), extractCarrierFacts("Acme LLC MC-111222 DOT 333444 806-745-4201"));
+    const shipment = attachCarrierToShipment(
+      {
+        id: "shp-1",
+        leadId: "",
+        customer: "Yard",
+        contact: "",
+        origin: "",
+        destination: "",
+        pickupDate: "",
+        deliveryDate: "",
+        commodity: "",
+        weight: "",
+        dimensions: "",
+        equipmentType: "",
+        carrier: "",
+        carrierRate: 0,
+        customerRate: 0,
+        status: "Carrier Needed",
+        reference: "",
+        notes: "",
+        createdAt: "",
+        updatedAt: "",
+      },
+      ingested.carrier,
+    );
+    expect(shipment.status).toBe("Carrier Booked");
   });
 });

@@ -2,18 +2,16 @@
 
 import { useMemo, useState } from "react";
 import { objectionsFor, scriptFor } from "@/lib/scripts";
-import type { Lead, RoofDesign } from "@/lib/types";
+import type { Lead } from "@/lib/types";
 
 export function ScriptPanel({
   lead,
-  design,
   beat,
   onBeat,
   large = false,
   mode = "split",
 }: {
   lead: Lead | null;
-  design?: RoofDesign | null;
   beat: number;
   onBeat: (index: number) => void;
   large?: boolean;
@@ -21,7 +19,7 @@ export function ScriptPanel({
 }) {
   const [tab, setTab] = useState<"script" | "objections">("script");
   const [query, setQuery] = useState("");
-  const beats = tab === "script" ? scriptFor(lead, design) : objectionsFor(lead);
+  const beats = tab === "script" ? scriptFor(lead) : objectionsFor(lead);
   const filtered = useMemo(() => {
     const q = query.trim().toLowerCase();
     if (!q) return beats.map((item, index) => ({ item, index }));

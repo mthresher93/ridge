@@ -1,5 +1,6 @@
 import type { Lead } from "./types";
 import { nowIso } from "./format";
+import { classifyLoad } from "./load-class";
 
 export type TrailerCode =
   | "HS"
@@ -287,43 +288,8 @@ export function guessUnitSpecs(text: string): Guess | null {
 
 function rankLoad(lengthFt: number | null, weightLbs: number | null, trailer: TrailerCode): LoadClass {
   if (["RGN", "RGNE", "LB", "PO", "DA"].includes(trailer)) return "Always TL";
-  const hs = trailer === "HS" || trailer === "TILT";
-  const byLength: LoadClass = hs
-    ? lengthFt == null
-      ? "Partial"
-      : lengthFt <= 5
-        ? "Parcel"
-        : lengthFt <= 20
-          ? "Partial"
-          : "TL"
-    : lengthFt == null
-      ? "Partial"
-      : lengthFt <= 10
-        ? "Parcel"
-        : lengthFt <= 27
-          ? "Partial"
-          : lengthFt <= 36
-            ? "LTL"
-            : "TL";
-  const byWeight: LoadClass = hs
-    ? weightLbs == null
-      ? "Partial"
-      : weightLbs <= 3000
-        ? "Parcel"
-        : weightLbs <= 10000
-          ? "Partial"
-          : "TL"
-    : weightLbs == null
-      ? "Partial"
-      : weightLbs <= 10000
-        ? "Parcel"
-        : weightLbs <= 24000
-          ? "Partial"
-          : weightLbs <= 33000
-            ? "LTL"
-            : "TL";
-  const order: LoadClass[] = ["Parcel", "Partial", "LTL", "TL"];
-  return order[Math.max(order.indexOf(byLength), order.indexOf(byWeight))] || "Partial";
+  const family = trailer === "HS" || trailer === "TILT" ? "hotshot" : "53";
+  return classifyLoad(lengthFt, weightLbs, family);
 }
 
 export function checkTrailer(
@@ -503,6 +469,17 @@ function finish(
 export function measuredDimensions(lengthFt: number | null, widthFt: number | null, heightFt: number | null) {
   if (lengthFt == null || widthFt == null || heightFt == null) return "";
   return `${lengthFt} x ${widthFt} x ${heightFt}`;
+}
+
+export function specsFromLead(lead: Pick<Lead, "dimensions" | "weight" | "equipmentType">) {
+  const parsed = parseDimensions(lead.dimensions || "");
+  return {
+    unit: lead.equipmentType || "",
+    lengthFt: parsed.lengthFt,
+    widthFt: parsed.widthFt,
+    heightFt: parsed.heightFt,
+    weightLbs: parsePounds(lead.weight || ""),
+  };
 }
 
 export function applySpecsToLead(

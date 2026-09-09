@@ -114,7 +114,7 @@ async function openrouterChat(system: string, user: string, jsonMode = true) {
       "Content-Type": "application/json",
       Authorization: `Bearer ${OPENROUTER_KEY}`,
       "HTTP-Referer": "http://localhost:6793",
-      "X-Title": "Move' Freight",
+      "X-Title": "Haul Freight",
     },
     body: JSON.stringify({
       model: OPENROUTER_MODEL,

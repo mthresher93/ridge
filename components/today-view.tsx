@@ -5,14 +5,20 @@ import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
 import { derive, topMove } from "@/lib/derive";
 import { deskCallBook, deskPlan, todayHunt } from "@/lib/desk";
+import { bookedMargin, deskAttention, liveLoadSnapshot } from "@/lib/ops";
+import { browserTelephony } from "@/lib/telephony";
+import { inCallingWindow } from "@/lib/us-time";
+import { settingsWithDefaults } from "@/lib/types";
 import { huntQueue } from "@/lib/hunt";
 import { DESK_JOB, HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
 import { companyName, leadLocation, outreachQueue, suggestClientKind } from "@/lib/freight";
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
-import { firstCall, labelObviousYards, obviousYardCount, recordCallAttempt, type CallOutcome } from "@/lib/prospect";
+import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
+import { HuntDance } from "./hunt-dance";
+import { bookCensus } from "@/lib/book";
 import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
-import { nowIso, phonePretty, relativeDue } from "@/lib/format";
+import { money, nowIso, phonePretty, relativeDue } from "@/lib/format";
 import type { Lead } from "@/lib/types";
 
 export function TodayView() {
@@ -23,6 +29,9 @@ export function TodayView() {
   const hunt = useMemo(() => todayHunt(new Date(), workspace), [workspace]);
   const queue = useMemo(() => huntQueue(new Date(), 12, huntPlacesFromBook(workspace)), [workspace]);
   const plan = useMemo(() => deskPlan(workspace), [workspace]);
+  const attention = useMemo(() => deskAttention(workspace), [workspace]);
+  const loads = useMemo(() => liveLoadSnapshot(workspace), [workspace]);
+  const books = useMemo(() => bookedMargin(workspace), [workspace]);
   const callBook = useMemo(() => deskCallBook(workspace, 80), [workspace]);
   const [metroId, setMetroId] = useState("all");
   const metroGroups = useMemo(() => groupByMetro(callBook), [callBook]);
@@ -39,6 +48,8 @@ export function TodayView() {
   const unlabeledAll = useMemo(() => live.filter((lead) => !lead.label), [live]);
   const unlabeled = unlabeledAll.slice(0, 6);
   const obvious = useMemo(() => obviousYardCount(live), [live]);
+  const prefs = settingsWithDefaults(workspace.settings);
+  const hours = nextCall ? inCallingWindow(nextCall.state, prefs.dialWindowStart, prefs.dialWindowEnd) : null;
   const stillCalling = callBook.length > 0;
   const [booker, setBooker] = useState("");
   const [bookerPhone, setBookerPhone] = useState("");
@@ -54,6 +65,7 @@ export function TodayView() {
         .slice(0, 6),
     [live],
   );
+  const census = useMemo(() => bookCensus(workspace.leads), [workspace.leads]);
   const sentToday = useMemo(() => messagesSentOnDay(workspace.kpiEvents || []), [workspace.kpiEvents]);
   const nextScript = nextCall ? firstCall(nextCall, sentToday) : null;
 
@@ -104,7 +116,7 @@ export function TodayView() {
   }
 
   function noteCall(lead: Lead, outcome: CallOutcome, extra?: { booker: string; bookerPhone?: string }) {
-    setWorkspace((prev) => recordCallAttempt(prev, lead.id, outcome, nowIso(), extra));
+    setWorkspace((prev) => wrapCall(prev, lead.id, outcome, extra));
     log(
       "lead",
       lead.id,
@@ -155,11 +167,11 @@ export function TodayView() {
         <header className="home-desk-head">
           <div>
             <div className="home-kicker">{deskDay}</div>
-            <h1>Desk</h1>
+            <h1>Dashboard</h1>
             <p>
               {live.length
-                ? `${live.length} yards on file · ${callBook.length} with a published phone still uncontacted · stay in ${hunt.place} · ${sentToday} sent · $0 spent`
-                : `${hunt.weekday} · ${hunt.play.title} · open the queue, then paste. No fake clients.`}
+                ? `${live.length} on file · ${callBook.length} published phones still uncontacted · ${census.yards} yards · ${census.sellers} private / marketplace · stay in ${hunt.place}`
+                : `${hunt.weekday} · ${hunt.play.title} · open a search, then paste. No fake clients.`}
             </p>
           </div>
           <div className="home-stats">
@@ -176,11 +188,87 @@ export function TodayView() {
               <span>to message</span>
             </div>
             <div>
+              <b>{books.booked}</b>
+              <span>loads</span>
+            </div>
+            <div>
               <b className={metrics.overdueCallbacks.length ? "bad" : ""}>{metrics.overdueCallbacks.length}</b>
               <span>overdue</span>
             </div>
           </div>
         </header>
+
+        <HuntDance hunt={hunt} census={census} />
+
+        {attention.length ? (
+          <section className="az-panel freight-panel desk-attention">
+            <header>
+              <div>
+                <div className="home-kicker">Needs attention</div>
+                <h3>What is actually waiting</h3>
+              </div>
+              <span className="cd-mono">
+                Booked margin {books.margin ? money(books.margin) : "—"} · {books.quoted} open quotes
+              </span>
+            </header>
+            <table className="az-table min-w-0">
+              <tbody>
+                {attention.map((item) => (
+                  <tr key={item.id} onClick={() => router.push(item.href)}>
+                    <td>
+                      <b>{item.title}</b>
+                    </td>
+                    <td>{item.why}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </section>
+        ) : null}
+
+        {loads.length ? (
+          <section className="az-panel freight-panel desk-loads">
+            <header>
+              <div>
+                <div className="home-kicker">Active loads</div>
+                <h3>Cover, pickup, delivery</h3>
+              </div>
+              <button className="az-btn sm" type="button" onClick={() => router.push("/shipments")}>
+                Open shipments
+              </button>
+            </header>
+            <div className="az-panel overflow-auto min-h-0 crm-table-wrap">
+              <table className="az-table min-w-[980px]">
+                <thead>
+                  <tr>
+                    <th>Load</th>
+                    <th>Customer</th>
+                    <th>Lane</th>
+                    <th>Equipment</th>
+                    <th>Status</th>
+                    <th>Margin</th>
+                    <th>Last check</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loads.map((item) => (
+                    <tr key={item.id} onClick={() => router.push(`/shipments?id=${encodeURIComponent(item.id)}`)}>
+                      <td>{item.loadNumber || "—"}</td>
+                      <td>{item.customer}</td>
+                      <td>
+                        {item.origin || "—"} → {item.destination || "—"}
+                      </td>
+                      <td>{item.equipmentType || "—"}</td>
+                      <td>{item.status}</td>
+                      <td className="az-num">{item.customerRate || item.carrierRate ? money(item.margin) : "—"}</td>
+                      <td>{item.lastCheck}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </section>
+        ) : null}
 
         {nextCall && nextScript ? (
           <section className="az-panel freight-panel desk-next">
@@ -194,6 +282,7 @@ export function TodayView() {
               </span>
             </header>
             <p className="desk-ask">{nextScript.ask}</p>
+            {hours ? <p className={hours.ok ? "desk-why" : "rec-warn"}>{hours.label}. {hours.why}</p> : null}
             <p className="desk-why">{nextScript.why}</p>
             <blockquote className="desk-opener">{nextScript.opener}</blockquote>
             {copyError ? <p className="rec-warn">{copyError}</p> : null}
@@ -208,9 +297,9 @@ export function TodayView() {
               </label>
             </div>
             <div className="desk-next-actions">
-              <a className="az-btn pri" href={`tel:${nextCall.phone}`}>
+              <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(nextCall.phone)}>
                 Call {phonePretty(nextCall.phone)}
-              </a>
+              </button>
               <button className="az-btn" type="button" onClick={() => void copyOpener(nextCall)}>
                 {copiedId === nextCall.id ? "Copied" : "Copy opener"}
               </button>
@@ -250,7 +339,9 @@ export function TodayView() {
                         {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : ""}
                       </span>
                     </button>
-                    <a href={`tel:${lead.phone}`}>{phonePretty(lead.phone)}</a>
+                    <button className="az-btn sm" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
+                      {phonePretty(lead.phone)}
+                    </button>
                   </li>
                   );
                 })}
@@ -307,7 +398,7 @@ export function TodayView() {
               </button>
             </header>
             <p className="desk-queue-note">
-              Each number was on that dealer’s public page. Dial it. If nobody picks up, copy the opener and you send it. Move' does not place the call.
+              Each number was on that dealer’s public page. Dial it. If nobody picks up, copy the opener and you send it. Haul does not place the call.
             </p>
             <div className="metro-chips">
               <button type="button" className={`az-btn sm ${metroId === "all" ? "pri" : ""}`} onClick={() => setMetroId("all")}>
@@ -342,9 +433,9 @@ export function TodayView() {
                           <em>{script.ask}</em>
                         </button>
                         <div className="desk-call-actions">
-                          <a className="az-btn pri sm" href={`tel:${lead.phone}`}>
+                          <button className="az-btn pri sm" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
                             {phonePretty(lead.phone)}
-                          </a>
+                          </button>
                           <button className="az-btn sm" type="button" onClick={() => void copyOpener(lead)}>
                             {copiedId === lead.id ? "Copied" : "Copy"}
                           </button>

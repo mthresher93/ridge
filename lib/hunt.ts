@@ -68,7 +68,12 @@ export const HUNT_PRESETS = [
   { query: "skid steer", place: "Fort Worth TX" },
   { query: "mini excavator", place: "Austin TX" },
   { query: "telehandler", place: "San Antonio TX" },
-  { query: "dump truck", place: "Odessa TX" },
+  { query: "forklift for sale", place: "Houston TX" },
+  { query: "skid steer for sale", place: "Dallas TX" },
+  { query: "equipment rental", place: "Tyler TX" },
+  { query: "forklift dealer", place: "Odessa TX" },
+  { query: "skid steer", place: "Waco TX" },
+  { query: "forklift", place: "Laredo TX" },
 ];
 
 export const HUNT_LANES: HuntLane[] = [
@@ -321,7 +326,7 @@ export const HUNT_LANES: HuntLane[] = [
     rank: "Strong",
     fit: "Yard managers, operations, dispatch at those dealers.",
     legal: "Your account, people search you open.",
-    how: "Search yard manager / operations + dealer + city. Connect with a short note.",
+    how: "Search yard manager / dispatcher / parts manager / equipment sales + dealer + city. Connect with a short note from your real profile.",
     messageWhere: "LinkedIn from your profile. You send it.",
   },
   {
@@ -337,7 +342,7 @@ export const HUNT_LANES: HuntLane[] = [
     id: "facebook",
     name: "Facebook Marketplace",
     rank: "Volume",
-    fit: "Volume, mixed quality. Commercial equipment only. Usually a one-shot.",
+    fit: "Volume, mixed quality. Commercial equipment only. Private people selling their own machine get fewer broker calls than a named Cat dealer.",
     legal: "Your account, ads you open. No bots, no fake profiles.",
     how: "Search forklift / skid steer / CNC. Capture the ad. Message from your profile.",
     messageWhere: "Facebook message from your profile. You hit send.",
@@ -350,6 +355,24 @@ export const HUNT_LANES: HuntLane[] = [
     legal: "Open the live ad. Copy what you see. No harvesters.",
     how: "Heavy equipment search for a metro. Paste ads with a phone.",
     messageWhere: "Ad phone or CL reply-to.",
+  },
+  {
+    id: "offerup",
+    name: "OfferUp",
+    rank: "Volume",
+    fit: "People selling a machine they own. Quieter than a dealer directory. Phone only if they printed it.",
+    legal: "Your account. Ads you open. No bots.",
+    how: "Search forklift / skid steer / dump truck in one metro. Skip household junk. Paste ads with a city or phone.",
+    messageWhere: "OfferUp message from your profile, or the published number.",
+  },
+  {
+    id: "ebay-motors",
+    name: "eBay commercial / heavy",
+    rank: "Volume",
+    fit: "Owner ads and small lots. One unit, then ask if they have more.",
+    legal: "Public listings you open.",
+    how: "Heavy equipment or commercial truck. Prefer a named seller with a city.",
+    messageWhere: "eBay message from your account, or the phone on the listing.",
   },
   {
     id: "uship",
@@ -431,6 +454,105 @@ export const HUNT_LANES: HuntLane[] = [
     legal: "JLG public locations page.",
     how: "Find sales/service near you. Copy the local number.",
     messageWhere: "Call the location. Dispatch or service books trucks.",
+  },
+  {
+    id: "yale-locator",
+    name: "Yale forklift dealers",
+    rank: "Best",
+    fit: "Yale dealers ship lift trucks to customers. Same backup-freight ask as Toyota.",
+    legal: "Yale public dealer finder.",
+    how: "Find the local dealer. Copy the published store phone.",
+    messageWhere: "Call the dealer. Ask who books customer deliveries.",
+  },
+  {
+    id: "crown-locator",
+    name: "Crown lift dealers",
+    rank: "Best",
+    fit: "Crown dealers already deliver. Recurring warehouse freight.",
+    legal: "Crown public dealer locator.",
+    how: "Open the local dealer. Phone on the page.",
+    messageWhere: "Call the store. Backup on outbound.",
+  },
+  {
+    id: "genie-locator",
+    name: "Genie lift dealers",
+    rank: "Strong",
+    fit: "Boom and scissor dealers. Aerial moves constantly.",
+    legal: "Genie public dealer finder.",
+    how: "Search your area. Capture the local dealer, not corporate.",
+    messageWhere: "Call the dealer. Service or dispatch books trucks.",
+  },
+  {
+    id: "vermeer-locator",
+    name: "Vermeer dealers",
+    rank: "Best",
+    fit: "Trenchers, grinders, compact equipment. Dealers already deliver sold iron.",
+    legal: "Vermeer public dealer finder.",
+    how: "North America, then your city. Copy the branch phone.",
+    messageWhere: "Call the dealer. Yard or product support.",
+  },
+  {
+    id: "takeuchi-locator",
+    name: "Takeuchi dealers",
+    rank: "Strong",
+    fit: "Compact excavators and track loaders. Dealers ship to jobsites.",
+    legal: "Takeuchi US public finder.",
+    how: "Find a dealer. Copy the published number.",
+    messageWhere: "Call the store. Ask who books machine delivery.",
+  },
+  {
+    id: "manitou-locator",
+    name: "Manitou dealers",
+    rank: "Strong",
+    fit: "Telehandlers. Same shipper profile as JCB and JLG.",
+    legal: "Manitou public dealer search.",
+    how: "United States, then your area. Phone on the dealer card.",
+    messageWhere: "Call the dealer. Backup on customer deliveries.",
+  },
+  {
+    id: "ahern",
+    name: "Ahern Rentals branches",
+    rank: "Best",
+    fit: "Regional rental. Branches move iron every week.",
+    legal: "Public locations page.",
+    how: "Open a nearby branch. Capture that phone, not 1-800.",
+    messageWhere: "Branch manager or dispatch.",
+  },
+  {
+    id: "sunstate",
+    name: "Sunstate Equipment branches",
+    rank: "Best",
+    fit: "Southwest rental yards. Recurring by design.",
+    legal: "Public locations page.",
+    how: "Open a Texas or nearby branch. Copy the local number.",
+    messageWhere: "Branch manager or dispatch.",
+  },
+  {
+    id: "penske",
+    name: "Penske truck rental locations",
+    rank: "Strong",
+    fit: "Truck rental lots. Overflow when their trucks are out.",
+    legal: "Public location finder.",
+    how: "Open a local lot. Copy the published phone.",
+    messageWhere: "Ask who books extra trucks when they are short.",
+  },
+  {
+    id: "kenworth-locator",
+    name: "Kenworth dealers",
+    rank: "Best",
+    fit: "Truck dealers already deliver sold units. Backup freight on the lot.",
+    legal: "Kenworth public dealer finder.",
+    how: "Find the local dealer. Copy the store phone.",
+    messageWhere: "Call the dealership. Ask who books outbound.",
+  },
+  {
+    id: "peterbilt-locator",
+    name: "Peterbilt dealers",
+    rank: "Best",
+    fit: "Same as Kenworth. Named yards with published phones.",
+    legal: "Peterbilt public dealer locator.",
+    how: "Open the local dealer. Phone on the page.",
+    messageWhere: "Call the store. Backup on customer deliveries.",
   },
   {
     id: "herc",
@@ -549,7 +671,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "Dealers and rental houses already ship. One good yard is the backbone of a hotshot book.",
     talkTo: "Yard manager, branch manager, or whoever books outbound freight. Ask to be backup when their guy can’t cover a sold machine.",
-    laneIds: ["mt-dealers", "maps-dealers", "maps-rental", "google-dealers", "cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator"],
+    laneIds: ["mt-dealers", "maps-dealers", "maps-rental", "google-dealers", "cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator", "maps-excavating", "maps-construction"],
   },
   {
     id: "oem",
@@ -557,7 +679,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "The manufacturer already published the local dealer. That yard ships to customers. You are asking to be backup freight.",
     talkTo: "The store phone on the locator. Product support or the person who books deliveries.",
-    laneIds: ["cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator", "hyster-locator", "komatsu-locator", "kubota-locator", "jcb-locator", "case-locator", "volvo-locator", "jlg-locator"],
+    laneIds: ["cat-locator", "toyota-forklift", "bobcat-locator", "deere-locator", "hyster-locator", "komatsu-locator", "kubota-locator", "jcb-locator", "case-locator", "volvo-locator", "jlg-locator", "yale-locator", "crown-locator", "genie-locator", "vermeer-locator", "takeuchi-locator", "manitou-locator"],
   },
   {
     id: "rental",
@@ -565,14 +687,14 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "Rental houses move machines every week. Capture the branch, not the 1-800 number.",
     talkTo: "Branch manager or dispatch.",
-    laneIds: ["maps-rental", "sunbelt", "united-rentals", "herc", "he-rental"],
+    laneIds: ["maps-rental", "sunbelt", "united-rentals", "herc", "he-rental", "ahern", "sunstate", "penske"],
   },
   {
     id: "listings",
     title: "Live inventory",
     rank: "Best",
-    why: "A listing is proof something might move. Prefer a dealer name and a phone over a private seller.",
-    talkTo: "The number on the ad. If it is a dealer, treat it as a yard relationship, not a one-load bid.",
+    why: "A listing is proof something might move. Dealers first for recurring freight. Private sellers with a published phone are quieter — they are not getting 40 dealer-style calls.",
+    talkTo: "The number on the ad. If it is a dealer, treat it as a yard. If it is a person, ask who books the truck and whether they have more iron.",
     laneIds: ["machinery-trader", "equipment-trader", "tractorhouse", "fastline", "rock-dirt", "machinio"],
   },
   {
@@ -581,7 +703,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     rank: "Best",
     why: "Dump, box, and wrecker lots. Run the unit through Intel before you name a deck.",
     talkTo: "The dealer phone on the listing.",
-    laneIds: ["truck-paper", "commercial-truck"],
+    laneIds: ["truck-paper", "commercial-truck", "kenworth-locator", "peterbilt-locator"],
   },
   {
     id: "auctions",
@@ -595,7 +717,7 @@ export const HUNT_PLAYS: HuntPlay[] = [
     id: "people",
     title: "People at those yards",
     rank: "Strong",
-    why: "The ad is the excuse. The relationship is the job. LinkedIn is public search you run while logged in as you.",
+    why: "The ad is the excuse. The relationship is the job. LinkedIn people search — yard manager, dispatcher, parts, equipment sales — from your own login.",
     talkTo: "Operations, yard, dispatch. Short note. You send it from your profile.",
     laneIds: ["linkedin-yards", "linkedin-people", "importyeti"],
   },
@@ -603,9 +725,17 @@ export const HUNT_PLAYS: HuntPlay[] = [
     id: "volume",
     title: "Volume ads",
     rank: "Volume",
-    why: "Marketplace and Craigslist are noisy. Use them for commercial iron only. Most are one-shots.",
+    why: "Marketplace, OfferUp, Craigslist. Noisy. Commercial iron only. Use them for people selling their own unit, not to replace the dealer book.",
     talkTo: "The seller on the ad, from your real account. No bots.",
-    laneIds: ["facebook", "craigslist"],
+    laneIds: ["facebook", "offerup", "craigslist", "ebay-motors"],
+  },
+  {
+    id: "sellers",
+    title: "Private sellers",
+    rank: "Volume",
+    why: "A person selling their own forklift is not on every broker’s Monday list. Open Marketplace / OfferUp / CL yourself. Paste only ads with a published phone or city. One-shot, then ask if they have more.",
+    talkTo: "The seller on the ad. You send it. Do not invent a number.",
+    laneIds: ["facebook", "offerup", "craigslist", "ebay-motors", "machinery-trader"],
   },
   {
     id: "spot",
@@ -669,6 +799,28 @@ export function huntSearchUrl(laneId: string, keywords = "forklift", location = 
       return "https://www.volvoce.com/united-states/en-us/contact-us/dealer-locator/us/";
     case "jlg-locator":
       return "https://www.jlg.com/en/find-a-location";
+    case "yale-locator":
+      return "https://www.yale.com/en-us/find-a-dealer";
+    case "crown-locator":
+      return "https://www.crown.com/en-us/about-crown/dealer-locator.html";
+    case "genie-locator":
+      return "https://www.genielift.com/en/where-to-buy";
+    case "vermeer-locator":
+      return "https://www.vermeer.com/na/dealer-locator";
+    case "takeuchi-locator":
+      return "https://www.takeuchi-us.com/find-a-dealer";
+    case "manitou-locator":
+      return "https://www.manitou.com/en-US/find-a-dealer";
+    case "ahern":
+      return "https://www.ahern.com/locations";
+    case "sunstate":
+      return "https://www.sunstateequip.com/locations";
+    case "penske":
+      return "https://www.pensketruckrental.com/locations/";
+    case "kenworth-locator":
+      return "https://www.kenworth.com/find-a-dealer/";
+    case "peterbilt-locator":
+      return "https://www.peterbilt.com/find-a-dealer";
     case "sunbelt":
       return "https://www.sunbeltrentals.com/locations/";
     case "united-rentals":
@@ -730,11 +882,15 @@ export function huntSearchUrl(laneId: string, keywords = "forklift", location = 
     case "linkedin-yards":
       return `https://www.linkedin.com/search/results/companies/?keywords=${q(`${query} dealer ${place}`)}`;
     case "linkedin-people":
-      return `https://www.linkedin.com/search/results/people/?keywords=${q(`yard manager OR operations ${query} dealer ${place}`)}`;
+      return `https://www.linkedin.com/search/results/people/?keywords=${q(`yard manager OR dispatcher OR "parts manager" OR "equipment sales" ${query} ${place}`)}`;
     case "importyeti":
       return "https://www.importyeti.com/";
     case "facebook":
       return `https://www.facebook.com/marketplace/search/?query=${q(query)}`;
+    case "offerup":
+      return `https://offerup.com/search?q=${q(`${query} ${place}`)}`;
+    case "ebay-motors":
+      return `https://www.ebay.com/sch/i.html?_nkw=${q(`${query} ${place}`)}&_sacat=6000`;
     case "craigslist":
       return `https://${clSubdomain(place)}.craigslist.org/search/hvy?query=${q(query)}`;
     case "uship":
@@ -815,7 +971,7 @@ export const HUNT_MARKETS = [
 
 export const HUNT_UNITS = ["forklift", "skid steer", "mini excavator", "telehandler", "scissor lift", "boom lift", "dump truck", "backhoe", "wheel loader"];
 
-const QUEUE_PLAY_IDS = ["yards", "jobsites", "oem", "rental", "listings", "surplus", "auctions", "trucks"] as const;
+const QUEUE_PLAY_IDS = ["yards", "jobsites", "oem", "rental", "listings", "sellers", "surplus", "auctions", "trucks", "people"] as const;
 
 export const CAPTURE_TARGET = 5;
 
@@ -880,6 +1036,8 @@ export function captureBookmarklet(origin = "http://localhost:6793", token = "")
 export function sourceFromLane(laneId: string) {
   if (laneId === "facebook") return "Facebook Marketplace";
   if (laneId === "craigslist") return "Craigslist";
+  if (laneId === "offerup") return "OfferUp";
+  if (laneId === "ebay-motors") return "eBay";
   if (laneId === "mt-dealers" || laneId === "machinery-trader") return "Machinery Trader";
   if (laneId === "equipment-trader") return "Equipment Trader";
   if (laneId === "tractorhouse" || laneId === "fastline") return "TractorHouse";
@@ -888,9 +1046,10 @@ export function sourceFromLane(laneId: string) {
 }
 
 export const HUNT_STEPS = [
-  `Open one public search. ${PRODUCT_NAME} does not scrape it.`,
-  "Copy the dealer or listing (or click the bookmarklet on that page).",
-  "Paste it. Name, published phone, and city only if they were on the page.",
+  "Pick one metro. Stay there until the list is called.",
+  `Open one public search yourself. ${PRODUCT_NAME} does not scrape Marketplace, Craigslist, DAT, or Maps.`,
+  "Copy the dealer, person, or listing (or click the bookmarklet on that page).",
+  "Paste it. Label how you found them: dealer yard vs private seller. Phone and city only if they were on the page.",
 ];
 
 export const HUNT_RULES = [
@@ -900,7 +1059,7 @@ export const HUNT_RULES = [
 ];
 
 export const HUNT_CONNECTIONS = [
-  { name: "APIs", value: "None", detail: `Do not buy a Facebook, DAT, or Maps API. ${PRODUCT_NAME} does not call those. Open is a normal tab.` },
+  { name: "APIs", value: "Overpass", detail: "Customer finder uses OpenStreetMap Overpass — free, no key. Phones only if OSM tagged them. Not Facebook, DAT, or Maps scrape." },
   { name: "Start today", value: "Browser", detail: "Google, Machinery Trader, OEM locators, auction catalogs. No login required to look." },
   { name: "Your logins", value: "Optional", detail: "Facebook and LinkedIn if you hunt there. DAT/Truckstop only for empty miles, on their sites." },
   { name: "Ollama", value: "Optional", detail: "Local scoring when you paste. The desk works without it." },

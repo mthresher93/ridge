@@ -21,7 +21,7 @@ export function runStudio(id: StudioToolId, workspace: Workspace, lead: Lead | n
   const first = lead?.name.split(" ")[0] || "this household";
 
   if (id === "talk") {
-    const beats = scriptFor(lead, design);
+    const beats = scriptFor(lead);
     return {
       title: `Talk track · ${lead?.name || "no lead"}`,
       body: beats.map((beat) => `${beat.label.toUpperCase()}\n${beat.say}\nCue: ${beat.cue}`).join("\n\n"),

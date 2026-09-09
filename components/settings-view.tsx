@@ -5,10 +5,11 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { settingsWithDefaults, type Accent, type Density, type ScriptModeSetting, type Settings } from "@/lib/types";
 import { MESSAGE_HARD_WARN, MESSAGE_SOFT_CAP } from "@/lib/pacing";
 
-type SettingsTab = "account" | "dialer" | "display" | "workspace" | "ai";
+type SettingsTab = "account" | "dialer" | "display" | "workspace" | "ai" | "connect";
 
 const TABS: { id: SettingsTab; label: string }[] = [
   { id: "account", label: "Account" },
+  { id: "connect", label: "Connect" },
   { id: "ai", label: "AI" },
   { id: "dialer", label: "Calling" },
   { id: "display", label: "Display" },
@@ -36,6 +37,8 @@ export function SettingsView() {
   const [backupMsg, setBackupMsg] = useState("");
   const [aiStatus, setAiStatus] = useState<{ ready?: boolean; provider?: string; ollama?: { detail?: string }; openrouter?: { detail?: string }; pull?: string; bookmarklet?: string } | null>(null);
   const [aiMsg, setAiMsg] = useState("");
+  const [connectMsg, setConnectMsg] = useState("");
+  const [connectBusy, setConnectBusy] = useState("");
 
   useEffect(() => {
     setDraft(settingsWithDefaults(workspace.settings));
@@ -64,7 +67,7 @@ export function SettingsView() {
       .then((json: { liveReady?: boolean; detail?: string }) =>
         setPhoneLink({
           ok: !!json.liveReady,
-          detail: (json.detail || "Phone is not connected.").replace(/\bCurrent\b/g, "Move'").replace(/\bazimuth\b/gi, "this workspace"),
+          detail: (json.detail || "Phone is not connected.").replace(/\bCurrent\b/g, "Haul").replace(/\bazimuth\b/gi, "this workspace"),
         }),
       )
       .catch(() => setPhoneLink({ ok: false, detail: "Could not check phone connection." }));
@@ -142,7 +145,7 @@ export function SettingsView() {
               <input className="az-input" value={draft.defaultOwner} onChange={(e) => set("defaultOwner", e.target.value)} />
             </Row>
             <p className="st-fine">
-              Move' is a desk, not a bot. You hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough — no custom domain. Trailer matching uses training caps, not a carrier quote.
+              Haul is a desk, not a bot. You hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough — no custom domain. Trailer matching uses training caps, not a carrier quote.
             </p>
             <Row label="Session" hint="Sign out of this browser when a workspace password is set.">
               <button
@@ -156,6 +159,113 @@ export function SettingsView() {
                 Sign out
               </button>
             </Row>
+          </section>
+        ) : null}
+
+        {tab === "connect" ? (
+          <section className="st-list">
+            <p className="st-fine">
+              Point Haul at a free JSON API on the company site you join — locations, customers, or loads. GET only. If they only have a website, keep using Discover paste. DAT and scraping stay off.
+            </p>
+            <Row label="JSON endpoint" hint="Full URL from their docs. Example: https://their-desk.com/api/locations">
+              <input
+                className="az-input"
+                value={draft.companyApiUrl}
+                onChange={(event) => set("companyApiUrl", event.target.value)}
+                placeholder="https://example.com/api/locations"
+              />
+            </Row>
+            <Row label="Auth" hint="Most public APIs need none. Use a key only if they issued you a free token.">
+              <select className="az-select" value={draft.companyApiAuth} onChange={(event) => set("companyApiAuth", event.target.value as Draft["companyApiAuth"])}>
+                <option value="none">None (public JSON)</option>
+                <option value="bearer">Bearer token</option>
+                <option value="query">Query api_key</option>
+              </select>
+            </Row>
+            <Row label="Key" hint="Stays in this workspace on this computer. Do not paste a paid DAT or Truckstop key.">
+              <input
+                className="az-input"
+                type="password"
+                autoComplete="off"
+                value={draft.companyApiKey}
+                onChange={(event) => set("companyApiKey", event.target.value)}
+                placeholder={draft.companyApiAuth === "none" ? "Leave blank" : "Token they gave you"}
+              />
+            </Row>
+            <Row label="Test" hint="Reads JSON. Does not save clients until you pull.">
+              <button
+                type="button"
+                className="az-btn"
+                disabled={!draft.companyApiUrl.trim() || Boolean(connectBusy)}
+                onClick={async () => {
+                  setConnectBusy("probe");
+                  setConnectMsg("");
+                  try {
+                    const res = await fetch("/api/connect", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "probe",
+                        url: draft.companyApiUrl,
+                        auth: draft.companyApiAuth,
+                        key: draft.companyApiKey,
+                      }),
+                    });
+                    const json = (await res.json()) as { ok?: boolean; error?: string; usable?: number; records?: number; sampleName?: string };
+                    setConnectMsg(
+                      json.ok
+                        ? `JSON ok · ${json.usable || 0} usable of ${json.records || 0}${json.sampleName ? ` · e.g. ${json.sampleName}` : ""}`
+                        : json.error || "Could not read that URL.",
+                    );
+                  } catch {
+                    setConnectMsg("Could not reach Haul.");
+                  }
+                  setConnectBusy("");
+                }}
+              >
+                {connectBusy === "probe" ? "Testing…" : "Test connection"}
+              </button>
+            </Row>
+            <Row label="Pull into book" hint="Same merge rules as paste: published phone merges, no invented numbers. Max 40 rows.">
+              <button
+                type="button"
+                className="az-btn pri"
+                disabled={!draft.companyApiUrl.trim() || Boolean(connectBusy)}
+                onClick={async () => {
+                  if (dirty) save();
+                  setConnectBusy("pull");
+                  setConnectMsg("");
+                  try {
+                    const res = await fetch("/api/connect", {
+                      method: "POST",
+                      headers: { "Content-Type": "application/json" },
+                      body: JSON.stringify({
+                        action: "pull",
+                        url: draft.companyApiUrl,
+                        auth: draft.companyApiAuth,
+                        key: draft.companyApiKey,
+                      }),
+                    });
+                    const json = (await res.json()) as { ok?: boolean; error?: string; created?: number; merged?: number };
+                    if (json.ok) {
+                      await reload();
+                      setConnectMsg(`Pulled · ${json.created || 0} new · ${json.merged || 0} merged`);
+                    } else {
+                      setConnectMsg(json.error || "Pull failed.");
+                    }
+                  } catch {
+                    setConnectMsg("Could not pull.");
+                  }
+                  setConnectBusy("");
+                }}
+              >
+                {connectBusy === "pull" ? "Pulling…" : "Pull into Clients"}
+              </button>
+            </Row>
+            {connectMsg ? <p className="rec-import-msg">{connectMsg}</p> : null}
+            <p className="st-fine">
+              Inbound is also free: their site can POST JSON to /api/prospects/capture with sellerName, phone (only if published), city, and url. Optional header x-capture-token if you set CAPTURE_TOKEN.
+            </p>
           </section>
         ) : null}
 
@@ -202,7 +312,7 @@ export function SettingsView() {
             </Row>
             {aiMsg ? <p className="rec-import-msg">{aiMsg}</p> : null}
             <p className="st-fine">
-              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Move' never logs into Facebook for you. Trailer picks still run from the Intel math if Ollama is down.
+              Defaults to qwen3-coder:30b on this machine. Override with OLLAMA_MODEL in .env. Optional: OPENROUTER_API_KEY for a cloud fallback. Haul never logs into Facebook for you. Trailer picks still run from the Intel math if Ollama is down.
             </p>
           </section>
         ) : null}

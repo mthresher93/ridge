@@ -1,3 +1,4 @@
+import { PRODUCT_NAME } from "./brand";
 import { outreachQueue } from "./freight";
 import { HUNT_PLAYS, huntLane, huntSearchUrl, type HuntPlay } from "./hunt";
 import { callableUncontacted, densestHuntPlace } from "./metro";
@@ -26,11 +27,11 @@ export type DeskMove = {
 const ROTATION: { playId: string; query: string; place: string; why: string; doThis: string }[] = [
   { playId: "people", query: "forklift dealer", place: "Dallas TX", why: "Sunday is for names, not ads. Find who books outbound at a yard you already know exists.", doThis: "Open LinkedIn people search from your login. Short note. You send it." },
   { playId: "yards", query: "forklift", place: "Dallas TX", why: "Monday: dealers and rental houses in the metros already on this book. That is the book, not Marketplace.", doThis: "Open the dealer directory and Maps. Capture yards with a published phone." },
-  { playId: "listings", query: "skid steer", place: "Houston TX", why: "Tuesday: live inventory in a Texas metro you can actually call. A listing is proof something might move.", doThis: "Prefer a dealer name and a phone over a private seller." },
+  { playId: "listings", query: "skid steer", place: "Houston TX", why: "Tuesday: live inventory. Dealer lots for recurring freight. Private ads with a published phone for people who are not on every broker’s list.", doThis: "Prefer a dealer for the book. Capture a private seller if the phone was on the ad." },
   { playId: "auctions", query: "mini excavator", place: "Dallas TX", why: "Wednesday: auction clock. After the hammer they have a removal deadline.", doThis: "Open Ritchie / Copart / IAA. Note lot number and pickup city." },
   { playId: "oem", query: "telehandler", place: "Fort Worth TX", why: "Thursday: OEM locators. Cat, Toyota, Bobcat, Deere already ship to customers.", doThis: "Open a locator, grab the local store phone, ask who books deliveries." },
   { playId: "rental", query: "scissor lift", place: "Houston TX", why: "Friday: rental chains. They move iron every week by design.", doThis: "Open Sunbelt / United / Maps rental. Capture the branch, not HQ." },
-  { playId: "trucks", query: "dump truck", place: "Houston TX", why: "Saturday: commercial trucks. Dump and box units need a real deck guess before you talk.", doThis: "Open TruckPaper / Commercial Truck Trader. Run specs through Intel before you quote." },
+  { playId: "sellers", query: "forklift for sale", place: "Dallas TX", why: "Saturday: people selling their own unit. Open Marketplace / OfferUp yourself. Paste only what was published.", doThis: "Stay in one metro. Label Private seller. Do not invent a number." },
 ];
 
 export function todayHunt(now = new Date(), workspace?: Workspace): DayHunt {
@@ -108,7 +109,7 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
       moves.push({
         kicker: "Before you quote",
         title: "Check the deck in Intel",
-        why: "Enter L × W × H and pounds. If hotshot fails, you will see why.",
+        why: "Type L × W × H and pounds, then Save specs onto that yard so Work and Shipments keep them.",
         href: "/playbook",
         cta: "Open Intel",
       });
@@ -128,7 +129,7 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
     moves.push({
       kicker: "Before you quote",
       title: "Check the deck in Intel",
-      why: "Enter L × W × H and pounds. If hotshot fails, you will see why.",
+        why: "Type L × W × H and pounds, then Save specs onto that yard so Work and Shipments keep them.",
       href: "/playbook",
       cta: "Open Intel",
     });
@@ -149,7 +150,7 @@ export const START_CONNECTIONS = [
   {
     name: "No API to buy",
     need: "None",
-    detail: "Move' does not connect to Facebook, DAT, Machinery Trader, or Maps as an integration. Open is a normal browser tab. That is enough to start today.",
+    detail: `${PRODUCT_NAME} does not connect to Facebook, DAT, Machinery Trader, or Maps as an integration. Open is a normal browser tab. That is enough to start today.`,
   },
   {
     name: "This computer",
@@ -164,12 +165,17 @@ export const START_CONNECTIONS = [
   {
     name: "LinkedIn",
     need: "Your login",
-    detail: "For people at yards. You run the search. Move' does not log in.",
+    detail: `For people at yards. You run the search. ${PRODUCT_NAME} does not log in.`,
   },
   {
     name: "Ollama",
     need: "Optional",
     detail: "Local scoring when you paste. Rules still work if it is off. qwen3-coder:30b if you want it.",
+  },
+  {
+    name: "Company website API",
+    need: "Optional, free",
+    detail: "If the desk you join publishes JSON (locations, customers, loads), paste that URL in Settings → Connect. Haul reads JSON. It does not scrape their HTML.",
   },
   {
     name: "DAT / Truckstop",

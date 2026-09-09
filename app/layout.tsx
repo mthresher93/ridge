@@ -32,10 +32,11 @@ export const metadata: Metadata = {
   title: PRODUCT_NAME,
   description: "Freight prospecting operating system",
   icons: {
-    icon: "/move.svg",
-    apple: "/move.svg",
+    icon: [{ url: "/haul.svg", type: "image/svg+xml" }],
+    apple: "/haul.svg",
+    shortcut: "/haul.svg",
   },
-  appleWebApp: { title: PRODUCT_NAME, capable: true, statusBarStyle: "black-translucent" },
+  appleWebApp: { title: PRODUCT_NAME, capable: true, statusBarStyle: "default" },
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {

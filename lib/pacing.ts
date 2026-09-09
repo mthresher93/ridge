@@ -18,7 +18,7 @@ export function pacingNote(sentToday: number) {
   if (sentToday >= MESSAGE_SOFT_CAP) {
     return {
       level: "caution" as const,
-      text: `${sentToday} sent today (soft cap ${MESSAGE_SOFT_CAP}). Slow down. Use a different variant. You send it — Move' does not.`,
+      text: `${sentToday} sent today (soft cap ${MESSAGE_SOFT_CAP}). Slow down. Use a different variant. You send it — Haul does not.`,
     };
   }
   return {

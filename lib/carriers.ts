@@ -1,5 +1,6 @@
 import { normalizePhone, nowIso, uid } from "./format";
-import type { Carrier, Workspace } from "./types";
+import { defaultVetting, normalizeCarrier } from "./ops";
+import type { Carrier, Shipment, Workspace } from "./types";
 
 const TOLL = /^(800|888|877|866|855|844|833)$/;
 
@@ -55,7 +56,7 @@ export function ingestCarrier(workspace: Workspace, payload: ReturnType<typeof e
   });
   const carrier: Carrier = existing
     ? {
-        ...existing,
+        ...normalizeCarrier(existing),
         name: payload.name || existing.name,
         mc: mc || existing.mc,
         dot: payload.dot || existing.dot,
@@ -78,6 +79,9 @@ export function ingestCarrier(workspace: Workspace, payload: ReturnType<typeof e
         sourceUrl: payload.sourceUrl,
         notes: payload.notes,
         createdAt: stamp,
+        preferred: false,
+        blocked: false,
+        vetting: defaultVetting(),
       };
   const carriers = existing
     ? (workspace.carriers || []).map((item) => (item.id === carrier.id ? carrier : item))
@@ -86,5 +90,20 @@ export function ingestCarrier(workspace: Workspace, payload: ReturnType<typeof e
     workspace: { ...workspace, carriers, updatedAt: stamp },
     carrier,
     duplicate: Boolean(existing),
+  };
+}
+
+export function carrierLabel(carrier: Carrier) {
+  return [carrier.name, carrier.mc && `MC ${carrier.mc}`, carrier.dot && `DOT ${carrier.dot}`, carrier.phone].filter(Boolean).join(" · ");
+}
+
+export function attachCarrierToShipment(shipment: Shipment, carrier: Carrier): Shipment {
+  const covered =
+    shipment.status === "Carrier Needed" || shipment.status === "Quote" ? ("Carrier Booked" as const) : shipment.status;
+  return {
+    ...shipment,
+    carrierId: carrier.id,
+    carrier: carrier.name,
+    status: shipment.status === "Quote" ? shipment.status : covered,
   };
 }

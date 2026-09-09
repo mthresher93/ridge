@@ -1,10 +1,14 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { PLAYBOOK, searchPlaybook, type PlaybookBlock } from "@/lib/playbook";
-import { CALL_ASK, cheaperFails, deckGates, UNIT_PRESETS, applySpecsToLead, parseDimensions, recommendEquipment, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+import { CALL_ASK, cheaperFails, deckGates, UNIT_PRESETS, applySpecsToLead, parseDimensions, recommendEquipment, specsFromLead, trailerCap, trailerName, type EquipmentFit, type UnitPreset } from "@/lib/equipment";
+import { combineUnits, loadedHeight } from "@/lib/freight-math";
+import { classifyWhy } from "@/lib/load-class";
 import { useWorkspace } from "@/lib/workspace-context";
+import { useRouter } from "next/navigation";
 import { nowIso } from "@/lib/format";
+import { upsertBlankQuote } from "@/lib/freight";
 
 const NAV_GROUPS = [
   { label: "Decide", ids: ["pick", "trailers", "loads", "units"] },
@@ -23,6 +27,7 @@ function fmt(n: number | null, suffix: string) {
 }
 
 export function PlaybookView() {
+  const router = useRouter();
   const { workspace, setWorkspace, selectedLeadId, setSelectedLeadId, log } = useWorkspace();
   const [query, setQuery] = useState("");
   const [topic, setTopic] = useState("pick");
@@ -39,10 +44,31 @@ export function PlaybookView() {
   const liveClients = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
   const targetId = selectedLeadId && liveClients.some((lead) => lead.id === selectedLeadId) ? selectedLeadId : "";
 
+  useEffect(() => {
+    const person = workspace.leads.find((lead) => lead.id === targetId);
+    if (!person) {
+      setSaveMsg("");
+      return;
+    }
+    const specs = specsFromLead(person);
+    setUnit(person.equipmentType || "");
+    setLength(specs.lengthFt != null ? String(specs.lengthFt) : "");
+    setWidth(specs.widthFt != null ? String(specs.widthFt) : "");
+    setHeight(specs.heightFt != null ? String(specs.heightFt) : "");
+    setWeight(specs.weightLbs != null ? String(specs.weightLbs) : "");
+    setPaste("");
+    setFromTraining(false);
+    setSaveMsg(person.dimensions || person.weight ? `On file: ${person.dimensions || "—"} · ${person.weight ? `${person.weight} lb` : "no weight"}` : "");
+  }, [targetId]);
+
   function saveSpecs() {
     const person = workspace.leads.find((lead) => lead.id === targetId);
     if (!person) {
       setSaveMsg("Pick the yard these numbers belong to.");
+      return;
+    }
+    if (fromTraining) {
+      setSaveMsg("Training example. Type the live numbers they told you.");
       return;
     }
     const result = applySpecsToLead(person, {
@@ -62,7 +88,7 @@ export function PlaybookView() {
       leads: prev.leads.map((item) => (item.id === person.id ? result.lead : item)),
       updatedAt: stamp,
     }));
-    log("lead", person.id, "specs_saved", result.lead.dimensions);
+    log("lead", person.id, "specs_saved", result.lead.dimensions || "");
     setSaveMsg(`Saved on ${person.name}. ${result.lead.trailerHint}`);
   }
 
@@ -245,13 +271,34 @@ export function PlaybookView() {
                     ))}
                   </select>
                 </label>
-                <button className="az-btn pri sm" type="button" onClick={saveSpecs} disabled={!targetId}>
+                <button className="az-btn pri sm" type="button" onClick={saveSpecs} disabled={!targetId || fromTraining}>
                   Save specs
+                </button>
+                <button
+                  className="az-btn sm"
+                  type="button"
+                  disabled={!targetId}
+                  onClick={() => {
+                    const person = workspace.leads.find((lead) => lead.id === targetId);
+                    if (!person) {
+                      setSaveMsg("Pick the yard these numbers belong to.");
+                      return;
+                    }
+                    const result = upsertBlankQuote(workspace, person);
+                    setWorkspace(result.workspace);
+                    log("shipment", result.shipment.id, result.created ? "created" : "updated", `Quote from Intel · ${person.name}`);
+                    router.push(`/shipments?id=${result.shipment.id}`);
+                  }}
+                >
+                  Use in quote
                 </button>
                 {saveMsg ? <p className="cd-mono">{saveMsg}</p> : null}
               </div>
               {hasInput ? (
-                <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
+                <>
+                  <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
+                  <IntelMath fit={fit} length={num(length)} width={num(width)} height={num(height)} weight={num(weight)} />
+                </>
               ) : (
                 <p className="intel-why">Nothing to match yet. Type what they told you, or paste L × W × H.</p>
               )}
@@ -420,6 +467,42 @@ function PlaybookBlockView({ block }: { block: PlaybookBlock }) {
           ))}
         </tbody>
       </table>
+    </div>
+  );
+}
+
+function IntelMath({
+  fit,
+  length,
+  width,
+  height,
+  weight,
+}: {
+  fit: EquipmentFit;
+  length: number | null;
+  width: number | null;
+  height: number | null;
+  weight: number | null;
+}) {
+  const family = fit.trailer === "HS" || fit.trailer === "TILT" ? "hotshot" : "53";
+  const klass = classifyWhy(length, weight, family);
+  const spec = trailerCap(fit.trailer);
+  const heightCheck = height != null && spec?.deckGcFt != null ? loadedHeight(spec.deckGcFt, height) : null;
+  const unit =
+    length != null && width != null && height != null && weight != null
+      ? { lengthFt: length, widthFt: width, heightFt: height, weightLbs: weight }
+      : null;
+  const combined = unit ? combineUnits([unit, unit], "end-to-end") : null;
+  return (
+    <div className="intel-math">
+      <p className="cd-mono">{klass.why}</p>
+      {heightCheck ? <p className="cd-mono">{heightCheck.note}</p> : null}
+      {combined ? (
+        <p className="cd-mono">
+          Two of these end-to-end: {combined.lengthFt}' × {combined.widthFt}' × {combined.heightFt}' · {combined.weightLbs.toLocaleString()} lb
+          {combined.warnings[0] ? ` · ${combined.warnings[0]}` : ""}
+        </p>
+      ) : null}
     </div>
   );
 }

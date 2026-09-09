@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeFreightOpportunity, captureFacts, detectShipperRole, extractListingData, generateOpeningMessage, hasMeasuredSpecs, ingestCapture, suggestClientKind, trailerFact } from "./freight";
+import { analyzeFreightOpportunity, blankLoadFromLead, blankProspect, captureFacts, detectShipperRole, extractListingData, generateOpeningMessage, hasMeasuredSpecs, ingestCapture, suggestClientKind, trailerFact, upsertBlankQuote } from "./freight";
 import { emptyWorkspace } from "./seed";
 
 function score(text: string, extra: Record<string, string> = {}) {
@@ -40,13 +40,13 @@ describe("ingestCapture", () => {
     const first = ingestCapture(emptyWorkspace(), {
       title: "Toyota forklift",
       sellerName: "John’s Equipment",
-      phone: "312-555-0140",
+      phone: "214-351-4511",
       location: "Chicago, IL",
     });
     const second = ingestCapture(first.workspace, {
       title: "Bobcat skid steer",
       sellerName: "Johns Equipment LLC",
-      phone: "(312) 555-0140",
+      phone: "(214) 351-4511",
       location: "Chicago, IL",
     });
     expect(second.duplicate).toBe(true);
@@ -109,7 +109,7 @@ describe("ingestCapture", () => {
     const result = ingestCapture(emptyWorkspace(), {
       title: "Toyota forklift",
       sellerName: "Westside Machinery",
-      phone: "214-555-0100",
+      phone: "214-351-4511",
       price: "18900",
       location: "Dallas, TX",
     });
@@ -122,7 +122,7 @@ describe("ingestCapture", () => {
       description: `Toyota 8FGU25 forklift 5,000 lb
 Westside Machinery LLC
 Dallas, TX
-Call (214) 555-0100
+Call (214) 351-4511
 26 x 8.5 x 10
 Asking $18,900
 Can load on a trailer`,
@@ -185,6 +185,14 @@ describe("extractListingData", () => {
     expect(captureFacts(extracted).some((item) => item.k === "Phone")).toBe(false);
   });
 
+  it("does not keep a 555 placeholder as a published phone", () => {
+    const extracted = extractListingData({
+      description: "Westside Machinery LLC Dallas, TX Call (214) 555-0100",
+      phone: "214-555-0100",
+    });
+    expect(extracted.phone).toBe("");
+  });
+
   it("reads a Maps dealer card without inventing a phone", () => {
     const extracted = extractListingData({
       pageText: `Hill Country Lift
@@ -194,7 +202,7 @@ Forklift dealer
 4411 S Congress Ave
 Austin, TX 78745
 United States
-(512) 555-0199
+(512) 251-3415
 hillcountrylift.com
 Directions
 Website`,
@@ -224,5 +232,40 @@ describe("trailerFact", () => {
     expect(hasMeasuredSpecs({ dimensions: "", weight: "" })).toBe(false);
     expect(trailerFact({ dimensions: "", weight: "", trailerHint: "Hot Shot · Partial" })).toBe("Ask on the call");
     expect(trailerFact({ dimensions: "12 x 6 x 8", weight: "9000", trailerHint: "Hot Shot · Partial" })).toBe("Hot Shot · Partial");
+  });
+});
+
+describe("blankLoadFromLead", () => {
+  it("starts rates at 0 and never copies listing ask", () => {
+    const lead = blankProspect("Michael", {
+      name: "Toyota Lift of Houston (Doggett)",
+      askingPrice: 18900,
+      estimatedValue: 1512,
+      dimensions: "26 x 8.5 x 10",
+      weight: "18000",
+      trailerHint: "Hot Shot · TL",
+      city: "Houston",
+      state: "TX",
+    });
+    const sheet = blankLoadFromLead(lead);
+    expect(sheet.customerRate).toBe(0);
+    expect(sheet.carrierRate).toBe(0);
+    expect(sheet.dimensions).toBe("26 x 8.5 x 10");
+    expect(sheet.weight).toBe("18000");
+    expect(sheet.equipmentType).toBe("Hot Shot · TL");
+    expect(sheet.origin).toBe("Houston, TX");
+    expect(sheet.cargoUnits).toHaveLength(1);
+    expect(sheet.cargoUnits?.[0]?.lengthFt).toBe(26);
+  });
+
+  it("reuses one open Quote instead of stacking duplicates", () => {
+    const lead = blankProspect("Michael", { name: "Yard", city: "Dallas", state: "TX" });
+    const seeded = { ...emptyWorkspace(), leads: [lead] };
+    const first = upsertBlankQuote(seeded, lead);
+    const second = upsertBlankQuote(first.workspace, { ...lead, destination: "Austin" }, { destination: "Austin" });
+    expect(second.created).toBe(false);
+    expect(second.workspace.shipments).toHaveLength(1);
+    expect(second.shipment.destination).toBe("Austin");
+    expect(second.shipment.customerRate).toBe(0);
   });
 });

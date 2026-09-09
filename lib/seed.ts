@@ -1,5 +1,6 @@
 import type { Appointment, Callback, Company, FreightAnalysis, Lead, Listing, Opportunity, Quote, SavedSearch, Shipment, Workspace } from "./types";
 import { blankProspect } from "./freight";
+import { normalizeCarrier, normalizeShipment } from "./ops";
 import { mapLegacyStage } from "./stages";
 
 function offset(days: number, hour = 10) {
@@ -820,9 +821,17 @@ export function createSeed(): Workspace {
   };
 }
 
+function inventedContact(lead: Lead) {
+  const digits = String(lead.phone || "").replace(/\D/g, "");
+  const ten = digits.length === 11 && digits.startsWith("1") ? digits.slice(1) : digits;
+  if (ten.length === 10 && ten.slice(3, 6) === "555") return true;
+  const hay = [lead.listingUrl, lead.website, lead.sellerUrl, lead.email].join(" ");
+  return /example\.com|\.example\b/i.test(hay);
+}
+
 function normalizeLead(item: Lead): Lead {
   const status = mapLegacyStage(item.status);
-  return blankProspect(item.owner || "Michael", {
+  const next = blankProspect(item.owner || "Michael", {
     ...item,
     status,
     company: item.company || item.property,
@@ -833,6 +842,13 @@ function normalizeLead(item: Lead): Lead {
     recurringPotential: item.recurringPotential || "Low",
     scoreConfidence: item.scoreConfidence || "LOW",
   });
+  if (!inventedContact(next) || next.archivedAt) return next;
+  return {
+    ...next,
+    archivedAt: new Date().toISOString(),
+    nextAction: "Archived — 555 and example.com are not real contacts.",
+    phone: "",
+  };
 }
 
 export function normalizeWorkspace(workspace: Workspace): Workspace {
@@ -841,8 +857,8 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
     listings: workspace.listings || [],
     companies: workspace.companies || [],
     quotes: workspace.quotes || [],
-    shipments: workspace.shipments || [],
-    carriers: workspace.carriers || [],
+    shipments: (workspace.shipments || []).map(normalizeShipment),
+    carriers: (workspace.carriers || []).map(normalizeCarrier),
     savedSearches: workspace.savedSearches || [],
     analyses: workspace.analyses || [],
   };

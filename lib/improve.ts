@@ -14,7 +14,7 @@ export const NO_SPEND = [
   {
     n: "2",
     title: "If nobody picks up, copy the opener and send it",
-    detail: "LinkedIn or the listing from your real profile. Move' does not send. Soft cap about 25 a day.",
+    detail: "LinkedIn or the listing from your real profile. Haul does not send. Soft cap about 25 a day.",
   },
   {
     n: "3",
