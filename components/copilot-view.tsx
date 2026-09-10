@@ -1,0 +1,113 @@
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useWorkspace } from "@/lib/workspace-context";
+import { answerCopilot } from "@/lib/freight-copilot";
+
+const PROMPTS = [
+  "Who should I follow up with today?",
+  "Show me all high-score heavy equipment prospects who haven’t been contacted.",
+  "Which prospects look like recurring shippers?",
+  "What trailer for a sleeper cab?",
+  "What were my best lead sources this month?",
+];
+
+const EMPTY_ANSWER = {
+  answer: "Ask about clients you captured. Trailer chips are catalog drills until you type measured numbers in Intel.",
+  matches: [] as { id: string; label: string }[],
+};
+
+export function CopilotView() {
+  const router = useRouter();
+  const { workspace, loading, setSelectedLeadId } = useWorkspace();
+  const [question, setQuestion] = useState("");
+  const [answer, setAnswer] = useState(EMPTY_ANSWER);
+  const [provider, setProvider] = useState("rules");
+  const [busy, setBusy] = useState(false);
+  const [asked, setAsked] = useState(false);
+
+  async function ask(text: string) {
+    const q = text.trim();
+    if (!q) return;
+    setQuestion(q);
+    setAsked(true);
+    setBusy(true);
+    const local = answerCopilot(workspace, q);
+    setAnswer(local);
+    setProvider("rules");
+    try {
+      const res = await fetch("/api/ai/copilot", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ question: q }),
+      });
+      const json = await res.json();
+      if (res.ok && json.answer) {
+        setAnswer({ answer: json.answer, matches: json.matches || local.matches });
+        setProvider(json.provider || "rules");
+      }
+    } catch {
+      setAnswer(local);
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  if (loading) return <div className="cd-body text-[var(--tx4)]">Loading workspace…</div>;
+
+  return (
+    <div className="cd-page">
+      <header className="crm-desk-head">
+        <div>
+          <h1>AI Copilot</h1>
+          <p>
+            Answers come from this workspace. {provider === "rules" ? "Local desk logic." : `Model: ${provider}.`} No invented names, phones, or rates.
+          </p>
+        </div>
+      </header>
+      <div className="desk-body">
+        <form
+          className="follow-add"
+          onSubmit={(event) => {
+            event.preventDefault();
+            void ask(question);
+          }}
+        >
+          <input className="az-input" value={question} onChange={(event) => setQuestion(event.target.value)} placeholder="Who should I follow up with today?" />
+          <button className="az-btn pri sm" type="submit" disabled={busy}>
+            {busy ? "Asking…" : "Ask"}
+          </button>
+        </form>
+        <div className="work-tabs wrap">
+          {PROMPTS.map((item) => (
+            <button key={item} type="button" className="az-btn sm" onClick={() => void ask(item)}>
+              {item}
+            </button>
+          ))}
+        </div>
+        <section className="az-panel freight-panel" style={{ marginTop: 16, whiteSpace: "pre-wrap" }}>
+          {asked || question ? answer.answer : EMPTY_ANSWER.answer}
+        </section>
+        {answer.matches.length ? (
+          <section className="desk-list">
+            {answer.matches.map((item) => (
+              <button
+                key={item.id}
+                type="button"
+                className="work-row text-left"
+                onClick={() => {
+                  setSelectedLeadId(item.id);
+                  router.push(`/people?id=${item.id}`);
+                }}
+              >
+                <b>{item.label}</b>
+                <span className="cd-mono">Open prospect</span>
+              </button>
+            ))}
+          </section>
+        ) : null}
+      </div>
+    </div>
+  );
+}

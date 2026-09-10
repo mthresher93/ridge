@@ -1,0 +1,46 @@
+.conduit-connector-studio{display:grid;gap:14px;margin-top:16px;color:#153f51}.connector-studio-head,.connector-section{border:1px solid #9bbdc9;border-radius:14px;background:#fff;box-shadow:0 8px 22px rgba(7,45,61,.07)}.connector-studio-head{display:flex;justify-content:space-between;gap:18px;padding:18px;background:linear-gradient(135deg,#f8fcfd,#e2f1f5)}.connector-studio-head>div:first-child{max-width:780px}.connector-studio-head span,.connector-section>header span{font:800 10px var(--fm);letter-spacing:.13em;color:#0a829b}.connector-studio-head h2{margin:4px 0;font:700 23px var(--fh)}.connector-studio-head p,.connector-section>header small{color:#587683;line-height:1.5}.connector-studio-head>div:last-child{display:flex;align-items:flex-start;gap:7px}.connector-studio button,.connector-modal-form button{padding:8px 10px;border:1px solid #86aeba;border-radius:7px;background:#edf7f9;color:#17485c;font-weight:750}.connector-studio button:hover,.connector-modal-form button:hover{background:#dff2f6}.connector-studio button:disabled{opacity:.42;cursor:not-allowed}.connector-metrics{display:grid;grid-template-columns:repeat(6,minmax(130px,1fr));gap:8px}.connector-metrics article,.connector-plan-output article{display:grid;gap:3px;padding:12px;border:1px solid #a8c5cf;border-radius:11px;background:#f9fcfd}.connector-metrics span,.connector-plan-output span{font-size:10px;font-weight:800;text-transform:uppercase;color:#5b7884}.connector-metrics b,.connector-plan-output b{font:700 21px var(--fh)}.connector-metrics small,.connector-plan-output small{color:#6b838d;font-size:10px}.connector-section{overflow:hidden}.connector-section>header{display:flex;justify-content:space-between;gap:14px;align-items:center;padding:14px 16px;border-bottom:1px solid #c2d7de;background:#f5fafb}.connector-section>header h3{margin-top:3px;font:700 17px var(--fh)}.connector-grid{display:grid;grid-template-columns:repeat(5,minmax(170px,1fr));gap:9px;padding:12px;background:#edf5f7}.connector-card{display:grid;align-content:start;gap:10px;padding:13px;border:1px solid #abc5cf;border-radius:10px;background:#fff}.connector-card.ready{border-color:#78bda3}.connector-card header{display:grid;grid-template-columns:29px 1fr auto;gap:8px;align-items:center}.connector-card header>span{display:grid;place-items:center;width:29px;height:29px;border-radius:8px;background:#e7f2f5;color:#087d96;font-weight:900}.connector-card.ready header>span{background:#def3e8;color:#14805a}.connector-card header div{display:grid}.connector-card header small{color:#6d858f}.connector-card header em{font:800 8px var(--fm);letter-spacing:.1em;color:#8b6a14}.connector-card.ready header em{color:#17805b}.connector-card p{min-height:46px;color:#587480;font-size:12px;line-height:1.45}.connector-two-col{display:grid;grid-template-columns:1fr 1fr;gap:14px}.connector-planner-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:13px}.connector-planner-grid label{display:grid;gap:5px;color:#496c7b;font-size:11px;font-weight:750}.connector-plan-output{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:0 13px 13px}.connector-strategies>div{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:12px}.connector-strategies article{display:grid;grid-template-columns:1fr auto;gap:4px 8px;padding:10px;border:1px solid #b4ccd5;border-radius:9px;background:#f8fbfc}.connector-strategies article span{color:#137d72;font-weight:800}.connector-strategies article p{grid-column:1/-1;color:#657e89;font-size:11px}.connector-table{overflow:auto}.connector-table table{width:100%;min-width:920px;border-collapse:collapse}.connector-table th,.connector-table td{padding:10px;border-bottom:1px solid #d1e0e5;text-align:left;font-size:12px}.connector-table th{position:sticky;top:0;background:#eaf3f6;color:#4c6d7b;font:800 9px var(--fm);letter-spacing:.08em;text-transform:uppercase}.connector-table td strong,.connector-table td small{display:block}.connector-table td small{margin-top:2px;color:#6d858e}.connector-status{display:inline-block;padding:4px 7px;border-radius:999px;background:#eef2f3;font-size:9px;font-weight:850;text-transform:uppercase}.connector-status.quarantine{background:#fff1c9;color:#805800}.connector-status.imported{background:#dff3e9;color:#176e50}.connector-status.duplicate,.connector-status.suppressed{background:#f9e1e5;color:#942d43}.connector-boundary{display:flex;gap:8px 16px;padding:10px 14px;border-bottom:1px solid #e1c673;background:#fff8db;color:#68520e}.connector-boundary span{font-size:11px}.connector-empty{padding:28px;text-align:center;color:#6a818b}.connector-error{display:flex;align-items:center;gap:10px;padding:16px;border:1px solid #d7a4ad;border-radius:12px;background:#fff0f2}.connector-error span{flex:1}.connector-modal-form{display:grid;grid-template-columns:1fr 1fr;gap:12px;padding:18px}.connector-modal-form label{display:grid;gap:5px;color:#355c6e;font-weight:750}.connector-modal-form button{justify-self:start;background:#dff1f5}.conduit-connector-studio input,.conduit-connector-studio select,.connector-modal-form input,.connector-modal-form select{min-width:0;padding:9px;border:1px solid #9dbbc7;border-radius:7px;background:#fff;color:#143f52}
+@media(max-width:1280px){.connector-metrics{grid-template-columns:repeat(3,1fr)}.connector-grid{grid-template-columns:repeat(3,1fr)}.connector-two-col{grid-template-columns:1fr}}
+@media(max-width:760px){.connector-studio-head{display:grid}.connector-metrics{grid-template-columns:repeat(2,1fr)}.connector-grid{grid-template-columns:1fr}.connector-planner-grid,.connector-plan-output{grid-template-columns:repeat(2,1fr)}.connector-strategies>div{grid-template-columns:1fr}.connector-modal-form{grid-template-columns:1fr}.connector-boundary{display:grid}}
+@media(max-width:760px){.page[data-page="marketing-capture"] .crm-product-metrics{grid-template-columns:repeat(2,minmax(0,1fr))!important}.page[data-page="marketing-capture"] .crm-product-metric{min-width:0!important}}
+
+/* Geometrically centered section icons across every contextual sidebar. */
+body[data-crm-product="true"] .crm-product-context nav button[data-crm-route]{
+  gap:12px!important;
+  min-height:56px!important;
+  padding-block:8px!important;
+  font-weight:800!important;
+}
+body[data-crm-product="true"] .crm-product-context nav button[data-crm-route]::before{
+  content:""!important;
+  display:none!important;
+}
+body[data-crm-product="true"] .crm-product-context .crm-section-icon{
+  display:grid!important;
+  box-sizing:border-box!important;
+  place-items:center!important;
+  flex:0 0 36px!important;
+  width:36px!important;
+  height:36px!important;
+  min-width:36px!important;
+  padding:0!important;
+  border:1.5px solid rgba(48,125,151,.24)!important;
+  border-radius:10px!important;
+  background:#e8f2f6;
+  color:#567788;
+  line-height:0!important;
+  transition:background .16s ease,color .16s ease,box-shadow .16s ease;
+}
+body[data-crm-product="true"] .crm-product-context .crm-section-icon svg{
+  display:block!important;
+  width:21px!important;
+  height:21px!important;
+  margin:0!important;
+  overflow:visible;
+}
+body[data-crm-product="true"] .crm-product-context .crm-section-icon-inbox svg{width:20px!important;height:20px!important}
+body[data-crm-product="true"] .crm-product-context .crm-section-icon-dialer svg{width:17px!important;height:17px!important;stroke-width:2.15}
+body[data-crm-product="true"] .crm-product-context nav button:hover .crm-section-icon{background:#d8f3f8;color:#087c96;box-shadow:0 0 10px rgba(0,186,218,.11)}
+body[data-crm-product="true"] .crm-product-context nav button.active .crm-section-icon{background:#bfeef6;color:#05718a;box-shadow:0 0 11px rgba(0,188,218,.16)}
+body[data-crm-product="true"] .crm-product-context nav button[data-crm-route^="reports-"] .crm-section-icon{border-color:color-mix(in srgb,var(--route-accent) 34%,#bfd5de)!important;background:color-mix(in srgb,var(--route-accent) 10%,#f4fafc)!important;color:var(--route-accent)!important;box-shadow:0 3px 9px color-mix(in srgb,var(--route-accent) 11%,transparent)!important}
+body[data-crm-product="true"] .crm-product-context footer>button::before{content:""!important;display:none!important}
+body[data-crm-product="true"] .crm-product-context footer>button>span:not(.crm-section-icon){flex:1;min-width:0}

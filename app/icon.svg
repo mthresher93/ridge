@@ -1,0 +1,43 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64">
+  <rect width="64" height="64" rx="16" fill="#f4f2eb"/>
+  <g fill="#c49a32">
+    <g>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(0 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(30 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(60 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(90 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(120 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(150 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(180 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(210 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(240 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(270 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(300 32 32)"/>
+      <rect x="30.2" y="4.4" width="3.6" height="4.2" rx=".8" transform="rotate(330 32 32)"/>
+    </g>
+    <path fill-rule="evenodd" d="M32 6.2a25.8 25.8 0 1 1 0 51.6 25.8 25.8 0 0 1 0-51.6Zm0 6.6a19.2 19.2 0 1 0 0 38.4 19.2 19.2 0 0 0 0-38.4Z"/>
+  </g>
+  <circle cx="32" cy="32" r="17.2" fill="none" stroke="#c49a32" stroke-width="1.5"/>
+  <g stroke="#c49a32" stroke-width="1.3" stroke-linecap="round">
+    <path d="M32 16.6v6.6"/>
+    <path d="M32 40.8v6.6"/>
+    <path d="M16.6 32h6.6"/>
+    <path d="M40.8 32h6.6"/>
+  </g>
+  <circle cx="32" cy="32" r="3.9" fill="none" stroke="#c49a32" stroke-width="1.5"/>
+  <circle cx="32" cy="32" r="1.5" fill="#c49a32"/>
+  <g fill="#1f2128" transform="translate(32 31) scale(0.58) translate(-24 -16)">
+    <rect x="22.15" y="2.15" width="2.05" height="1.15" rx=".45"/>
+    <rect x="22.45" y="3.1" width="1.45" height="8.35" rx=".45"/>
+    <rect x="24.85" y="2.95" width="2.05" height="1.15" rx=".45"/>
+    <rect x="25.15" y="3.9" width="1.45" height="7.55" rx=".45"/>
+    <rect x="1.15" y="10.05" width="20.7" height="11.15" rx="1.2"/>
+    <path d="M21.85 10.05h4.2l2.35-3.05h6.05v3.05H21.85z"/>
+    <path fill-rule="evenodd" d="M21.85 7.05h7.35l1.55 2.95.45.05L45.9 13.55c.7.22 1.15.88 1.15 1.6v6.55h-2.35v-1.2c0-.4-.33-.72-.74-.72h-3.05c-.4 0-.74.32-.74.72v1.2H21.85V7.05Zm8.55 5.35 11.7 1.55v4.55H30.4V12.4Zm-5.55.45h4.05v3.35h-4.05V12.85Z"/>
+    <rect x="30.15" y="20.85" width="16.55" height="1.7" rx=".4"/>
+    <circle cx="6.05" cy="23.35" r="2.55"/>
+    <circle cx="12.85" cy="23.35" r="2.55"/>
+    <circle cx="25.15" cy="23.35" r="2.75"/>
+    <circle cx="39.35" cy="23.35" r="2.5"/>
+  </g>
+</svg>
