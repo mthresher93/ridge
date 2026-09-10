@@ -12,6 +12,7 @@ export function BoardView() {
   const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [dragging, setDragging] = useState<string | null>(null);
+  const [dropOn, setDropOn] = useState<string | null>(null);
   const [mode, setMode] = useState<"board" | "table">("board");
 
   const selected = workspace.opportunities.find((item) => item.id === selectedId) || null;
@@ -84,11 +85,16 @@ export function BoardView() {
               return (
                 <section
                   key={group.id}
-                  className="board-col"
-                  onDragOver={(event) => event.preventDefault()}
+                  className={`board-col${dropOn === group.id ? " drop" : ""}`}
+                  onDragOver={(event) => {
+                    event.preventDefault();
+                    setDropOn(group.id);
+                  }}
+                  onDragLeave={() => setDropOn((value) => (value === group.id ? null : value))}
                   onDrop={() => {
                     if (dragging) moveDeal(dragging, group.drop);
                     setDragging(null);
+                    setDropOn(null);
                   }}
                 >
                   <div className="board-col-head">
@@ -109,18 +115,20 @@ export function BoardView() {
                             setSelectedId(item.id);
                             if (item.leadId) setSelectedLeadId(item.leadId);
                           }}
-                          className="board-card"
+                          className={`board-card${dragging === item.id ? " dragging" : ""}`}
                         >
                           <div className="board-card-top">
                             <span className="az-chip">{item.stage}</span>
                             {person?.label ? <span className="az-chip">{person.label}</span> : null}
+                            {person?.source ? <span className="az-chip">{person.source}</span> : null}
                           </div>
                           <div className="board-card-name">{item.property || item.name || person?.name}</div>
                           <div className="board-card-sub">
                             {[person?.name, person ? [person.city, person.state].filter(Boolean).join(", ") : ""].filter(Boolean).join(" · ") || "—"}
                           </div>
+                          <div className="board-card-sub">{item.nextAction || person?.nextAction || "No next action"}</div>
                           <div className="board-card-foot">
-                            <span>{person?.freightScore != null ? `Screen ${person.freightScore}` : "Unscored"}</span>
+                            <span>{person?.lastContactAt ? "Touched" : "No contact"}</span>
                             <span>{item.value ? `$${item.value}` : "Rate unset"}</span>
                           </div>
                         </button>

@@ -499,7 +499,7 @@ export function DiscoverView() {
                       <button
                         key={metro.id}
                         type="button"
-                        className={`az-btn sm ${activePlace === metro.hunt ? "pri" : ""}`}
+                        className={`az-chip-ctrl${activePlace === metro.hunt ? " on" : ""}`}
                         onClick={() => setHuntPlace(metro.hunt)}
                       >
                         {metro.label}
@@ -511,7 +511,7 @@ export function DiscoverView() {
                       <button
                         key={`${preset.query}-${preset.place}`}
                         type="button"
-                        className={`az-btn sm ${huntQuery === preset.query && activePlace === preset.place ? "pri" : ""}`}
+                        className={`az-chip-ctrl${huntQuery === preset.query && activePlace === preset.place ? " on" : ""}`}
                         onClick={() => {
                           setHuntQuery(preset.query);
                           setHuntPlace(preset.place);
@@ -522,7 +522,7 @@ export function DiscoverView() {
                     ))}
                   </div>
                   <div className="hunt-actions">
-                    <button className="az-btn pri" type="button" onClick={openFirstSearch}>
+                    <button className="az-btn gold" type="button" onClick={openFirstSearch}>
                       Open {pack[0]?.name || "first search"}
                     </button>
                     <button className="az-btn" type="button" onClick={() => document.getElementById("hunt-paste")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
@@ -741,14 +741,14 @@ export function DiscoverView() {
                       <button
                         key={metro.id}
                         type="button"
-                        className={`az-btn sm ${activePlace === metro.hunt ? "pri" : ""}`}
+                        className={`az-chip-ctrl${activePlace === metro.hunt ? " on" : ""}`}
                         onClick={() => setHuntPlace(metro.hunt)}
                       >
                         {metro.label}
                       </button>
                     ))}
                   </div>
-                  <button className="az-btn pri" type="button" disabled={busy} onClick={() => void runFinder()}>
+                  <button className="az-btn gold" type="button" disabled={busy} onClick={() => void runFinder()}>
                     {busy ? "Searching OSM…" : "Find customers"}
                   </button>
                   {finderNote ? <p className="cd-mono">{finderNote}</p> : null}

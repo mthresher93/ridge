@@ -30,6 +30,7 @@ export function OutreachView() {
   const [bookerPhone, setBookerPhone] = useState("");
   const [dest, setDest] = useState("");
   const [beat, setBeat] = useState(0);
+  const [lastDisp, setLastDisp] = useState("");
 
   const wantedId = searchParams.get("id") || selectedLeadId;
   const thursdayIn = daysUntilNextWeekday(4);
@@ -66,6 +67,7 @@ export function OutreachView() {
     setBookerPhone(lead.bookerPhone || "");
     setDest(lead.destination || "");
     setBeat(0);
+    setLastDisp("");
   }, [lead?.id]);
   const fit = lead
     ? recommendEquipment({
@@ -271,6 +273,32 @@ export function OutreachView() {
           <article className="az-panel freight-panel outreach-main">
             <div className="az-kicker">{lead.source}</div>
             <h2>{lead.name}</h2>
+            <div className="work-facts">
+              <div>
+                <span>Who</span>
+                <b>{companyName(lead)}</b>
+              </div>
+              <div>
+                <span>Contact</span>
+                <b>{lead.booker || lead.homeowner || "Ask who books freight"}</b>
+              </div>
+              <div>
+                <span>Why this call</span>
+                <b>{script?.ask || lead.nextAction || "Qualify outbound freight"}</b>
+              </div>
+              <div>
+                <span>Source</span>
+                <b>{lead.source || "—"}</b>
+              </div>
+              <div>
+                <span>City</span>
+                <b>{leadLocation(lead) || metroOf(lead)?.label || "Location unset"}</b>
+              </div>
+              <div>
+                <span>Last touch</span>
+                <b>{lead.lastContactAt ? `${lead.attempts || 0} tries` : "Untried"}</b>
+              </div>
+            </div>
             <p className="cd-mono">
               {lead.label || suggested || "Unlabeled"} · {companyName(lead)} · {leadLocation(lead) || metroOf(lead)?.label || "Location unset"}
               {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : " · untried"}
@@ -346,17 +374,29 @@ export function OutreachView() {
               <input className="az-input" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Saved on the call event" />
             </label>
             <div className="call-disposition">
-              <button className="az-btn" type="button" onClick={() => noteCall("no_pickup")}>
+              <button className={`az-btn${lastDisp === "no_pickup" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("no_pickup"); noteCall("no_pickup"); }}>
                 No pickup
               </button>
-              <button className="az-btn" type="button" onClick={() => noteCall("voicemail")}>
+              <button className={`az-btn${lastDisp === "voicemail" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("voicemail"); noteCall("voicemail"); }}>
                 Voicemail
               </button>
-              <button className="az-btn pri" type="button" onClick={() => noteCall("talked", false)}>
+              <button className={`az-btn${lastDisp === "talked" ? " on pri" : ""}`} type="button" onClick={() => { setLastDisp("talked"); noteCall("talked", false); }}>
                 Talked
               </button>
-              <button className="az-btn" type="button" onClick={() => noteCall("wrong_number")}>
+              <button className={`az-btn${lastDisp === "wrong_number" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("wrong_number"); noteCall("wrong_number"); }}>
                 Wrong number
+              </button>
+              <button className={`az-btn${lastDisp === "not_interested" ? " on danger" : ""}`} type="button" onClick={() => { setLastDisp("not_interested"); mark("Load Lost", "Not interested"); }}>
+                Not interested
+              </button>
+              <button className={`az-btn${lastDisp === "interested" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("interested"); mark("Replied", "Interested"); }}>
+                Interested
+              </button>
+              <button className={`az-btn${lastDisp === "quote" ? " on pri" : ""}`} type="button" onClick={() => { setLastDisp("quote"); mark("Quote Requested", "Quote opportunity"); }}>
+                Quote opportunity
+              </button>
+              <button className={`az-btn${lastDisp === "follow" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("follow"); mark("Replied", "Follow up", 1); }}>
+                Follow up
               </button>
             </div>
             <p className="cd-mono">Voicemail stays here and sets a follow-up for tomorrow. Not a sent message.</p>

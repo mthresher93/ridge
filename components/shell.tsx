@@ -49,11 +49,41 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`az-shell density-${density}`} data-accent={prefs.accent}>
-      <aside className="az-rail">
-        <Link href="/" className="az-brand">
-          <BrandLockup />
-        </Link>
+      <Link href="/" className="az-brand">
+        <BrandLockup />
+      </Link>
 
+      <header className="az-top">
+        <button className="cd-search" type="button" onClick={() => setPalette(true)}>
+          <span>Search clients…</span>
+          <kbd>⌘K</kbd>
+        </button>
+        <div className="az-top-right">
+          <div className="az-clocks" title={`${clocks.broker.zone} · ${clocks.book.zone}`}>
+            <span>
+              <em>PH</em> {clocks.broker.clock}
+            </span>
+            <span>
+              <em>CT</em> {clocks.book.clock}
+            </span>
+          </div>
+          <span className="cd-stat">
+            <span className={`livedot ${loadError ? "off" : ""}`} />
+            {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : saveStatus === "saving" ? "Saving" : "Ready"}
+          </span>
+          {saveStatus === "error" ? (
+            <button className="az-btn sm" type="button" onClick={() => retrySave()}>
+              Retry
+            </button>
+          ) : null}
+          <span className="az-num az-top-open">{workspace.leads.filter((lead) => !lead.archivedAt).length} clients</span>
+          <button className="az-btn gold az-add-prospect" type="button" onClick={() => router.push("/discover")}>
+            Add prospect
+          </button>
+        </div>
+      </header>
+
+      <aside className="az-rail">
         <nav className="az-rail-nav" aria-label="Workspace">
           <div className="az-rail-group">
             {DESK_NAV.map((item) => (
@@ -89,35 +119,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="az-main">
-        <header className="az-top">
-          <button className="cd-search" type="button" onClick={() => setPalette(true)}>
-            <span>Search clients…</span>
-            <kbd>⌘K</kbd>
-          </button>
-          <div className="az-top-right">
-            <div className="az-clocks" title={`${clocks.broker.zone} · ${clocks.book.zone}`}>
-              <span>
-                <em>PH</em> {clocks.broker.clock}
-              </span>
-              <span>
-                <em>CT</em> {clocks.book.clock}
-              </span>
-            </div>
-            <span className="cd-stat">
-              <span className={`livedot ${loadError ? "off" : ""}`} />
-              {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : saveStatus === "saving" ? "Saving" : "Ready"}
-            </span>
-            {saveStatus === "error" ? (
-              <button className="az-btn sm" type="button" onClick={() => retrySave()}>
-                Retry
-              </button>
-            ) : null}
-            <span className="az-num az-top-open">{workspace.leads.filter((lead) => !lead.archivedAt).length} clients</span>
-            <button className="az-btn az-add-prospect" type="button" onClick={() => router.push("/discover")}>
-              Add prospect
-            </button>
-          </div>
-        </header>
         {loadError ? (
           <div className="az-sync-banner">
             <span>Could not load the workspace. {loadError}</span>

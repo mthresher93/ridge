@@ -13,6 +13,14 @@ import type { Lead, Shipment, ShipmentStatus } from "@/lib/types";
 
 const STATUSES = SHIPMENT_STATUSES;
 
+function statusTone(status: ShipmentStatus) {
+  if (status === "Problem" || status === "Canceled") return "bad";
+  if (status === "Delivered" || status === "Paid") return "good";
+  if (status === "In Transit" || status === "Carrier Booked" || status === "Booked") return "hot";
+  if (status === "Quote") return "";
+  return "warn";
+}
+
 function fillFromLead(person: Lead | undefined, prev: Omit<Shipment, "id" | "createdAt" | "updatedAt">) {
   if (!person) return { ...prev, leadId: "" };
   const blank = blankLoadFromLead(person);
@@ -274,7 +282,7 @@ export function ShipmentsView() {
                     <div className="text-[12px] text-[var(--muted)]">{item.equipmentType || "—"}</div>
                   </td>
                   <td>
-                    <span className="az-chip">{item.status}</span>
+                    <span className={`status-badge ${statusTone(item.status)}`}>{item.status}</span>
                   </td>
                   <td className="az-num">{item.customerRate ? money(item.customerRate) : "—"}</td>
                   <td className="az-num">{item.carrierRate ? money(item.carrierRate) : "—"}</td>

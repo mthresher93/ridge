@@ -14,6 +14,7 @@ export function HuntDance({
   census?: Census;
 }) {
   const router = useRouter();
+  const selected = hunt.href;
   return (
     <section className="hunt-dance">
       <header>
@@ -21,10 +22,21 @@ export function HuntDance({
           <div className="home-kicker">How you add more</div>
           <h3>Open a page. Paste it. Label it.</h3>
         </div>
-        <button className="az-btn pri sm" type="button" onClick={() => router.push(hunt.href)}>
+        <button className="az-btn gold sm" type="button" onClick={() => router.push(hunt.href)}>
           Today: {hunt.play.title} · {hunt.place}
         </button>
       </header>
+      <div className="hunt-flow" aria-label="Prospecting workflow">
+        <span>Find</span>
+        <span>Open source</span>
+        <span>Capture</span>
+        <span>Identify contact</span>
+        <span>Qualify</span>
+        <span>Call</span>
+        <span>Follow-up</span>
+        <span>Pipeline</span>
+        <span>Shipment</span>
+      </div>
       <p className="desk-why">
         Haul does not scrape Marketplace, Craigslist, or DAT. You open the search. You copy what was published. Dealers and rental yards are the book. Private sellers and LinkedIn people are extra — quieter, usually one-shot.
       </p>
@@ -60,23 +72,29 @@ export function HuntDance({
       </ol>
       <div className="hunt-dance-links">
         {hunt.links.map((item) => (
-          <a key={item.id} className="az-btn sm" href={item.url} target="_blank" rel="noreferrer">
+          <a
+            key={item.id}
+            className={`hunt-chip${selected.includes(item.id) ? " on" : ""}`}
+            href={item.url}
+            target="_blank"
+            rel="noreferrer"
+          >
             {item.name}
           </a>
         ))}
-        <button className="az-btn sm" type="button" onClick={() => router.push("/discover?tab=finder")}>
+        <button className={`hunt-chip${selected.includes("finder") ? " on" : ""}`} type="button" onClick={() => router.push("/discover?tab=finder")}>
           Customer finder
         </button>
-        <button className="az-btn sm" type="button" onClick={() => router.push("/discover?play=sellers")}>
+        <button className={`hunt-chip${selected.includes("sellers") ? " on" : ""}`} type="button" onClick={() => router.push("/discover?play=sellers")}>
           Private sellers
         </button>
-        <button className="az-btn sm" type="button" onClick={() => router.push("/discover?play=people")}>
+        <button className={`hunt-chip${selected.includes("people") ? " on" : ""}`} type="button" onClick={() => router.push("/discover?play=people")}>
           People at yards
         </button>
-        <button className="az-btn sm" type="button" onClick={() => router.push("/discover?play=jobsites")}>
+        <button className={`hunt-chip${selected.includes("jobsites") ? " on" : ""}`} type="button" onClick={() => router.push("/discover?play=jobsites")}>
           Jobsite movers
         </button>
-        <button className="az-btn sm" type="button" onClick={() => router.push("/discover?play=oem")}>
+        <button className={`hunt-chip${selected.includes("oem") ? " on" : ""}`} type="button" onClick={() => router.push("/discover?play=oem")}>
           OEM locators
         </button>
       </div>

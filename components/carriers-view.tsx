@@ -57,12 +57,16 @@ export function CarriersView() {
                     <tr key={item.id} className={item.id === selected?.id ? "on" : ""} onClick={() => setSelectedId(item.id)}>
                       <td>
                         <div className="font-medium">{item.name}</div>
-                        <div className="text-[12px] text-[var(--muted)]">{item.equipment || "—"}</div>
+                        <div className="text-[12px] text-[var(--muted)]">{item.equipment || "—"} · {item.city || item.state || "—"}</div>
                       </td>
                       <td>{item.mc || "—"}</td>
                       <td>{item.dot || "—"}</td>
                       <td>{item.phone || "—"}</td>
-                      <td>{carrierVerified(item) ? "MC/DOT/authority/insurance passed" : "Not verified"}</td>
+                      <td>
+                        <span className={`status-badge ${carrierVerified(item) ? "good" : "warn"}`}>
+                          {carrierVerified(item) ? "Verified" : "Not verified"}
+                        </span>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -84,7 +88,7 @@ export function CarriersView() {
                   const row = (selected.vetting || []).find((item) => item.id === check.id);
                   const state = row?.state || "unchecked";
                   return (
-                    <div key={check.id} className="vet-row">
+                    <div key={check.id} className={`vet-row ${state}`}>
                       <span>{check.label}</span>
                       <select
                         className="az-select"
