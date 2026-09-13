@@ -834,112 +834,114 @@ input[type="range"] {
   overflow: visible;
 }
 
-.desk-flow-hit {
-  fill: none;
-  stroke: transparent;
-  stroke-width: 16;
-  stroke-linecap: round;
-  cursor: pointer;
+.desk-flow-grid {
+  stroke: rgba(255, 255, 255, 0.06);
+  stroke-width: 1;
+}
+
+.desk-flow-tick {
+  stroke: rgba(255, 255, 255, 0.2);
+  stroke-width: 1;
+}
+
+.desk-flow-hair {
+  stroke: rgba(255, 255, 255, 0.22);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  pointer-events: none;
 }
 
 .desk-flow-glow {
   fill: none;
-  stroke-width: 10;
+  stroke-width: 9;
   stroke-linecap: round;
   stroke-linejoin: round;
-  opacity: 0.42;
-}
-
-.desk-flow-glow.is-ok {
-  stroke: #22e36a;
+  opacity: 0.28;
 }
 
 .desk-flow-glow.is-hot {
   stroke: #ff3b3b;
+  opacity: 0.4;
 }
 
 .desk-flow-edge {
   fill: none;
-  stroke-width: 4.5;
+  stroke-width: 2.4;
   stroke-linecap: round;
   stroke-linejoin: round;
   opacity: 1;
 }
 
-.desk-flow-edge.is-ok {
-  stroke: #22e36a;
-  stroke-dasharray: 16 10;
-  animation: flow-dash 1.6s linear infinite;
-}
-
 .desk-flow-edge.is-hot {
-  stroke: #ff3b3b;
-  stroke-dasharray: 9 7;
-  animation: flow-dash 1.1s linear infinite;
-}
-
-.desk-flow-edge.is-live.is-ok,
-.desk-flow-edge.is-live.is-hot,
-.desk-flow-glow.is-live {
-  opacity: 1;
-}
-
-.desk-flow-edge.is-live {
-  stroke-width: 5.5;
+  stroke: #ff4d4d;
+  stroke-width: 2.8;
 }
 
 .desk-flow-g {
   cursor: pointer;
 }
 
-.desk-flow-shape {
-  fill: #1a222c;
-  stroke: #44515c;
-  stroke-width: 1.6;
+.desk-flow-dot-hit {
+  fill: transparent;
+}
+
+.desk-flow-dot {
+  fill: #121820;
+  stroke: #22e36a;
+  stroke-width: 2.4;
+}
+
+.desk-flow-g.is-now .desk-flow-dot {
+  fill: #22e36a;
+  stroke: #7dffb0;
+}
+
+.desk-flow-g.is-hot .desk-flow-dot,
+.desk-flow-g.is-wait .desk-flow-dot {
+  fill: #2a1515;
+  stroke: #ff4d4d;
+}
+
+.desk-flow-g.is-focus .desk-flow-dot,
+.desk-flow-g:hover .desk-flow-dot {
+  fill: #7dffb0;
+  stroke: #fff;
 }
 
 .desk-flow-label,
-.desk-flow-count {
-  fill: #f4f7fa;
+.desk-flow-value {
+  fill: rgba(244, 247, 250, 0.72);
   text-anchor: middle;
   pointer-events: none;
 }
 
 .desk-flow-label {
   font-family: var(--fb);
-  font-size: 13px;
-  font-weight: 650;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
 }
 
-.desk-flow-count {
+.desk-flow-value {
   font-family: var(--fm);
-  font-size: 11px;
+  font-size: 10px;
   fill: #9aa4ad;
 }
 
-.desk-flow-g.is-now .desk-flow-shape {
-  fill: #15261b;
-  stroke: #3dba6a;
-  filter: url(#flow-glow-ok);
+.desk-flow-g.is-now .desk-flow-label,
+.desk-flow-g.is-focus .desk-flow-label {
+  fill: #fff;
 }
 
-.desk-flow-g.is-hot .desk-flow-shape {
-  fill: #2a1515;
-  stroke: #e24b4b;
-  filter: url(#flow-glow-hot);
+.desk-flow-g.is-now .desk-flow-value,
+.desk-flow-g.is-focus .desk-flow-value {
+  fill: #7dffb0;
 }
 
-.desk-flow-g.is-live .desk-flow-shape {
-  stroke: #c49a32;
-}
-
-.desk-flow-g.is-wait .desk-flow-shape {
-  stroke: #8a3a3a;
-}
-
-.desk-flow-g.is-focus .desk-flow-shape,
-.desk-flow-g:hover .desk-flow-shape {
-  stroke-width: 2.2;
+.desk-flow-g.is-hot .desk-flow-value,
+.desk-flow-g.is-wait .desk-flow-value {
+  fill: #ff8a8a;
 }
 
 @keyframes flow-dash {

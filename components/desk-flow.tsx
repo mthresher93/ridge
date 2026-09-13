@@ -2,18 +2,15 @@
 
 import { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { FLOW_BOXES, flowEdgePath, type FlowBox, type FlowState, type FlowStepId } from "@/lib/flow";
-
-function nodePath(box: FlowBox) {
-  const { x, y, w, h, shape } = box;
-  if (shape === "decision") {
-    const cx = x + w / 2;
-    const cy = y + h / 2;
-    return `M ${cx} ${y} L ${x + w} ${cy} L ${cx} ${y + h} L ${x} ${cy} Z`;
-  }
-  const r = shape === "process" ? 8 : h / 2;
-  return `M ${x + r} ${y} H ${x + w - r} Q ${x + w} ${y} ${x + w} ${y + r} V ${y + h - r} Q ${x + w} ${y + h} ${x + w - r} ${y + h} H ${x + r} Q ${x} ${y + h} ${x} ${y + h - r} V ${y + r} Q ${x} ${y} ${x + r} ${y} Z`;
-}
+import {
+  GRAPH,
+  flowAreaPath,
+  flowCurvePath,
+  flowGraphPoints,
+  flowSegmentPath,
+  type FlowState,
+  type FlowStepId,
+} from "@/lib/flow";
 
 export function DeskFlow({
   flow,
@@ -25,18 +22,17 @@ export function DeskFlow({
   const router = useRouter();
   const [focus, setFocus] = useState<FlowStepId | null>(null);
   const active = flow.steps.find((item) => item.id === (focus || flow.current)) || flow.steps[0];
-  const lit = useMemo(() => {
-    if (!focus) return new Set<string>();
-    const set = new Set<string>([focus]);
-    for (const edge of flow.edges) {
-      if (edge.from === focus || edge.to === focus) {
-        set.add(edge.from);
-        set.add(edge.to);
-        set.add(`${edge.from}-${edge.to}`);
-      }
-    }
-    return set;
-  }, [focus, flow.edges]);
+  const points = useMemo(() => flowGraphPoints(flow.steps), [flow.steps]);
+  const curve = useMemo(() => flowCurvePath(points), [points]);
+  const area = useMemo(() => flowAreaPath(points), [points]);
+  const baseline = GRAPH.h - GRAPH.b;
+  const hot = useMemo(
+    () =>
+      flow.edges
+        .map((edge, index) => ({ edge, index, d: flowSegmentPath(points, index) }))
+        .filter((item) => item.edge.tone === "hot" && item.d),
+    [flow.edges, points],
+  );
 
   function go(id: FlowStepId) {
     const step = flow.steps.find((item) => item.id === id);
@@ -48,11 +44,13 @@ export function DeskFlow({
     router.push(step.href);
   }
 
+  const focused = points.find((item) => item.id === focus) || null;
+
   return (
-    <section className="desk-flow" aria-label="Load flowchart">
+    <section className="desk-flow" aria-label="Load graph">
       <header className="desk-flow-head">
         <div>
-          <div className="home-kicker">Flowchart</div>
+          <div className="home-kicker">Live graph</div>
           <p className="desk-flow-line">
             <b>{active.label}</b>
             <span>{active.hint}</span>
@@ -64,51 +62,52 @@ export function DeskFlow({
         </p>
       </header>
       <div className="desk-flow-chart">
-        <svg className="desk-flow-svg" viewBox="0 0 760 300" role="img">
-          <title>Hunt to Track load flowchart</title>
+        <svg className="desk-flow-svg" viewBox={`0 0 ${GRAPH.w} ${GRAPH.h}`} role="img">
+          <title>Hunt to Track as a line graph</title>
           <defs>
-            <marker id="flow-arrow-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#22e36a" />
-            </marker>
-            <marker id="flow-arrow-hot" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff3b3b" />
-            </marker>
+            <linearGradient id="flow-fill" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor="#22e36a" stopOpacity="0.32" />
+              <stop offset="70%" stopColor="#22e36a" stopOpacity="0.06" />
+              <stop offset="100%" stopColor="#22e36a" stopOpacity="0" />
+            </linearGradient>
+            <linearGradient id="flow-stroke" x1="0" y1="0" x2="1" y2="0">
+              <stop offset="0%" stopColor="#7dffb0" />
+              <stop offset="45%" stopColor="#22e36a" />
+              <stop offset="100%" stopColor="#14b85a" />
+            </linearGradient>
+            <filter id="flow-line-glow" x="-80" y="-40" width="920" height="330" filterUnits="userSpaceOnUse">
+              <feGaussianBlur stdDeviation="3.4" result="blur" />
+              <feMerge>
+                <feMergeNode in="blur" />
+                <feMergeNode in="SourceGraphic" />
+              </feMerge>
+            </filter>
           </defs>
-          {flow.edges.map((edge) => {
-            const key = `${edge.from}-${edge.to}`;
-            const live = lit.has(key) || !focus;
-            const hot = edge.tone === "hot";
-            const d = flowEdgePath(edge.from, edge.to);
-            return (
-              <g key={key}>
-                <path
-                  d={d}
-                  className="desk-flow-hit"
-                  onMouseEnter={() => setFocus(edge.to)}
-                  onMouseLeave={() => setFocus(null)}
-                  onClick={() => go(edge.to)}
-                />
-                <path
-                  d={d}
-                  className={`desk-flow-glow is-${hot ? "hot" : "ok"}${live ? " is-live" : ""}`}
-                  stroke={hot ? "#ff3b3b" : "#22e36a"}
-                  pointerEvents="none"
-                />
-                <path
-                  d={d}
-                  className={`desk-flow-edge is-${hot ? "hot" : "ok"}${live ? " is-live" : ""}`}
-                  stroke={hot ? "#ff3b3b" : "#22e36a"}
-                  markerEnd={`url(#flow-arrow-${hot ? "hot" : "ok"})`}
-                  pointerEvents="none"
-                />
-              </g>
-            );
+          {[0.25, 0.5, 0.75, 1].map((t) => {
+            const y = GRAPH.t + (GRAPH.h - GRAPH.t - GRAPH.b) * t;
+            return <line key={t} className="desk-flow-grid" x1={GRAPH.l} x2={GRAPH.w - GRAPH.r} y1={y} y2={y} />;
           })}
-          {flow.steps.map((step) => {
-            const box = FLOW_BOXES[step.id];
-            const state = step.id === flow.current ? (step.hot ? "hot" : "now") : lit.has(step.id) ? "live" : step.hot ? "wait" : "idle";
-            const cx = box.x + box.w / 2;
-            const cy = box.y + box.h / 2;
+          {area ? <path d={area} fill="url(#flow-fill)" pointerEvents="none" /> : null}
+          <path d={curve} className="desk-flow-glow is-ok is-live" stroke="url(#flow-stroke)" pointerEvents="none" />
+          <path
+            d={curve}
+            className="desk-flow-edge is-ok is-live"
+            stroke="url(#flow-stroke)"
+            filter="url(#flow-line-glow)"
+            pointerEvents="none"
+          />
+          {hot.map((item) => (
+            <g key={`${item.edge.from}-${item.edge.to}`}>
+              <path d={item.d} className="desk-flow-glow is-hot is-live" stroke="#ff3b3b" pointerEvents="none" />
+              <path d={item.d} className="desk-flow-edge is-hot is-live" stroke="#ff4d4d" pointerEvents="none" />
+            </g>
+          ))}
+          {focused ? (
+            <line className="desk-flow-hair" x1={focused.x} x2={focused.x} y1={GRAPH.t} y2={baseline} />
+          ) : null}
+          {points.map((point, index) => {
+            const step = flow.steps[index];
+            const state = step.id === flow.current ? (step.hot ? "hot" : "now") : step.hot ? "wait" : focus === step.id ? "live" : "idle";
             return (
               <g
                 key={step.id}
@@ -127,12 +126,16 @@ export function DeskFlow({
                 onFocus={() => setFocus(step.id)}
                 onBlur={() => setFocus(null)}
               >
-                <path d={nodePath(box)} className="desk-flow-shape" />
-                <text className="desk-flow-label" x={cx} y={cy - 6}>
-                  {step.n} {step.label}
-                </text>
-                <text className="desk-flow-count" x={cx} y={cy + 12}>
-                  {step.count ? step.count : step.id === "hunt" ? "start" : "—"}
+                <line className="desk-flow-tick" x1={point.x} x2={point.x} y1={baseline} y2={baseline + 6} />
+                <circle className="desk-flow-dot-hit" cx={point.x} cy={point.y} r="16" />
+                <circle className="desk-flow-dot" cx={point.x} cy={point.y} r={step.id === flow.current || focus === step.id ? 7 : 5} />
+                {step.count ? (
+                  <text className="desk-flow-value" x={point.x} y={point.y - 14}>
+                    {step.count}
+                  </text>
+                ) : null}
+                <text className="desk-flow-label" x={point.x} y={baseline + 22}>
+                  {step.label}
                 </text>
               </g>
             );

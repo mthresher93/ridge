@@ -28,39 +28,72 @@ export type FlowState = {
   line: string;
 };
 
-export type FlowShape = "start" | "process" | "decision" | "end";
+export type GraphPoint = { id: FlowStepId; x: number; y: number; value: number };
 
-export type FlowBox = { x: number; y: number; w: number; h: number; shape: FlowShape };
-
-export const FLOW_BOXES: Record<FlowStepId, FlowBox> = {
-  hunt: { x: 16, y: 48, w: 124, h: 56, shape: "start" },
-  paste: { x: 220, y: 48, w: 124, h: 56, shape: "process" },
-  call: { x: 424, y: 48, w: 124, h: 56, shape: "process" },
-  wrap: { x: 628, y: 28, w: 108, h: 96, shape: "decision" },
-  quote: { x: 616, y: 208, w: 124, h: 56, shape: "process" },
-  cover: { x: 412, y: 208, w: 124, h: 56, shape: "process" },
-  track: { x: 208, y: 208, w: 124, h: 56, shape: "end" },
+export const GRAPH = {
+  w: 760,
+  h: 248,
+  l: 40,
+  r: 28,
+  t: 22,
+  b: 44,
 };
 
-export function flowPort(box: FlowBox, side: "l" | "r" | "t" | "b") {
-  const cx = box.x + box.w / 2;
-  const cy = box.y + box.h / 2;
-  if (side === "l") return { x: box.x, y: cy };
-  if (side === "r") return { x: box.x + box.w, y: cy };
-  if (side === "t") return { x: cx, y: box.y };
-  return { x: cx, y: box.y + box.h };
+function curveControls(points: GraphPoint[], index: number) {
+  const p0 = points[index - 1] || points[index];
+  const p1 = points[index];
+  const p2 = points[index + 1] || p1;
+  const p3 = points[index + 2] || p2;
+  const top = GRAPH.t;
+  const floor = GRAPH.h - GRAPH.b;
+  const clampY = (y: number) => Math.min(floor, Math.max(top, y));
+  return {
+    c1x: p1.x + (p2.x - p0.x) / 6,
+    c1y: clampY(p1.y + (p2.y - p0.y) / 6),
+    c2x: p2.x - (p3.x - p1.x) / 6,
+    c2y: clampY(p2.y - (p3.y - p1.y) / 6),
+    p1,
+    p2,
+  };
 }
 
-export function flowEdgePath(from: FlowStepId, to: FlowStepId) {
-  const a = FLOW_BOXES[from];
-  const b = FLOW_BOXES[to];
-  const down = b.y > a.y + 40;
-  const left = b.x + b.w < a.x - 8;
-  const start = down ? flowPort(a, "b") : left ? flowPort(a, "l") : flowPort(a, "r");
-  const end = down ? flowPort(b, "t") : left ? flowPort(b, "r") : flowPort(b, "l");
-  if (start.x === end.x || start.y === end.y) return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
-  const midY = (start.y + end.y) / 2;
-  return `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
+export function flowGraphPoints(steps: FlowStep[]): GraphPoint[] {
+  const n = Math.max(steps.length, 1);
+  const innerW = GRAPH.w - GRAPH.l - GRAPH.r;
+  const innerH = GRAPH.h - GRAPH.t - GRAPH.b;
+  const max = Math.max(1, ...steps.map((step) => step.count));
+  return steps.map((step, index) => ({
+    id: step.id,
+    x: GRAPH.l + (n === 1 ? innerW / 2 : (index / (n - 1)) * innerW),
+    y: GRAPH.t + innerH - (step.count / max) * innerH * 0.9,
+    value: step.count,
+  }));
+}
+
+export function flowCurvePath(points: GraphPoint[]) {
+  if (!points.length) return "";
+  if (points.length === 1) return `M ${points[0].x} ${points[0].y}`;
+  let d = `M ${points[0].x} ${points[0].y}`;
+  for (let i = 0; i < points.length - 1; i += 1) {
+    const { c1x, c1y, c2x, c2y, p2 } = curveControls(points, i);
+    d += ` C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
+  }
+  return d;
+}
+
+export function flowAreaPath(points: GraphPoint[]) {
+  const line = flowCurvePath(points);
+  if (!line || points.length < 2) return "";
+  const baseline = GRAPH.h - GRAPH.b;
+  const first = points[0];
+  const last = points[points.length - 1];
+  return `${line} L ${last.x} ${baseline} L ${first.x} ${baseline} Z`;
+}
+
+export function flowSegmentPath(points: GraphPoint[], index: number) {
+  if (index < 0 || index >= points.length - 1) return "";
+  const { c1x, c1y, c2x, c2y, p1, p2 } = curveControls(points, index);
+  return `M ${p1.x} ${p1.y} C ${c1x} ${c1y}, ${c2x} ${c2y}, ${p2.x} ${p2.y}`;
 }
 
 const EDGE_PAIRS: [FlowStepId, FlowStepId][] = [
