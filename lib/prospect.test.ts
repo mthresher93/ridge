@@ -29,6 +29,9 @@ describe("recordCallAttempt", () => {
     expect(next.leads[0].booker).toBe("Maria");
     expect(next.leads[0].status).toBe("Contacted");
     expect(next.kpiEvents).toEqual(workspace.kpiEvents);
+    expect(next.callbacks[0].type).toBe("hot");
+    expect(next.callbacks[0].reason).toMatch(/Maria/);
+    expect(next.callbacks[0].dueAt).toBe("2026-09-08T12:00:00.000Z");
   });
 
   it("creates a follow-up callback after voicemail", () => {
@@ -50,6 +53,7 @@ describe("wrapCall", () => {
     expect(next.activities[0].detail).toMatch(/talked/i);
     expect(next.kpiEvents.some((event) => event.type === "dial_attempt")).toBe(true);
     expect(next.kpiEvents.some((event) => event.type === "connected_call")).toBe(true);
+    expect(next.callbacks[0].type).toBe("hot");
   });
 });
 

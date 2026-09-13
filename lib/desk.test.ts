@@ -60,4 +60,34 @@ describe("deskPlan", () => {
     expect(plan[0].why).toMatch(/214-342-6700/);
     expect(plan.some((item) => item.href.includes("/discover"))).toBe(false);
   });
+
+  it("keeps a connected call on the desk instead of jumping to hunt", () => {
+    const workspace = emptyWorkspace();
+    workspace.leads = [
+      blankProspect("Michael", {
+        id: "lead-1",
+        name: "HOLT CAT Dallas (North)",
+        phone: "214-342-6700",
+        status: "Contacted",
+        label: "Dealer",
+      }),
+    ];
+    workspace.callbacks = [
+      {
+        id: "cb1",
+        leadId: "lead-1",
+        type: "hot",
+        dueAt: "2026-09-08T12:00:00.000Z",
+        reason: "Talked to Maria. Dest, specs, blank quote.",
+        assignedUser: "Michael",
+        notes: "Maria",
+        status: "open",
+        createdAt: "2026-09-08T12:00:00.000Z",
+      },
+    ];
+    const plan = deskPlan(workspace, Date.parse("2026-09-08T12:00:00"));
+    expect(plan[0].kicker).toMatch(/Finish the call/i);
+    expect(plan[0].title).toBe("HOLT CAT Dallas (North)");
+    expect(plan[0].href).toBe("/outreach?id=lead-1");
+  });
 });

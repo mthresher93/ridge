@@ -135,20 +135,35 @@ export function recordCallAttempt(
   if (!lead) return workspace;
   const due = new Date(Date.parse(stamp) + 86400000).toISOString();
   const next = applyCallOutcome(lead, outcome, stamp, due, extra);
+  const booker = (extra?.booker || "").trim();
   const follow =
-    outcome === "voicemail" || outcome === "no_pickup"
+    outcome === "talked"
       ? {
           id: uid("cb"),
           leadId,
-          type: "standard" as const,
-          dueAt: due,
-          reason: outcome === "voicemail" ? "Voicemail — send the opener" : "No pickup — send the opener",
+          type: "hot" as const,
+          dueAt: stamp,
+          reason: booker
+            ? `Talked to ${booker}. Dest, specs, blank quote.`
+            : "They picked up. Save who books freight, dest, and specs.",
           assignedUser: workspace.settings.operator,
-          notes: extra?.booker || extra?.notes || "",
+          notes: extra?.notes || booker,
           status: "open" as const,
           createdAt: stamp,
         }
-      : null;
+      : outcome === "voicemail" || outcome === "no_pickup"
+        ? {
+            id: uid("cb"),
+            leadId,
+            type: "standard" as const,
+            dueAt: due,
+            reason: outcome === "voicemail" ? "Voicemail — send the opener" : "No pickup — send the opener",
+            assignedUser: workspace.settings.operator,
+            notes: extra?.booker || extra?.notes || "",
+            status: "open" as const,
+            createdAt: stamp,
+          }
+        : null;
   return {
     ...workspace,
     leads: workspace.leads.map((item) => (item.id === leadId ? next : item)),

@@ -223,7 +223,7 @@ export function OutreachView() {
           <header className="crm-desk-head">
             <div>
               <h1>Work</h1>
-              <p>Capture a listing, then this screen is label → copy → you send → follow-up.</p>
+              <p>Label, copy, send from your account. Haul does not send.</p>
             </div>
           </header>
           <section className="empty-desk">

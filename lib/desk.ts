@@ -69,7 +69,20 @@ export function deskPlan(workspace: Workspace, now = Date.now()): DeskMove[] {
   const hunt = todayHunt(new Date(now), workspace);
   const moves: DeskMove[] = [];
 
-  if (overdue) {
+  const justTalked = (workspace.callbacks || [])
+    .filter((item) => item.status === "open" && item.type === "hot")
+    .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt))[0];
+  if (justTalked) {
+    const person = live.find((lead) => lead.id === justTalked.leadId);
+    moves.push({
+      kicker: "Finish the call",
+      title: person?.name || "Connected",
+      why: justTalked.reason,
+      href: workPath(justTalked.leadId),
+      cta: "Stay on this yard",
+    });
+  }
+  if (overdue && overdue.id !== justTalked?.id) {
     const person = live.find((lead) => lead.id === overdue.leadId);
     moves.push({
       kicker: "Due now",

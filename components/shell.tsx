@@ -7,6 +7,7 @@ import { BrandLockup } from "./mark";
 import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
 import { DESK_NAV, MORE_NAV } from "@/lib/nav";
+import { NavIcon, NAV_ICONS } from "./nav-icons";
 import { settingsWithDefaults } from "@/lib/types";
 import { deskClocks } from "@/lib/us-time";
 
@@ -88,6 +89,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <div className="az-rail-group">
             {DESK_NAV.map((item) => (
               <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
+                <NavIcon name={NAV_ICONS[item.href]} />
                 {item.label}
               </Link>
             ))}
@@ -99,11 +101,13 @@ export function Shell({ children }: { children: React.ReactNode }) {
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen((open) => !open)}
             >
+              <NavIcon name="more" />
               More
             </button>
             {moreOpen
               ? MORE_NAV.map((item) => (
                   <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
+                    <NavIcon name={NAV_ICONS[item.href]} />
                     {item.label}
                   </Link>
                 ))
@@ -113,6 +117,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
         <div className="az-rail-foot">
           <Link href="/settings" className={`az-rail-settings${isActive(pathname, "/settings") ? " active" : ""}`}>
+            <NavIcon name="settings" />
             Settings
           </Link>
         </div>

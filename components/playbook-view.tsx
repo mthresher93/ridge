@@ -417,7 +417,7 @@ function PlaybookBlockView({ block }: { block: PlaybookBlock }) {
       <div className="intel-cards">
         {block.items.map((item) => (
           <div key={item.title}>
-            {item.meta ? <span className="az-chip gold">{item.meta}</span> : null}
+            {item.meta ? <span className="az-chip">{item.meta}</span> : null}
             <b>{item.title}</b>
             <p>{item.body}</p>
           </div>
@@ -431,7 +431,7 @@ function PlaybookBlockView({ block }: { block: PlaybookBlock }) {
         {block.rows.map((row) => (
           <article key={row.join("|")} className="intel-spec">
             <header>
-              <span className="az-chip gold">{row[0]}</span>
+              <span className="az-chip">{row[0]}</span>
               <b>{row[1] || row[0]}</b>
             </header>
             <dl>

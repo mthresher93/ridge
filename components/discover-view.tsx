@@ -6,7 +6,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, LEAD_SOURCES, captureFacts, extractListingData, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
 import { workPath } from "@/lib/nav";
 import { todayHunt } from "@/lib/desk";
-import { HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, HUNT_STEPS, huntLane, huntPack, huntPackText, huntSearchUrl, sourceFromLane, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import { HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, sourceFromLane, type HuntPackItem, type HuntRank } from "@/lib/hunt";
 import { bookCensus } from "@/lib/book";
 import { densestHuntPlace, leadsInPlace, METROS } from "@/lib/metro";
 import { firstCall } from "@/lib/prospect";
@@ -395,7 +395,7 @@ export function DiscoverView() {
   }
 
   function rankChip(rank: HuntRank) {
-    if (rank === "Best") return "az-chip gold";
+    if (rank === "Best") return "az-chip best";
     if (rank === "Volume" || rank === "Spot") return "az-chip warn";
     return "az-chip";
   }
@@ -442,7 +442,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Stay in one metro. Open a public search. Paste the page. Label dealer vs private seller. Haul does not scrape the sites.</p>
+            <p>One metro. Open a public search. Paste what was published.</p>
           </div>
           <div className="freight-row-actions">
             <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
@@ -540,14 +540,6 @@ export function DiscoverView() {
                   </div>
                 </section>
 
-                <ol className="hunt-ritual">
-                  {HUNT_STEPS.map((item, index) => (
-                    <li key={item}>
-                      <b>{index + 1}</b>
-                      <p>{item}</p>
-                    </li>
-                  ))}
-                </ol>
                 {census.live ? (
                   <div className="hunt-census">
                     <span>{census.live} on file</span>

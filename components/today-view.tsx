@@ -10,8 +10,8 @@ import { browserTelephony } from "@/lib/telephony";
 import { inCallingWindow } from "@/lib/us-time";
 import { settingsWithDefaults } from "@/lib/types";
 import { huntQueue } from "@/lib/hunt";
-import { DESK_JOB, HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
-import { companyName, leadLocation, outreachQueue, suggestClientKind } from "@/lib/freight";
+import { HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
+import { companyName, leadLocation, outreachQueue, suggestClientKind, upsertBlankQuote } from "@/lib/freight";
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
 import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { HuntDance } from "./hunt-dance";
@@ -39,8 +39,6 @@ export function TodayView() {
     () => (metroId === "all" ? callBook : callBook.filter((lead) => metroOf(lead)?.id === metroId)),
     [callBook, metroId],
   );
-  const nextCall = filteredBook[0] || null;
-  const nextFive = filteredBook.slice(0, 5);
   const [bookmarklet, setBookmarklet] = useState("");
   const [copiedId, setCopiedId] = useState("");
   const [copyError, setCopyError] = useState("");
@@ -48,11 +46,18 @@ export function TodayView() {
   const unlabeledAll = useMemo(() => live.filter((lead) => !lead.label), [live]);
   const unlabeled = unlabeledAll.slice(0, 6);
   const obvious = useMemo(() => obviousYardCount(live), [live]);
-  const prefs = settingsWithDefaults(workspace.settings);
-  const hours = nextCall ? inCallingWindow(nextCall.state, prefs.dialWindowStart, prefs.dialWindowEnd) : null;
-  const stillCalling = callBook.length > 0;
   const [booker, setBooker] = useState("");
   const [bookerPhone, setBookerPhone] = useState("");
+  const [wrapNote, setWrapNote] = useState("");
+  const [dest, setDest] = useState("");
+  const [lastWrappedId, setLastWrappedId] = useState("");
+  const [lastOutcome, setLastOutcome] = useState<CallOutcome | "">("");
+  const wrappedLead = lastWrappedId ? live.find((lead) => lead.id === lastWrappedId) || null : null;
+  const nextCall = wrappedLead || filteredBook[0] || null;
+  const nextFive = filteredBook.filter((lead) => lead.id !== lastWrappedId).slice(0, 5);
+  const prefs = settingsWithDefaults(workspace.settings);
+  const hours = nextCall ? inCallingWindow(nextCall.state, prefs.dialWindowStart, prefs.dialWindowEnd) : null;
+  const stillCalling = callBook.length > 0 || Boolean(wrappedLead);
   const toMessage = useMemo(() => outreachQueue(live).slice(0, 6), [live]);
   const followUps = useMemo(
     () => [...metrics.overdueCallbacks, ...metrics.dueCallbacks.filter((item) => !metrics.overdueCallbacks.includes(item))].slice(0, 6),
@@ -116,7 +121,13 @@ export function TodayView() {
   }
 
   function noteCall(lead: Lead, outcome: CallOutcome, extra?: { booker: string; bookerPhone?: string }) {
-    setWorkspace((prev) => wrapCall(prev, lead.id, outcome, extra));
+    setWorkspace((prev) =>
+      wrapCall(prev, lead.id, outcome, {
+        booker: extra?.booker || booker.trim(),
+        bookerPhone: extra?.bookerPhone || bookerPhone.trim(),
+        notes: wrapNote.trim(),
+      }),
+    );
     log(
       "lead",
       lead.id,
@@ -124,10 +135,48 @@ export function TodayView() {
       outcome === "talked" ? "Talked from Desk" : outcome === "voicemail" ? "Voicemail from Desk" : outcome === "wrong_number" ? "Wrong number from Desk" : "No pickup from Desk",
     );
     if (outcome === "no_pickup" || outcome === "voicemail") void copyOpener(lead);
-    if (outcome === "talked") {
-      setBooker("");
-      setBookerPhone("");
-    }
+    setLastWrappedId(lead.id);
+    setLastOutcome(outcome);
+    setSelectedLeadId(lead.id);
+  }
+
+  function dismissWrap() {
+    setLastWrappedId("");
+    setLastOutcome("");
+    setWrapNote("");
+    setDest("");
+    setBooker("");
+    setBookerPhone("");
+  }
+
+  function openBlankQuote(lead: Lead) {
+    const destination = dest.trim();
+    const contact = (booker.trim() || lead.booker || lead.name).trim();
+    const result = upsertBlankQuote(workspace, lead, { destination, contact });
+    const stamp = result.shipment.updatedAt;
+    setWorkspace({
+      ...result.workspace,
+      leads: result.workspace.leads.map((row) =>
+        row.id === lead.id
+          ? {
+              ...row,
+              destination: destination || row.destination,
+              booker: contact,
+              bookerPhone: (bookerPhone.trim() || row.bookerPhone || "").trim(),
+              updatedAt: stamp,
+            }
+          : row,
+      ),
+      callbacks: result.workspace.callbacks.map((item) =>
+        item.leadId === lead.id && item.status === "open" && item.type === "hot"
+          ? { ...item, status: "completed", completedAt: stamp }
+          : item,
+      ),
+    });
+    setSelectedLeadId(lead.id);
+    log("shipment", result.shipment.id, result.created ? "created" : "updated", `Blank quote from Desk for ${lead.name}`);
+    dismissWrap();
+    router.push(`/shipments?id=${encodeURIComponent(result.shipment.id)}`);
   }
 
   function labelObvious() {
@@ -170,35 +219,183 @@ export function TodayView() {
             <h1>Dashboard</h1>
             <p>
               {live.length
-                ? `${live.length} on file · ${callBook.length} published phones still uncontacted · ${census.yards} yards · ${census.sellers} private / marketplace · stay in ${hunt.place}`
-                : `${hunt.weekday} · ${hunt.play.title} · open a search, then paste. No fake clients.`}
+                ? `${hunt.place} · ${callBook.length} untried · ${census.yards} yards`
+                : `${hunt.weekday} · ${hunt.play.title} · ${hunt.place}`}
             </p>
           </div>
           <div className="home-stats">
-            <div>
+            <button type="button" onClick={() => router.push(workPath())}>
               <b>{callBook.length}</b>
               <span>to call</span>
-            </div>
-            <div>
+            </button>
+            <button type="button" onClick={() => router.push("/people?filter=unlabeled")}>
               <b>{unlabeledAll.length}</b>
               <span>unlabeled</span>
-            </div>
-            <div>
+            </button>
+            <button type="button" onClick={() => router.push(workPath())}>
               <b>{toMessage.length}</b>
               <span>to message</span>
-            </div>
-            <div>
+            </button>
+            <button type="button" onClick={() => router.push("/shipments")}>
               <b>{books.booked}</b>
               <span>loads</span>
-            </div>
-            <div>
+            </button>
+            <button type="button" onClick={() => router.push("/callbacks")}>
               <b className={metrics.overdueCallbacks.length ? "bad" : ""}>{metrics.overdueCallbacks.length}</b>
               <span>overdue</span>
-            </div>
+            </button>
           </div>
         </header>
 
-        <HuntDance hunt={hunt} census={census} />
+        {nextCall && nextScript ? (
+          <section className={`az-panel freight-panel desk-next${wrappedLead && lastOutcome ? " desk-wrap" : ""}`}>
+            <header>
+              <div>
+                <div className="home-kicker">
+                  {wrappedLead && lastOutcome === "talked"
+                    ? "Stay on this call"
+                    : wrappedLead && lastOutcome
+                      ? lastOutcome === "wrong_number"
+                        ? "Wrong number"
+                        : lastOutcome === "voicemail"
+                          ? "Voicemail logged"
+                          : "No pickup logged"
+                      : "Next call"}
+                </div>
+                <h3>{nextCall.name}</h3>
+              </div>
+              <span className="cd-mono">
+                {nextCall.label || "Unlabeled"} · {leadLocation(nextCall) || hunt.place} · {phonePretty(nextCall.phone)}
+              </span>
+            </header>
+            {wrappedLead && lastOutcome === "talked" ? (
+              <>
+                <p className="desk-ask">They picked up. Type dest. Blank quote stays $0 until they give a number.</p>
+                <div className="desk-booker">
+                  <label className="rec-field">
+                    Who books freight
+                    <input className="az-input" value={booker} onChange={(event) => setBooker(event.target.value)} placeholder="Name they gave you" />
+                  </label>
+                  <label className="rec-field">
+                    Direct line (if they gave it)
+                    <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if published or they told you" />
+                  </label>
+                  <label className="rec-field">
+                    Destination (typed — never invented)
+                    <input className="az-input" value={dest} onChange={(event) => setDest(event.target.value)} placeholder="City they named" />
+                  </label>
+                </div>
+                <div className="desk-next-actions">
+                  <button className="az-btn pri" type="button" onClick={() => openBlankQuote(nextCall)}>
+                    Blank quote — rates $0
+                  </button>
+                  <button className="az-btn pri" type="button" onClick={() => { setSelectedLeadId(nextCall.id); router.push("/playbook"); }}>
+                    Save specs in Intel
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => openLead(nextCall.id, workPath(nextCall.id))}>
+                    Open in Work
+                  </button>
+                  <button className="az-btn" type="button" onClick={dismissWrap}>
+                    Next untried call
+                  </button>
+                </div>
+              </>
+            ) : wrappedLead && lastOutcome ? (
+              <>
+                <p className="desk-ask">
+                  {lastOutcome === "wrong_number"
+                    ? "Wrong number. Hunt another published phone or skip this yard."
+                    : "Follow-up is set for tomorrow. Copy the opener and send it yourself."}
+                </p>
+                {copyError ? <p className="rec-warn">{copyError}</p> : null}
+                <blockquote className="desk-opener">{nextScript.opener}</blockquote>
+                <div className="desk-next-actions">
+                  <button className="az-btn pri" type="button" onClick={() => void copyOpener(nextCall)}>
+                    {copiedId === nextCall.id ? "Copied" : "Copy opener"}
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => openLead(nextCall.id, workPath(nextCall.id))}>
+                    Open in Work
+                  </button>
+                  <button className="az-btn pri" type="button" onClick={dismissWrap}>
+                    Next untried call
+                  </button>
+                </div>
+              </>
+            ) : (
+              <>
+                <p className="desk-ask">{nextScript.ask}</p>
+                {hours ? <p className={hours.ok ? "desk-why" : "rec-warn"}>{hours.label}. {hours.why}</p> : null}
+                <blockquote className="desk-opener">{nextScript.opener}</blockquote>
+                {copyError ? <p className="rec-warn">{copyError}</p> : null}
+                <div className="desk-booker">
+                  <label className="rec-field">
+                    Who books freight
+                    <input className="az-input" value={booker} onChange={(event) => setBooker(event.target.value)} placeholder="Name they gave you" />
+                  </label>
+                  <label className="rec-field">
+                    Direct line (if they gave it)
+                    <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if published or they told you" />
+                  </label>
+                  <label className="rec-field">
+                    Wrap note
+                    <input className="az-input" value={wrapNote} onChange={(event) => setWrapNote(event.target.value)} placeholder="Saved on the call event" />
+                  </label>
+                </div>
+                <div className="desk-next-actions">
+                  <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(nextCall.phone)}>
+                    Call {phonePretty(nextCall.phone)}
+                  </button>
+                  <button className="az-btn pri" type="button" onClick={() => noteCall(nextCall, "talked", { booker: booker.trim(), bookerPhone: bookerPhone.trim() })}>
+                    Talked{booker.trim() ? ` — ${booker.trim()}` : ""}
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "no_pickup")}>
+                    No pickup
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "voicemail")}>
+                    Voicemail
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "wrong_number")}>
+                    Wrong number
+                  </button>
+                  <button className="az-btn" type="button" onClick={() => void copyOpener(nextCall)}>
+                    {copiedId === nextCall.id ? "Copied" : "Copy opener"}
+                  </button>
+                  {!nextCall.label && suggestClientKind({ sellerName: nextCall.name, title: nextCall.listingTitle, source: nextCall.source, website: nextCall.website }) ? (
+                    <button className="az-btn" type="button" onClick={() => applySuggestedLabel(nextCall)}>
+                      Label {suggestClientKind({ sellerName: nextCall.name, title: nextCall.listingTitle, source: nextCall.source, website: nextCall.website })}
+                    </button>
+                  ) : null}
+                  <button className="az-btn" type="button" onClick={() => openLead(nextCall.id, workPath(nextCall.id))}>
+                    Open in Work
+                  </button>
+                </div>
+              </>
+            )}
+            {nextFive.length > 0 ? (
+              <ol className="desk-next-strip">
+                {nextFive.map((lead, index) => {
+                  const suggested = lead.label ? "" : suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website });
+                  return (
+                  <li key={lead.id}>
+                    <button type="button" onClick={() => openLead(lead.id, workPath(lead.id))}>
+                      <b>
+                        {index + 1}. {lead.name}
+                      </b>
+                      <span>
+                        {lead.label || suggested || "Unlabeled"} · {leadLocation(lead) || metroOf(lead)?.label || "—"}
+                        {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : ""}
+                      </span>
+                    </button>
+                    <button className="az-btn sm" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
+                      {phonePretty(lead.phone)}
+                    </button>
+                  </li>
+                  );
+                })}
+              </ol>
+            ) : null}
+          </section>
+        ) : null}
 
         {attention.length ? (
           <section className="az-panel freight-panel desk-attention">
@@ -270,136 +467,51 @@ export function TodayView() {
           </section>
         ) : null}
 
-        {nextCall && nextScript ? (
-          <section className="az-panel freight-panel desk-next">
-            <header>
-              <div>
-                <div className="home-kicker">Next prospect — costs nothing</div>
-                <h3>{nextCall.name}</h3>
-              </div>
-              <span className="cd-mono">
-                {nextCall.label || "Unlabeled"} · {leadLocation(nextCall) || "—"} · screen {nextCall.freightScore ?? "—"}
-              </span>
-            </header>
-            <p className="desk-ask">{nextScript.ask}</p>
-            {hours ? <p className={hours.ok ? "desk-why" : "rec-warn"}>{hours.label}. {hours.why}</p> : null}
-            <p className="desk-why">{nextScript.why}</p>
-            <blockquote className="desk-opener">{nextScript.opener}</blockquote>
-            {copyError ? <p className="rec-warn">{copyError}</p> : null}
-            <div className="desk-booker">
-              <label className="rec-field">
-                Who books freight
-                <input className="az-input" value={booker} onChange={(event) => setBooker(event.target.value)} placeholder="Name they gave you" />
-              </label>
-              <label className="rec-field">
-                Direct line (if they gave it)
-                <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if published or they told you" />
-              </label>
-            </div>
-            <div className="desk-next-actions">
-              <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(nextCall.phone)}>
-                Call {phonePretty(nextCall.phone)}
-              </button>
-              <button className="az-btn" type="button" onClick={() => void copyOpener(nextCall)}>
-                {copiedId === nextCall.id ? "Copied" : "Copy opener"}
-              </button>
-              <button className="az-btn pri" type="button" onClick={() => noteCall(nextCall, "talked", { booker: booker.trim(), bookerPhone: bookerPhone.trim() })}>
-                Talked{booker.trim() ? ` — ${booker.trim()}` : ""}
-              </button>
-              <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "no_pickup")}>
-                No pickup
-              </button>
-              <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "voicemail")}>
-                Voicemail
-              </button>
-              <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "wrong_number")}>
-                Wrong number
-              </button>
-              {!nextCall.label && suggestClientKind({ sellerName: nextCall.name, title: nextCall.listingTitle, source: nextCall.source, website: nextCall.website }) ? (
-                <button className="az-btn" type="button" onClick={() => applySuggestedLabel(nextCall)}>
-                  Label {suggestClientKind({ sellerName: nextCall.name, title: nextCall.listingTitle, source: nextCall.source, website: nextCall.website })}
-                </button>
-              ) : null}
-              <button className="az-btn" type="button" onClick={() => openLead(nextCall.id, workPath(nextCall.id))}>
-                Open in Work
-              </button>
-            </div>
-            {nextFive.length > 1 ? (
-              <ol className="desk-next-strip">
-                {nextFive.map((lead, index) => {
-                  const suggested = lead.label ? "" : suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website });
-                  return (
-                  <li key={lead.id}>
-                    <button type="button" onClick={() => openLead(lead.id, workPath(lead.id))}>
-                      <b>
-                        {index + 1}. {lead.name}
-                      </b>
-                      <span>
-                        {lead.label || suggested || "Unlabeled"} · {leadLocation(lead) || metroOf(lead)?.label || "—"}
-                        {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : ""}
-                      </span>
-                    </button>
-                    <button className="az-btn sm" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
-                      {phonePretty(lead.phone)}
-                    </button>
-                  </li>
-                  );
-                })}
-              </ol>
-            ) : null}
-          </section>
-        ) : null}
-
+        {!stillCalling ? (
         <section className="az-panel freight-panel desk-from-you">
           <header>
             <div>
-              <div className="home-kicker">The job</div>
-              <h3>{stillCalling ? "Call this list. Do not hunt more yet." : "Get paid without spending"}</h3>
+              <div className="home-kicker">When the list is empty</div>
+              <h3>Hunt one metro. Do not buy a board yet.</h3>
             </div>
             {obvious ? (
               <button className="az-btn pri sm" type="button" onClick={labelObvious}>
                 Label {obvious} obvious yards
               </button>
-            ) : (
-              <span className="cd-mono">{callBook.length} published phones still uncontacted</span>
-            )}
+            ) : null}
           </header>
           <ol className="desk-from-list">
-            {stillCalling
-              ? DESK_JOB.map((detail, index) => (
-                  <li key={detail}>
-                    <b>{index + 1}</b>
-                    <div>
-                      <p>{detail}</p>
-                    </div>
-                  </li>
-                ))
-              : NO_SPEND.map((item) => (
-                  <li key={item.n}>
-                    <b>{item.n}</b>
-                    <div>
-                      <strong>{item.title}</strong>
-                      <p>{item.detail}</p>
-                    </div>
-                  </li>
-                ))}
+            {NO_SPEND.map((item) => (
+              <li key={item.n}>
+                <b>{item.n}</b>
+                <div>
+                  <strong>{item.title}</strong>
+                  <p>{item.detail}</p>
+                </div>
+              </li>
+            ))}
           </ol>
         </section>
+        ) : null}
 
         {callBook.length ? (
           <section className="az-panel freight-panel desk-call-book">
             <header>
               <div>
-                <div className="home-kicker">Call book</div>
-                <h3>Stay in one metro. Untried first.</h3>
+                <div className="home-kicker">Call book · {hunt.place}</div>
+                <h3>Untried first</h3>
               </div>
-              <button className="az-btn sm" type="button" onClick={() => router.push("/people")}>
-                All {live.length} clients
-              </button>
+              <div className="freight-row-actions">
+                {obvious ? (
+                  <button className="az-btn pri sm" type="button" onClick={labelObvious}>
+                    Label {obvious} yards
+                  </button>
+                ) : null}
+                <button className="az-btn sm" type="button" onClick={() => router.push("/people")}>
+                  All {live.length}
+                </button>
+              </div>
             </header>
-            <p className="desk-queue-note">
-              Each number was on that dealer’s public page. Dial it. If nobody picks up, copy the opener and you send it. Haul does not place the call.
-            </p>
             <div className="metro-chips">
               <button type="button" className={`az-btn sm ${metroId === "all" ? "pri" : ""}`} onClick={() => setMetroId("all")}>
                 All {callBook.length}
@@ -454,6 +566,8 @@ export function TodayView() {
           </section>
         ) : null}
 
+        {stillCalling ? <HuntDance hunt={hunt} /> : null}
+
         {!stillCalling ? (
           <>
           <section className="desk-today">
@@ -463,7 +577,7 @@ export function TodayView() {
             <p>{hunt.why}</p>
             <p className="cd-mono">{hunt.doThis}</p>
             <div className="empty-desk-actions">
-              <button className="az-btn pri" type="button" onClick={() => router.push(hunt.href)}>
+              <button className="az-btn gold" type="button" onClick={() => router.push(hunt.href)}>
                 Hunt {hunt.query} · {hunt.place}
               </button>
               <button className="az-btn" type="button" onClick={() => void copyBookmarklet()}>
