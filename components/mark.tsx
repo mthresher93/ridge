@@ -51,9 +51,9 @@ export function BrandMark({ className = "az-brand-mark" }: { className?: string 
 }
 
 function BrandWord() {
-  const word = { x: 14, y: 38 };
+  const word = { x: 9, y: 28 };
   return (
-    <svg className="az-brand-word" viewBox="0 0 168 52" role="img" aria-label={PRODUCT_WORD}>
+    <svg className="az-brand-word" viewBox="0 0 124 38" role="img" aria-label={PRODUCT_WORD}>
       <text {...word} className="az-brand-word-white">
         {PRODUCT_WORD}
       </text>
@@ -71,10 +71,8 @@ export function BrandLockup() {
   return (
     <>
       <BrandMark />
-      <div className="az-brand-copy">
-        <BrandWord />
-        <div className="az-brand-sub">{PRODUCT_SUB}</div>
-      </div>
+      <BrandWord />
+      <div className="az-brand-sub">{PRODUCT_SUB}</div>
     </>
   );
 }
