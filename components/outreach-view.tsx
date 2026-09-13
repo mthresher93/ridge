@@ -6,6 +6,7 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, MESSAGE_STYLES, companyName, generateFollowUp, generateOpeningMessage, hasMeasuredSpecs, leadLocation, outreachQueue, suggestClientKind, upsertBlankQuote, type ClientKind, type MessageStyle } from "@/lib/freight";
 import { recommendEquipment } from "@/lib/equipment";
 import { metroOf, sameMetroQueue } from "@/lib/metro";
+import { bookerOf } from "@/lib/people";
 import { analysisFromLead, firstCall, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { messagesSentOnDay, pacingNote } from "@/lib/pacing";
 import { daysUntilNextWeekday, nowIso, phonePretty, uid } from "@/lib/format";
@@ -280,7 +281,7 @@ export function OutreachView() {
               </div>
               <div>
                 <span>Contact</span>
-                <b>{lead.booker || lead.homeowner || "Ask who books freight"}</b>
+                <b>{bookerOf(workspace, lead)?.name || lead.booker || "Ask who books freight"}</b>
               </div>
               <div>
                 <span>Why this call</span>

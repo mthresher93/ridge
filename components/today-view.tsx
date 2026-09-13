@@ -13,6 +13,7 @@ import { huntQueue } from "@/lib/hunt";
 import { applySpecsToLead, recommendEquipment, specsFromLead } from "@/lib/equipment";
 import { companyName, finishConnectedCall, leadLocation, outreachQueue, parseMeasure, suggestClientKind } from "@/lib/freight";
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
+import { bookerOf, contactsForLead, skipQuote, unfinishedTalked, upsertBooker } from "@/lib/people";
 import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { HuntDance } from "./hunt-dance";
 import { bookCensus } from "@/lib/book";
@@ -76,6 +77,9 @@ export function TodayView() {
   const census = useMemo(() => bookCensus(workspace.leads), [workspace.leads]);
   const sentToday = useMemo(() => messagesSentOnDay(workspace.kpiEvents || []), [workspace.kpiEvents]);
   const nextScript = nextCall ? firstCall(nextCall, sentToday) : null;
+  const pendingTalked = useMemo(() => unfinishedTalked(workspace), [workspace]);
+  const wrapContacts = nextCall ? contactsForLead(workspace, nextCall.id) : [];
+  const wrapBooker = nextCall ? bookerOf(workspace, nextCall) : null;
   const wrapFit = recommendEquipment({
     text: nextCall?.equipmentType || nextCall?.listingTitle || "",
     lengthFt: parseMeasure(specL),
@@ -132,8 +136,9 @@ export function TodayView() {
 
   function fillWrap(lead: Lead) {
     const specs = specsFromLead(lead);
-    setBooker(lead.booker || "");
-    setBookerPhone(lead.bookerPhone || "");
+    const person = bookerOf(workspace, lead);
+    setBooker(person?.name || lead.booker || "");
+    setBookerPhone(person?.phone || lead.bookerPhone || "");
     setDest(lead.destination || "");
     setSpecL(specs.lengthFt != null ? String(specs.lengthFt) : "");
     setSpecW(specs.widthFt != null ? String(specs.widthFt) : "");
@@ -170,6 +175,22 @@ export function TodayView() {
     window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
+  useEffect(() => {
+    if (lastWrappedId || !pendingTalked) return;
+    const lead = live.find((item) => item.id === pendingTalked.leadId);
+    if (!lead) return;
+    fillWrap(lead);
+    setLastWrappedId(lead.id);
+    setLastOutcome("talked");
+    setSelectedLeadId(lead.id);
+  }, [pendingTalked?.leadId, lastWrappedId, live]);
+
+  function skipWrapQuote(lead: Lead) {
+    setWorkspace((prev) => skipQuote(prev, lead.id));
+    log("lead", lead.id, "quote_skipped", "Skipped blank quote from Desk");
+    dismissWrap();
+  }
+
   function dismissWrap() {
     setLastWrappedId("");
     setLastOutcome("");
@@ -197,15 +218,18 @@ export function TodayView() {
       return;
     }
     const stamp = result.lead.updatedAt;
-    setWorkspace((prev) => ({
-      ...prev,
-      leads: prev.leads.map((item) =>
-        item.id === lead.id
-          ? { ...result.lead, destination: dest.trim() || result.lead.destination, booker: booker.trim() || result.lead.booker, bookerPhone: bookerPhone.trim() || result.lead.bookerPhone }
-          : item,
-      ),
-      updatedAt: stamp,
-    }));
+    setWorkspace((prev) => {
+      const withSpecs = {
+        ...prev,
+        leads: prev.leads.map((item) =>
+          item.id === lead.id
+            ? { ...result.lead, destination: dest.trim() || result.lead.destination, booker: booker.trim() || result.lead.booker, bookerPhone: bookerPhone.trim() || result.lead.bookerPhone }
+            : item,
+        ),
+        updatedAt: stamp,
+      };
+      return upsertBooker(withSpecs, lead.id, { name: booker.trim(), phone: bookerPhone.trim() }).workspace;
+    });
     log("lead", lead.id, "specs_saved", result.lead.dimensions || "");
     setSpecMsg(`Saved on ${lead.name}. ${result.lead.trailerHint}`);
   }
@@ -318,12 +342,15 @@ export function TodayView() {
                 <h3>{nextCall.name}</h3>
               </div>
               <span className="cd-mono">
-                {nextCall.label || "Unlabeled"} · {leadLocation(nextCall) || hunt.place} · {phonePretty(nextCall.phone)}
+                Yard · {nextCall.label || "Unlabeled"} · {leadLocation(nextCall) || hunt.place} · {phonePretty(nextCall.phone)}
+                {wrapBooker ? ` · Booker ${wrapBooker.name}` : ""}
               </span>
             </header>
             {wrappedLead && lastOutcome === "talked" ? (
               <>
-                <p className="desk-ask">Stay here. Booker, dest, L × W × H and pounds. Quote stays $0.</p>
+                <p className="desk-ask">
+                  This yard stays here until you save a $0 quote. {nextCall.name} is the customer. The booker is a contact on that yard.
+                </p>
                 <div className="desk-booker">
                   <label className="rec-field">
                     Who books freight
@@ -338,6 +365,11 @@ export function TodayView() {
                     <input className="az-input" value={dest} onChange={(event) => setDest(event.target.value)} placeholder="City, ST they named" />
                   </label>
                 </div>
+                {wrapContacts.length ? (
+                  <p className="cd-mono">
+                    Contacts on this yard: {wrapContacts.map((item) => [item.name, item.role, item.phone].filter(Boolean).join(" · ")).join("; ")}
+                  </p>
+                ) : null}
                 <div className="desk-specs">
                   <div className="home-kicker">Measured specs</div>
                   <div className="desk-specs-grid">
@@ -375,8 +407,8 @@ export function TodayView() {
                   <button className="az-btn" type="button" onClick={() => openLead(nextCall.id, workPath(nextCall.id))}>
                     Work
                   </button>
-                  <button className="az-btn" type="button" onClick={dismissWrap}>
-                    Next call
+                  <button className="az-btn" type="button" onClick={() => skipWrapQuote(nextCall)}>
+                    Skip quote — next call
                   </button>
                 </div>
               </>

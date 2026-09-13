@@ -2,6 +2,7 @@ import type { FreightAnalysis, Lead, ShipperRole, Workspace } from "./types";
 import { generateOpeningMessage, openingLines, suggestClientKind } from "./freight";
 import { looksLikeYardName } from "./yard";
 import { nowIso, uid } from "./format";
+import { upsertBooker } from "./people";
 
 export function yardRole(lead: Lead): ShipperRole {
   if (lead.shipperRole && lead.shipperRole !== "Unknown") return lead.shipperRole;
@@ -103,8 +104,12 @@ export function wrapCall(
   const stamp = nowIso();
   const next = recordCallAttempt(workspace, leadId, outcome, stamp, extra);
   const notes = [extra?.notes, extra?.booker && `Booker ${extra.booker}`].filter(Boolean).join(" · ");
+  const withBooker =
+    outcome === "talked" && (extra?.booker || extra?.bookerPhone)
+      ? upsertBooker(next, leadId, { name: extra.booker, phone: extra.bookerPhone }).workspace
+      : next;
   return {
-    ...next,
+    ...withBooker,
     activities: [
       {
         id: uid("act"),

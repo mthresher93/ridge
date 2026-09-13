@@ -1,6 +1,7 @@
 import type { Appointment, Callback, Company, FreightAnalysis, Lead, Listing, Opportunity, Quote, SavedSearch, Shipment, Workspace } from "./types";
 import { blankProspect } from "./freight";
 import { normalizeCarrier, normalizeShipment } from "./ops";
+import { hydrateContacts } from "./people";
 import { mapLegacyStage } from "./stages";
 
 function offset(days: number, hour = 10) {
@@ -30,6 +31,7 @@ export function emptyWorkspace(): Workspace {
     proposals: {},
     callLogs: [],
     listings: [],
+    contacts: [],
     companies: [],
     quotes: [],
     shipments: [],
@@ -804,6 +806,7 @@ export function createSeed(): Workspace {
       },
     ],
     listings,
+    contacts: [],
     companies,
     quotes,
     shipments,
@@ -855,6 +858,7 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
   const version = Number(workspace.version) || 0;
   const freightFields = {
     listings: workspace.listings || [],
+    contacts: workspace.contacts || [],
     companies: workspace.companies || [],
     quotes: workspace.quotes || [],
     shipments: (workspace.shipments || []).map(normalizeShipment),
@@ -863,7 +867,7 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
     analyses: workspace.analyses || [],
   };
 
-  return {
+  const normalized: Workspace = {
     ...workspace,
     ...freightFields,
     version: Math.max(version, 3),
@@ -883,6 +887,7 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
     proposals: workspace.proposals || {},
     callLogs: workspace.callLogs || [],
   };
+  return hydrateContacts(normalized);
 }
 
 export function isWorkspace(value: unknown): value is Workspace {

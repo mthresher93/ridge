@@ -105,6 +105,16 @@ export type Listing = {
   priceHistory: { price: number; at: string }[];
 };
 
+export type Contact = {
+  id: string;
+  leadId: string;
+  name: string;
+  phone: string;
+  role: string;
+  createdAt: string;
+  updatedAt: string;
+};
+
 export type Company = {
   id: string;
   name: string;
@@ -523,6 +533,7 @@ export type Workspace = {
   proposals: Record<string, Proposal>;
   callLogs: CallLog[];
   listings: Listing[];
+  contacts: Contact[];
   companies: Company[];
   quotes: Quote[];
   shipments: Shipment[];

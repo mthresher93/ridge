@@ -14,6 +14,7 @@ import type {
 import { CONTACTED_STAGES, PHONE_STAGES, QUALIFIED_STAGES, QUOTE_STAGES, REPLIED_STAGES, UNCONTACTED_STAGES, WON_STAGES } from "./stages";
 import { normalizePhone, nowIso, uid } from "./format";
 import { applySpecsToLead, parseDimensions, parsePounds, recommendEquipment } from "./equipment";
+import { upsertBooker } from "./people";
 import { looksLikeYardName } from "./yard";
 import { workQueue } from "./metro";
 import { variantIndex } from "./pacing";
@@ -319,7 +320,9 @@ export function finishConnectedCall(
     leads: workspace.leads.map((item) => (item.id === leadId ? lead : item)),
     updatedAt: stamp,
   };
-  const result = upsertBlankQuote(withLead, lead, { destination, contact: booker || lead.name });
+  const withBooker = upsertBooker(withLead, leadId, { name: booker, phone: bookerPhone }).workspace;
+  const quotedLead = withBooker.leads.find((item) => item.id === leadId) || lead;
+  const result = upsertBlankQuote(withBooker, quotedLead, { destination, contact: booker || quotedLead.name });
   return {
     ok: true as const,
     shipment: result.shipment,

@@ -10,6 +10,7 @@ import { archiveLead, contactTimeline, findDuplicateLeads, relatedFor, restoreLe
 import { blankLoadFromLead, companyName, generateFollowUp, generateOpeningMessage, hasMeasuredSpecs, leadLocation, openQuoteShipment, shipmentMargin, summarizeProspect, CLIENT_KINDS } from "@/lib/freight";
 import { applySpecsToLead, parseDimensions, parsePounds, recommendEquipment } from "@/lib/equipment";
 import { attachCarrierToShipment, carrierLabel } from "@/lib/carriers";
+import { contactsForLead, upsertBooker } from "@/lib/people";
 import { wrapCall, type CallOutcome } from "@/lib/prospect";
 import { browserTelephony } from "@/lib/telephony";
 import { parseMoney } from "@/lib/validate";
@@ -140,7 +141,8 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
   function save(event?: React.FormEvent) {
     event?.preventDefault();
     const stamp = nowIso();
-    setWorkspace((prev) => ({
+    setWorkspace((prev) => {
+      const next = {
       ...prev,
       leads: prev.leads.map((item) => {
         if (item.id !== live.id) return item;
@@ -191,7 +193,9 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
           : item,
       ),
       updatedAt: stamp,
-    }));
+    };
+      return upsertBooker(next, live.id, { name: draft.booker, phone: draft.bookerPhone }).workspace;
+    });
     log("lead", live.id, "updated", "Client saved");
   }
 
@@ -428,6 +432,19 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
                 <p>{analysis.unknown.join(" · ") || "—"}</p>
               </>
             ) : null}
+            <h3>Contacts</h3>
+            {contactsForLead(workspace, live.id).length === 0 ? (
+              <p className="cd-mono">No booker on file. The yard is this record. Save who books freight on the wrap or below.</p>
+            ) : (
+              contactsForLead(workspace, live.id).map((item) => (
+                <div key={item.id} className="rec-row">
+                  <b>{item.name}</b>
+                  <p>
+                    {item.role} · {item.phone || "No direct line"}
+                  </p>
+                </div>
+              ))
+            )}
             <h3>Listings / signals</h3>
             {company?.recurringCandidate ? (
               <p className="rec-warn">
