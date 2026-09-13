@@ -13,7 +13,7 @@ import type {
 } from "./types";
 import { CONTACTED_STAGES, PHONE_STAGES, QUALIFIED_STAGES, QUOTE_STAGES, REPLIED_STAGES, UNCONTACTED_STAGES, WON_STAGES } from "./stages";
 import { normalizePhone, nowIso, uid } from "./format";
-import { parseDimensions, parsePounds, recommendEquipment } from "./equipment";
+import { applySpecsToLead, parseDimensions, parsePounds, recommendEquipment } from "./equipment";
 import { looksLikeYardName } from "./yard";
 import { workQueue } from "./metro";
 import { variantIndex } from "./pacing";
@@ -150,7 +150,7 @@ export function shipmentMargin(customerRate: number, carrierRate: number) {
 
 function cargoUnitsFromLead(lead: Lead): CargoUnit[] {
   const parsed = parseDimensions(lead.dimensions || "");
-  const weightLbs = parsePounds(lead.weight);
+  const weightLbs = parsePounds(lead.weight || "");
   if (parsed.lengthFt == null && weightLbs == null) return [];
   return [
     {
@@ -196,6 +196,25 @@ export function blankLoadFromLead(
     destNotes: "",
     appointmentPickup: false,
   };
+}
+
+export function parseMeasure(value: string) {
+  const n = Number(String(value).replace(/,/g, "").trim());
+  return Number.isFinite(n) && String(value).trim() !== "" ? n : null;
+}
+
+export function splitLanePlace(value: string) {
+  const raw = String(value || "").trim();
+  const match = raw.match(/^(.*?)[, ]+([A-Za-z]{2})$/);
+  if (match) return { city: match[1].replace(/,$/, "").trim(), state: match[2].toUpperCase() };
+  return { city: raw, state: "" };
+}
+
+export function joinLanePlace(city: string, state: string) {
+  const c = city.trim();
+  const s = state.trim().toUpperCase();
+  if (c && s) return `${c}, ${s}`;
+  return c || s;
 }
 
 export function openQuoteShipment(workspace: Workspace, leadId: string) {
@@ -262,6 +281,59 @@ export function upsertBlankQuote(workspace: Workspace, lead: Lead, overlay: { de
           : item,
       ),
       updatedAt: stamp,
+    },
+  };
+}
+
+export function finishConnectedCall(
+  workspace: Workspace,
+  leadId: string,
+  extra: {
+    booker?: string;
+    bookerPhone?: string;
+    destination?: string;
+    lengthFt?: number | null;
+    widthFt?: number | null;
+    heightFt?: number | null;
+    weightLbs?: number | null;
+    unit?: string;
+  } = {},
+) {
+  const current = workspace.leads.find((item) => item.id === leadId);
+  if (!current) return { ok: false as const, error: "Client not found." };
+  const stamp = nowIso();
+  const destination = String(extra.destination ?? current.destination ?? "").trim();
+  const booker = (extra.booker || current.booker || "").trim();
+  const bookerPhone = (extra.bookerPhone || current.bookerPhone || "").trim();
+  let lead: Lead = { ...current, destination, booker, bookerPhone, updatedAt: stamp };
+  const specs = applySpecsToLead(lead, {
+    lengthFt: extra.lengthFt,
+    widthFt: extra.widthFt,
+    heightFt: extra.heightFt,
+    weightLbs: extra.weightLbs,
+    unit: extra.unit || current.equipmentType,
+  });
+  if (specs.saved) lead = { ...specs.lead, destination, booker, bookerPhone };
+  const withLead: Workspace = {
+    ...workspace,
+    leads: workspace.leads.map((item) => (item.id === leadId ? lead : item)),
+    updatedAt: stamp,
+  };
+  const result = upsertBlankQuote(withLead, lead, { destination, contact: booker || lead.name });
+  return {
+    ok: true as const,
+    shipment: result.shipment,
+    created: result.created,
+    specsSaved: specs.saved,
+    fit: specs.fit,
+    lead,
+    workspace: {
+      ...result.workspace,
+      callbacks: (result.workspace.callbacks || []).map((item) =>
+        item.leadId === leadId && item.status === "open" && item.type === "hot"
+          ? { ...item, status: "completed" as const, completedAt: stamp }
+          : item,
+      ),
     },
   };
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { money, nowIso, uid } from "@/lib/format";
 import type { CargoUnit, Shipment, ShipmentStatus, Workspace } from "@/lib/types";
 import { convertQuoteToLoad, recordTracking, TRACKING_KINDS } from "@/lib/ops";
@@ -8,20 +8,51 @@ import { parseMoney, SHIPMENT_STATUSES } from "@/lib/validate";
 import { attachCarrierToShipment, carrierLabel, extractCarrierFacts, ingestCarrier } from "@/lib/carriers";
 import { classifyWhy } from "@/lib/load-class";
 import { combineUnits } from "@/lib/freight-math";
-import { parseDimensions, parsePounds, recommendEquipment } from "@/lib/equipment";
+import { measuredDimensions, parseDimensions, parsePounds, recommendEquipment } from "@/lib/equipment";
 import { useWorkspace } from "@/lib/workspace-context";
-import { shipmentMargin } from "@/lib/freight";
+import { joinLanePlace, parseMeasure, shipmentMargin, splitLanePlace } from "@/lib/freight";
 
 type Tab = "overview" | "quote" | "carrier" | "tracking" | "money" | "log";
 
 const TABS: { id: Tab; label: string }[] = [
   { id: "overview", label: "Overview" },
-  { id: "quote", label: "Lane / cargo" },
+  { id: "quote", label: "Lane" },
   { id: "carrier", label: "Carrier" },
   { id: "tracking", label: "Tracking" },
   { id: "money", label: "Financials" },
   { id: "log", label: "Activity" },
 ];
+
+function blankRate(value: number | string | null | undefined) {
+  if (value == null || value === "" || Number(value) === 0) return "";
+  return String(value);
+}
+
+function laneFromShipment(shipment: Shipment) {
+  const origin = splitLanePlace(shipment.origin || "");
+  const dest = splitLanePlace(shipment.destination || "");
+  const parsed = parseDimensions(shipment.dimensions || "");
+  const unit = shipment.cargoUnits?.[0];
+  return {
+    originCity: origin.city,
+    originState: origin.state,
+    destCity: dest.city,
+    destState: dest.state,
+    pickupDate: shipment.pickupDate || "",
+    deliveryDate: shipment.deliveryDate || "",
+    pickupNotes: shipment.pickupNotes || "",
+    destNotes: shipment.destNotes || "",
+    appointmentPickup: Boolean(shipment.appointmentPickup),
+    length: unit?.lengthFt != null ? String(unit.lengthFt) : parsed.lengthFt != null ? String(parsed.lengthFt) : "",
+    width: unit?.widthFt != null ? String(unit.widthFt) : parsed.widthFt != null ? String(parsed.widthFt) : "",
+    height: unit?.heightFt != null ? String(unit.heightFt) : parsed.heightFt != null ? String(parsed.heightFt) : "",
+    weight: unit?.weightLbs != null ? String(unit.weightLbs) : shipment.weight || "",
+    commodity: shipment.commodity || "",
+    equipmentType: shipment.equipmentType || "",
+    customerRate: blankRate(shipment.customerRate),
+    carrierRate: blankRate(shipment.carrierRate),
+  };
+}
 
 export function LoadOpsPane({
   shipment,
@@ -37,7 +68,12 @@ export function LoadOpsPane({
   const [msg, setMsg] = useState("");
   const [paste, setPaste] = useState("");
   const [url, setUrl] = useState("");
+  const [lane, setLane] = useState(() => laneFromShipment(shipment));
   const draft = shipment;
+
+  useEffect(() => {
+    setLane(laneFromShipment(shipment));
+  }, [shipment.id]);
   const activities = useMemo(
     () =>
       (workspace.activities || [])
@@ -50,6 +86,14 @@ export function LoadOpsPane({
     dimensions: draft.dimensions,
     weight: draft.weight,
   });
+  const laneFit = recommendEquipment({
+    text: lane.commodity || lane.equipmentType,
+    lengthFt: parseMeasure(lane.length),
+    widthFt: parseMeasure(lane.width),
+    heightFt: parseMeasure(lane.height),
+    weightLbs: parseMeasure(lane.weight),
+  });
+  const laneMargin = shipmentMargin(Number(lane.customerRate) || 0, Number(lane.carrierRate) || 0);
   const parsed = parseDimensions(draft.dimensions || "");
   const klass = classifyWhy(
     parsed.lengthFt,
@@ -80,19 +124,76 @@ export function LoadOpsPane({
   }
 
   function saveRates() {
-    const customerRate = parseMoney(draft.customerRate);
-    const carrierRate = parseMoney(draft.carrierRate);
+    const customerRate = parseMoney(lane.customerRate === "" ? 0 : lane.customerRate);
+    const carrierRate = parseMoney(lane.carrierRate === "" ? 0 : lane.carrierRate);
     if (customerRate == null || carrierRate == null) {
-      setMsg("Rates must be numbers. Leave 0 until you have a real number.");
+      setMsg("Rates must be numbers. Leave blank until you have a real number.");
       return;
     }
+    const next = { ...draft, customerRate, carrierRate, updatedAt: nowIso() };
+    onChange(next);
     setWorkspace((prev) => ({
       ...prev,
-      shipments: (prev.shipments || []).map((row) => (row.id === draft.id ? { ...draft, customerRate, carrierRate, updatedAt: nowIso() } : row)),
-      updatedAt: nowIso(),
+      shipments: (prev.shipments || []).map((row) => (row.id === draft.id ? next : row)),
+      updatedAt: next.updatedAt,
     }));
     setMsg("Saved.");
     log("shipment", draft.id, "updated", draft.status);
+  }
+
+  function setLaneField<K extends keyof ReturnType<typeof laneFromShipment>>(key: K, value: ReturnType<typeof laneFromShipment>[K]) {
+    setLane((prev) => ({ ...prev, [key]: value }));
+  }
+
+  function saveLane() {
+    const origin = joinLanePlace(lane.originCity, lane.originState);
+    const destination = joinLanePlace(lane.destCity, lane.destState);
+    const lengthFt = parseMeasure(lane.length);
+    const widthFt = parseMeasure(lane.width);
+    const heightFt = parseMeasure(lane.height);
+    const weightLbs = parseMeasure(lane.weight);
+    const customerRate = parseMoney(lane.customerRate === "" ? 0 : lane.customerRate);
+    const carrierRate = parseMoney(lane.carrierRate === "" ? 0 : lane.carrierRate);
+    if (customerRate == null || carrierRate == null) {
+      setMsg("Rates must be numbers. Leave blank until you have a real number.");
+      return;
+    }
+    const dims = measuredDimensions(lengthFt, widthFt, heightFt);
+    const rest = (draft.cargoUnits || []).slice(1);
+    const first: CargoUnit = {
+      id: draft.cargoUnits?.[0]?.id || uid("cu"),
+      qty: draft.cargoUnits?.[0]?.qty || 1,
+      lengthFt,
+      widthFt,
+      heightFt,
+      weightLbs,
+      notes: lane.commodity || draft.cargoUnits?.[0]?.notes || "",
+    };
+    const fit = recommendEquipment({
+      text: lane.commodity || lane.equipmentType,
+      lengthFt,
+      widthFt,
+      heightFt,
+      weightLbs,
+    });
+    patch({
+      origin,
+      destination,
+      pickupDate: lane.pickupDate,
+      deliveryDate: lane.deliveryDate,
+      pickupNotes: lane.pickupNotes,
+      destNotes: lane.destNotes,
+      appointmentPickup: lane.appointmentPickup,
+      commodity: lane.commodity,
+      dimensions: dims || draft.dimensions,
+      weight: weightLbs != null ? String(weightLbs) : "",
+      equipmentType: lane.equipmentType || (fit.trailer !== "UNKNOWN" ? fit.trailerName : draft.equipmentType),
+      cargoUnits: lengthFt != null || weightLbs != null ? [first, ...rest] : rest,
+      customerRate,
+      carrierRate,
+    });
+    setMsg("Lane saved.");
+    log("shipment", draft.id, "updated", "lane");
   }
 
   function convert() {
@@ -134,24 +235,6 @@ export function LoadOpsPane({
     onChange(attached, result.workspace);
     setMsg(`Cover: ${carrierLabel(result.carrier)}`);
     setPaste("");
-  }
-
-  function patchUnits(units: CargoUnit[]) {
-    const mapped = units
-      .filter((item) => (item.lengthFt || 0) > 0 || (item.weightLbs || 0) > 0)
-      .map((item) => ({
-        lengthFt: item.lengthFt || 0,
-        widthFt: item.widthFt || 0,
-        heightFt: item.heightFt || 0,
-        weightLbs: item.weightLbs || 0,
-      }));
-    const combined = mapped.length ? combineUnits(mapped, "end-to-end") : null;
-    patch({
-      cargoUnits: units,
-      ...(combined
-        ? { dimensions: `${combined.lengthFt} x ${combined.widthFt} x ${combined.heightFt}`, weight: String(combined.weightLbs) }
-        : {}),
-    });
   }
 
   const margin = shipmentMargin(Number(draft.customerRate) || 0, Number(draft.carrierRate) || 0);
@@ -212,145 +295,114 @@ export function LoadOpsPane({
           </div>
         ) : null}
         {tab === "quote" ? (
-          <div className="rec-form">
-            <div className="rec-grid">
-              <label className="rec-field">
-                Origin
-                <input className="az-input" value={draft.origin} onChange={(event) => patch({ origin: event.target.value })} />
+          <div className="lane-sheet">
+            <div className="lane-block">
+              <div className="home-kicker">Lane</div>
+              <div className="lane-places">
+                <label className="rec-field">
+                  Origin city
+                  <input className="az-input" value={lane.originCity} onChange={(event) => setLaneField("originCity", event.target.value)} />
+                </label>
+                <label className="rec-field lane-st">
+                  ST
+                  <input className="az-input" maxLength={2} value={lane.originState} onChange={(event) => setLaneField("originState", event.target.value.toUpperCase())} />
+                </label>
+                <span className="lane-arrow" aria-hidden>
+                  →
+                </span>
+                <label className="rec-field">
+                  Dest city
+                  <input className="az-input" value={lane.destCity} onChange={(event) => setLaneField("destCity", event.target.value)} />
+                </label>
+                <label className="rec-field lane-st">
+                  ST
+                  <input className="az-input" maxLength={2} value={lane.destState} onChange={(event) => setLaneField("destState", event.target.value.toUpperCase())} />
+                </label>
+              </div>
+              <div className="rec-grid">
+                <label className="rec-field">
+                  Pickup
+                  <input className="az-input" type="date" value={lane.pickupDate} onChange={(event) => setLaneField("pickupDate", event.target.value)} />
+                </label>
+                <label className="rec-field">
+                  Delivery
+                  <input className="az-input" type="date" value={lane.deliveryDate} onChange={(event) => setLaneField("deliveryDate", event.target.value)} />
+                </label>
+              </div>
+              <label className="rec-field lane-check">
+                <input type="checkbox" checked={lane.appointmentPickup} onChange={(event) => setLaneField("appointmentPickup", event.target.checked)} />
+                Pickup appointment required
               </label>
-              <label className="rec-field">
-                Destination
-                <input className="az-input" value={draft.destination} onChange={(event) => patch({ destination: event.target.value })} />
-              </label>
+              <div className="rec-grid">
+                <label className="rec-field">
+                  Pickup notes
+                  <input className="az-input" value={lane.pickupNotes} onChange={(event) => setLaneField("pickupNotes", event.target.value)} />
+                </label>
+                <label className="rec-field">
+                  Delivery notes
+                  <input className="az-input" value={lane.destNotes} onChange={(event) => setLaneField("destNotes", event.target.value)} />
+                </label>
+              </div>
             </div>
-            <div className="rec-grid">
+            <div className="lane-block">
+              <div className="home-kicker">Cargo</div>
               <label className="rec-field">
-                Pickup notes
-                <input className="az-input" value={draft.pickupNotes || ""} onChange={(event) => patch({ pickupNotes: event.target.value })} />
+                Commodity
+                <input className="az-input" value={lane.commodity} onChange={(event) => setLaneField("commodity", event.target.value)} placeholder="What they told you is moving" />
               </label>
+              <div className="desk-specs-grid">
+                <label className="rec-field">
+                  L ft
+                  <input className="az-input" inputMode="decimal" value={lane.length} onChange={(event) => setLaneField("length", event.target.value)} />
+                </label>
+                <label className="rec-field">
+                  W ft
+                  <input className="az-input" inputMode="decimal" value={lane.width} onChange={(event) => setLaneField("width", event.target.value)} />
+                </label>
+                <label className="rec-field">
+                  H ft
+                  <input className="az-input" inputMode="decimal" value={lane.height} onChange={(event) => setLaneField("height", event.target.value)} />
+                </label>
+                <label className="rec-field">
+                  lb
+                  <input className="az-input" inputMode="decimal" value={lane.weight} onChange={(event) => setLaneField("weight", event.target.value)} />
+                </label>
+              </div>
               <label className="rec-field">
-                Delivery notes
-                <input className="az-input" value={draft.destNotes || ""} onChange={(event) => patch({ destNotes: event.target.value })} />
+                Equipment
+                <input className="az-input" value={lane.equipmentType} onChange={(event) => setLaneField("equipmentType", event.target.value)} placeholder="Leave blank to use the matcher" />
               </label>
+              <p className="cd-mono">
+                {laneFit.trailerName} · {laneFit.loadClass}. {laneFit.why}
+                {laneFit.alsoFits.length ? ` Also: ${laneFit.alsoFits.join(", ")}.` : ""}
+              </p>
+              {combined ? (
+                <p className="cd-mono">
+                  Extra units combined: {combined.lengthFt}' × {combined.widthFt}' × {combined.heightFt}' · {combined.weightLbs.toLocaleString()} lb
+                </p>
+              ) : null}
             </div>
-            <label className="rec-field">
-              <input
-                type="checkbox"
-                checked={Boolean(draft.appointmentPickup)}
-                onChange={(event) => patch({ appointmentPickup: event.target.checked })}
-              />{" "}
-              Pickup appointment required
-            </label>
-            <div className="rec-grid">
-              <label className="rec-field">
-                Dims L × W × H
-                <input className="az-input" value={draft.dimensions} onChange={(event) => patch({ dimensions: event.target.value })} />
-              </label>
-              <label className="rec-field">
-                Weight
-                <input className="az-input" value={draft.weight} onChange={(event) => patch({ weight: event.target.value })} />
-              </label>
-            </div>
-            <div className="cargo-units">
-              <div className="home-kicker">Cargo units</div>
-              {(draft.cargoUnits || []).map((unit, index) => (
-                <div key={unit.id} className="rec-grid">
-                  <label className="rec-field">
-                    L ft
-                    <input
-                      className="az-input"
-                      type="number"
-                      min={0}
-                      value={unit.lengthFt ?? ""}
-                      onChange={(event) => {
-                        const next = [...(draft.cargoUnits || [])];
-                        next[index] = { ...unit, lengthFt: event.target.value === "" ? null : Number(event.target.value) };
-                        patchUnits(next);
-                      }}
-                    />
-                  </label>
-                  <label className="rec-field">
-                    W ft
-                    <input
-                      className="az-input"
-                      type="number"
-                      min={0}
-                      value={unit.widthFt ?? ""}
-                      onChange={(event) => {
-                        const next = [...(draft.cargoUnits || [])];
-                        next[index] = { ...unit, widthFt: event.target.value === "" ? null : Number(event.target.value) };
-                        patchUnits(next);
-                      }}
-                    />
-                  </label>
-                  <label className="rec-field">
-                    H ft
-                    <input
-                      className="az-input"
-                      type="number"
-                      min={0}
-                      value={unit.heightFt ?? ""}
-                      onChange={(event) => {
-                        const next = [...(draft.cargoUnits || [])];
-                        next[index] = { ...unit, heightFt: event.target.value === "" ? null : Number(event.target.value) };
-                        patchUnits(next);
-                      }}
-                    />
-                  </label>
-                  <label className="rec-field">
-                    lb
-                    <input
-                      className="az-input"
-                      type="number"
-                      min={0}
-                      value={unit.weightLbs ?? ""}
-                      onChange={(event) => {
-                        const next = [...(draft.cargoUnits || [])];
-                        next[index] = { ...unit, weightLbs: event.target.value === "" ? null : Number(event.target.value) };
-                        patchUnits(next);
-                      }}
-                    />
-                  </label>
+            <div className="lane-block">
+              <div className="home-kicker">Rates</div>
+              <div className="lane-rates">
+                <label className="rec-field">
+                  Customer
+                  <input className="az-input" inputMode="decimal" value={lane.customerRate} onChange={(event) => setLaneField("customerRate", event.target.value)} placeholder="Blank until quoted" />
+                </label>
+                <label className="rec-field">
+                  Carrier
+                  <input className="az-input" inputMode="decimal" value={lane.carrierRate} onChange={(event) => setLaneField("carrierRate", event.target.value)} placeholder="Blank until covered" />
+                </label>
+                <div className="lane-margin">
+                  <span>Margin</span>
+                  <b>{lane.customerRate || lane.carrierRate ? money(laneMargin) : "—"}</b>
                 </div>
-              ))}
-              <button
-                className="az-btn sm"
-                type="button"
-                onClick={() =>
-                  patchUnits([
-                    ...(draft.cargoUnits || []),
-                    { id: uid("cu"), qty: 1, lengthFt: null, widthFt: null, heightFt: null, weightLbs: null, notes: "" },
-                  ])
-                }
-              >
-                Add unit
+              </div>
+              <p className="cd-mono">Listing ask is never the rate. Type a number you actually quoted.</p>
+              <button className="az-btn pri sm" type="button" onClick={saveLane}>
+                Save lane
               </button>
             </div>
-            <label className="rec-field">
-              Equipment
-              <input className="az-input" value={draft.equipmentType} onChange={(event) => patch({ equipmentType: event.target.value })} />
-            </label>
-            <p className="cd-mono">
-              Recommended: {fit.trailerName}. Possible: {fit.alsoFits.length ? fit.alsoFits.join(", ") : "—"}. {fit.legalNote}
-            </p>
-            {combined ? (
-              <p className="cd-mono">
-                Combined units end-to-end: {combined.lengthFt}' × {combined.widthFt}' × {combined.heightFt}' · {combined.weightLbs.toLocaleString()} lb
-              </p>
-            ) : null}
-            <div className="rec-grid">
-              <label className="rec-field">
-                Pickup
-                <input className="az-input" type="date" value={draft.pickupDate} onChange={(event) => patch({ pickupDate: event.target.value })} />
-              </label>
-              <label className="rec-field">
-                Delivery
-                <input className="az-input" type="date" value={draft.deliveryDate} onChange={(event) => patch({ deliveryDate: event.target.value })} />
-              </label>
-            </div>
-            <button className="az-btn pri sm" type="button" onClick={saveRates}>
-              Save lane
-            </button>
           </div>
         ) : null}
         {tab === "carrier" ? (

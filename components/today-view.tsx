@@ -3,15 +3,15 @@
 import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { derive, topMove } from "@/lib/derive";
-import { deskCallBook, deskPlan, todayHunt } from "@/lib/desk";
+import { derive } from "@/lib/derive";
+import { deskCallBook, todayHunt } from "@/lib/desk";
 import { bookedMargin, deskAttention, liveLoadSnapshot } from "@/lib/ops";
 import { browserTelephony } from "@/lib/telephony";
 import { inCallingWindow } from "@/lib/us-time";
 import { settingsWithDefaults } from "@/lib/types";
 import { huntQueue } from "@/lib/hunt";
-import { HOW_VOLUME_GROWS, NO_SPEND } from "@/lib/improve";
-import { companyName, leadLocation, outreachQueue, suggestClientKind, upsertBlankQuote } from "@/lib/freight";
+import { applySpecsToLead, recommendEquipment, specsFromLead } from "@/lib/equipment";
+import { companyName, finishConnectedCall, leadLocation, outreachQueue, parseMeasure, suggestClientKind } from "@/lib/freight";
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
 import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { HuntDance } from "./hunt-dance";
@@ -25,10 +25,8 @@ export function TodayView() {
   const router = useRouter();
   const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
   const metrics = useMemo(() => derive(workspace), [workspace]);
-  const move = useMemo(() => topMove(workspace), [workspace]);
   const hunt = useMemo(() => todayHunt(new Date(), workspace), [workspace]);
   const queue = useMemo(() => huntQueue(new Date(), 12, huntPlacesFromBook(workspace)), [workspace]);
-  const plan = useMemo(() => deskPlan(workspace), [workspace]);
   const attention = useMemo(() => deskAttention(workspace), [workspace]);
   const loads = useMemo(() => liveLoadSnapshot(workspace), [workspace]);
   const books = useMemo(() => bookedMargin(workspace), [workspace]);
@@ -50,6 +48,11 @@ export function TodayView() {
   const [bookerPhone, setBookerPhone] = useState("");
   const [wrapNote, setWrapNote] = useState("");
   const [dest, setDest] = useState("");
+  const [specL, setSpecL] = useState("");
+  const [specW, setSpecW] = useState("");
+  const [specH, setSpecH] = useState("");
+  const [specLb, setSpecLb] = useState("");
+  const [specMsg, setSpecMsg] = useState("");
   const [lastWrappedId, setLastWrappedId] = useState("");
   const [lastOutcome, setLastOutcome] = useState<CallOutcome | "">("");
   const wrappedLead = lastWrappedId ? live.find((lead) => lead.id === lastWrappedId) || null : null;
@@ -73,6 +76,13 @@ export function TodayView() {
   const census = useMemo(() => bookCensus(workspace.leads), [workspace.leads]);
   const sentToday = useMemo(() => messagesSentOnDay(workspace.kpiEvents || []), [workspace.kpiEvents]);
   const nextScript = nextCall ? firstCall(nextCall, sentToday) : null;
+  const wrapFit = recommendEquipment({
+    text: nextCall?.equipmentType || nextCall?.listingTitle || "",
+    lengthFt: parseMeasure(specL),
+    widthFt: parseMeasure(specW),
+    heightFt: parseMeasure(specH),
+    weightLbs: parseMeasure(specLb),
+  });
 
   useEffect(() => {
     fetch("/api/ai/status")
@@ -120,12 +130,26 @@ export function TodayView() {
     }
   }
 
-  function noteCall(lead: Lead, outcome: CallOutcome, extra?: { booker: string; bookerPhone?: string }) {
+  function fillWrap(lead: Lead) {
+    const specs = specsFromLead(lead);
+    setBooker(lead.booker || "");
+    setBookerPhone(lead.bookerPhone || "");
+    setDest(lead.destination || "");
+    setSpecL(specs.lengthFt != null ? String(specs.lengthFt) : "");
+    setSpecW(specs.widthFt != null ? String(specs.widthFt) : "");
+    setSpecH(specs.heightFt != null ? String(specs.heightFt) : "");
+    setSpecLb(specs.weightLbs != null ? String(specs.weightLbs) : "");
+    setSpecMsg(lead.dimensions || lead.weight ? `On file: ${lead.dimensions || "—"} · ${lead.weight ? `${lead.weight} lb` : "no weight"}` : "");
+    setWrapNote("");
+  }
+
+  function noteCall(lead: Lead, outcome: CallOutcome) {
+    const sameHero = lead.id === nextCall?.id && !lastOutcome;
     setWorkspace((prev) =>
       wrapCall(prev, lead.id, outcome, {
-        booker: extra?.booker || booker.trim(),
-        bookerPhone: extra?.bookerPhone || bookerPhone.trim(),
-        notes: wrapNote.trim(),
+        booker: sameHero ? booker.trim() : lead.booker,
+        bookerPhone: sameHero ? bookerPhone.trim() : lead.bookerPhone,
+        notes: sameHero ? wrapNote.trim() : "",
       }),
     );
     log(
@@ -135,9 +159,15 @@ export function TodayView() {
       outcome === "talked" ? "Talked from Desk" : outcome === "voicemail" ? "Voicemail from Desk" : outcome === "wrong_number" ? "Wrong number from Desk" : "No pickup from Desk",
     );
     if (outcome === "no_pickup" || outcome === "voicemail") void copyOpener(lead);
+    fillWrap({
+      ...lead,
+      booker: sameHero ? booker.trim() || lead.booker : lead.booker,
+      bookerPhone: sameHero ? bookerPhone.trim() || lead.bookerPhone : lead.bookerPhone,
+    });
     setLastWrappedId(lead.id);
     setLastOutcome(outcome);
     setSelectedLeadId(lead.id);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   }
 
   function dismissWrap() {
@@ -145,34 +175,57 @@ export function TodayView() {
     setLastOutcome("");
     setWrapNote("");
     setDest("");
+    setSpecL("");
+    setSpecW("");
+    setSpecH("");
+    setSpecLb("");
+    setSpecMsg("");
     setBooker("");
     setBookerPhone("");
   }
 
-  function openBlankQuote(lead: Lead) {
-    const destination = dest.trim();
-    const contact = (booker.trim() || lead.booker || lead.name).trim();
-    const result = upsertBlankQuote(workspace, lead, { destination, contact });
-    const stamp = result.shipment.updatedAt;
-    setWorkspace({
-      ...result.workspace,
-      leads: result.workspace.leads.map((row) =>
-        row.id === lead.id
-          ? {
-              ...row,
-              destination: destination || row.destination,
-              booker: contact,
-              bookerPhone: (bookerPhone.trim() || row.bookerPhone || "").trim(),
-              updatedAt: stamp,
-            }
-          : row,
-      ),
-      callbacks: result.workspace.callbacks.map((item) =>
-        item.leadId === lead.id && item.status === "open" && item.type === "hot"
-          ? { ...item, status: "completed", completedAt: stamp }
+  function saveSpecsOnWrap(lead: Lead) {
+    const result = applySpecsToLead(lead, {
+      unit: lead.equipmentType || lead.listingTitle || "",
+      lengthFt: parseMeasure(specL),
+      widthFt: parseMeasure(specW),
+      heightFt: parseMeasure(specH),
+      weightLbs: parseMeasure(specLb),
+    });
+    if (!result.saved) {
+      setSpecMsg(result.reason);
+      return;
+    }
+    const stamp = result.lead.updatedAt;
+    setWorkspace((prev) => ({
+      ...prev,
+      leads: prev.leads.map((item) =>
+        item.id === lead.id
+          ? { ...result.lead, destination: dest.trim() || result.lead.destination, booker: booker.trim() || result.lead.booker, bookerPhone: bookerPhone.trim() || result.lead.bookerPhone }
           : item,
       ),
+      updatedAt: stamp,
+    }));
+    log("lead", lead.id, "specs_saved", result.lead.dimensions || "");
+    setSpecMsg(`Saved on ${lead.name}. ${result.lead.trailerHint}`);
+  }
+
+  function openBlankQuote(lead: Lead) {
+    const result = finishConnectedCall(workspace, lead.id, {
+      booker: booker.trim(),
+      bookerPhone: bookerPhone.trim(),
+      destination: dest.trim(),
+      lengthFt: parseMeasure(specL),
+      widthFt: parseMeasure(specW),
+      heightFt: parseMeasure(specH),
+      weightLbs: parseMeasure(specLb),
+      unit: lead.equipmentType || lead.listingTitle || "",
     });
+    if (!result.ok) {
+      setSpecMsg(result.error);
+      return;
+    }
+    setWorkspace(result.workspace);
     setSelectedLeadId(lead.id);
     log("shipment", result.shipment.id, result.created ? "created" : "updated", `Blank quote from Desk for ${lead.name}`);
     dismissWrap();
@@ -270,33 +323,60 @@ export function TodayView() {
             </header>
             {wrappedLead && lastOutcome === "talked" ? (
               <>
-                <p className="desk-ask">They picked up. Type dest. Blank quote stays $0 until they give a number.</p>
+                <p className="desk-ask">Stay here. Booker, dest, L × W × H and pounds. Quote stays $0.</p>
                 <div className="desk-booker">
                   <label className="rec-field">
                     Who books freight
                     <input className="az-input" value={booker} onChange={(event) => setBooker(event.target.value)} placeholder="Name they gave you" />
                   </label>
                   <label className="rec-field">
-                    Direct line (if they gave it)
-                    <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if published or they told you" />
+                    Direct line
+                    <input className="az-input" value={bookerPhone} onChange={(event) => setBookerPhone(event.target.value)} placeholder="Only if they gave it" />
                   </label>
                   <label className="rec-field">
-                    Destination (typed — never invented)
-                    <input className="az-input" value={dest} onChange={(event) => setDest(event.target.value)} placeholder="City they named" />
+                    Destination
+                    <input className="az-input" value={dest} onChange={(event) => setDest(event.target.value)} placeholder="City, ST they named" />
                   </label>
+                </div>
+                <div className="desk-specs">
+                  <div className="home-kicker">Measured specs</div>
+                  <div className="desk-specs-grid">
+                    <label className="rec-field">
+                      L ft
+                      <input className="az-input" inputMode="decimal" value={specL} onChange={(event) => setSpecL(event.target.value)} />
+                    </label>
+                    <label className="rec-field">
+                      W ft
+                      <input className="az-input" inputMode="decimal" value={specW} onChange={(event) => setSpecW(event.target.value)} />
+                    </label>
+                    <label className="rec-field">
+                      H ft
+                      <input className="az-input" inputMode="decimal" value={specH} onChange={(event) => setSpecH(event.target.value)} />
+                    </label>
+                    <label className="rec-field">
+                      lb
+                      <input className="az-input" inputMode="decimal" value={specLb} onChange={(event) => setSpecLb(event.target.value)} />
+                    </label>
+                  </div>
+                  <p className="cd-mono">
+                    {parseMeasure(specL) != null || parseMeasure(specLb) != null
+                      ? `${wrapFit.trailerName} · ${wrapFit.loadClass}. ${wrapFit.why}`
+                      : "Type the numbers they told you. Catalog nicknames are not specs."}
+                  </p>
+                  {specMsg ? <p className="cd-mono">{specMsg}</p> : null}
                 </div>
                 <div className="desk-next-actions">
                   <button className="az-btn pri" type="button" onClick={() => openBlankQuote(nextCall)}>
                     Blank quote — rates $0
                   </button>
-                  <button className="az-btn pri" type="button" onClick={() => { setSelectedLeadId(nextCall.id); router.push("/playbook"); }}>
-                    Save specs in Intel
+                  <button className="az-btn" type="button" onClick={() => saveSpecsOnWrap(nextCall)}>
+                    Save specs
                   </button>
                   <button className="az-btn" type="button" onClick={() => openLead(nextCall.id, workPath(nextCall.id))}>
-                    Open in Work
+                    Work
                   </button>
                   <button className="az-btn" type="button" onClick={dismissWrap}>
-                    Next untried call
+                    Next call
                   </button>
                 </div>
               </>
@@ -345,7 +425,7 @@ export function TodayView() {
                   <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(nextCall.phone)}>
                     Call {phonePretty(nextCall.phone)}
                   </button>
-                  <button className="az-btn pri" type="button" onClick={() => noteCall(nextCall, "talked", { booker: booker.trim(), bookerPhone: bookerPhone.trim() })}>
+                  <button className="az-btn pri" type="button" onClick={() => noteCall(nextCall, "talked")}>
                     Talked{booker.trim() ? ` — ${booker.trim()}` : ""}
                   </button>
                   <button className="az-btn" type="button" onClick={() => noteCall(nextCall, "no_pickup")}>
@@ -402,7 +482,7 @@ export function TodayView() {
             <header>
               <div>
                 <div className="home-kicker">Needs attention</div>
-                <h3>What is actually waiting</h3>
+                <h3>Waiting</h3>
               </div>
               <span className="cd-mono">
                 Booked margin {books.margin ? money(books.margin) : "—"} · {books.quoted} open quotes
@@ -428,7 +508,7 @@ export function TodayView() {
             <header>
               <div>
                 <div className="home-kicker">Active loads</div>
-                <h3>Cover, pickup, delivery</h3>
+                <h3>Active loads</h3>
               </div>
               <button className="az-btn sm" type="button" onClick={() => router.push("/shipments")}>
                 Open shipments
@@ -465,33 +545,6 @@ export function TodayView() {
               </table>
             </div>
           </section>
-        ) : null}
-
-        {!stillCalling ? (
-        <section className="az-panel freight-panel desk-from-you">
-          <header>
-            <div>
-              <div className="home-kicker">When the list is empty</div>
-              <h3>Hunt one metro. Do not buy a board yet.</h3>
-            </div>
-            {obvious ? (
-              <button className="az-btn pri sm" type="button" onClick={labelObvious}>
-                Label {obvious} obvious yards
-              </button>
-            ) : null}
-          </header>
-          <ol className="desk-from-list">
-            {NO_SPEND.map((item) => (
-              <li key={item.n}>
-                <b>{item.n}</b>
-                <div>
-                  <strong>{item.title}</strong>
-                  <p>{item.detail}</p>
-                </div>
-              </li>
-            ))}
-          </ol>
-        </section>
         ) : null}
 
         {callBook.length ? (
@@ -548,6 +601,20 @@ export function TodayView() {
                           <button className="az-btn pri sm" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
                             {phonePretty(lead.phone)}
                           </button>
+                          <div className="desk-wrap-disp">
+                            <button type="button" onClick={() => noteCall(lead, "talked")}>
+                              Talked
+                            </button>
+                            <button type="button" onClick={() => noteCall(lead, "no_pickup")}>
+                              Miss
+                            </button>
+                            <button type="button" onClick={() => noteCall(lead, "voicemail")}>
+                              VM
+                            </button>
+                            <button type="button" onClick={() => noteCall(lead, "wrong_number")}>
+                              Wrong
+                            </button>
+                          </div>
                           <button className="az-btn sm" type="button" onClick={() => void copyOpener(lead)}>
                             {copiedId === lead.id ? "Copied" : "Copy"}
                           </button>
@@ -574,8 +641,7 @@ export function TodayView() {
           <div className="desk-today-copy">
             <div className="home-kicker">{hunt.weekday} hunt</div>
             <h2>{hunt.play.title}</h2>
-            <p>{hunt.why}</p>
-            <p className="cd-mono">{hunt.doThis}</p>
+            <p>{hunt.doThis}</p>
             <div className="empty-desk-actions">
               <button className="az-btn gold" type="button" onClick={() => router.push(hunt.href)}>
                 Hunt {hunt.query} · {hunt.place}
@@ -613,9 +679,6 @@ export function TodayView() {
               All plays
             </button>
           </header>
-          <p className="desk-queue-note">
-            These public pages stay in metros already on this book. Open one, capture it, then the next. Do not rotate to Florida while Texas phones are untried.
-          </p>
           <div className="desk-queue-grid">
             {queue.map((item) => (
               <a key={item.id} className="desk-open-row desk-queue-row" href={item.url} target="_blank" rel="noreferrer">
@@ -635,52 +698,11 @@ export function TodayView() {
           </div>
         </section>
 
-        <section className="az-panel freight-panel desk-improve">
-          <header>
-            <div>
-              <div className="home-kicker">How to improve this</div>
-              <h3>What still raises capture — and what will not</h3>
-            </div>
-          </header>
-          <div className="desk-improve-grid">
-            {HOW_VOLUME_GROWS.map((item) => (
-              <div key={item.title}>
-                <b>{item.title}</b>
-                <p>{item.detail}</p>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <ol className="desk-plan">
-          {plan.map((item, index) => (
-            <li key={`${item.href}-${item.title}`}>
-              <button type="button" className="desk-plan-row" onClick={() => router.push(item.href)}>
-                <b>{index + 1}</b>
-                <div>
-                  <span className="home-kicker">{item.kicker}</span>
-                  <strong>{item.title}</strong>
-                  <p>{item.why}</p>
-                </div>
-                <em>{item.cta}</em>
-              </button>
-            </li>
-          ))}
-        </ol>
           </>
         ) : null}
 
         {live.length > 0 ? (
           <>
-            {!stillCalling ? (
-            <section className="freight-hero" onClick={() => openLead(move.leadId, move.href)}>
-              <div className="home-kicker">{move.kicker}</div>
-              <h2>{move.title}</h2>
-              <p>{move.reason}</p>
-              <span className="az-btn pri sm">{move.cta}</span>
-            </section>
-            ) : null}
-
             <div className="desk-work-grid">
               {!stillCalling ? (
               <>

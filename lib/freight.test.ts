@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { analyzeFreightOpportunity, blankLoadFromLead, blankProspect, captureFacts, detectShipperRole, extractListingData, generateOpeningMessage, hasMeasuredSpecs, ingestCapture, suggestClientKind, trailerFact, upsertBlankQuote } from "./freight";
+import { analyzeFreightOpportunity, blankLoadFromLead, blankProspect, captureFacts, detectShipperRole, extractListingData, finishConnectedCall, generateOpeningMessage, hasMeasuredSpecs, ingestCapture, joinLanePlace, splitLanePlace, suggestClientKind, trailerFact, upsertBlankQuote } from "./freight";
 import { emptyWorkspace } from "./seed";
 
 function score(text: string, extra: Record<string, string> = {}) {
@@ -267,5 +267,64 @@ describe("blankLoadFromLead", () => {
     expect(second.workspace.shipments).toHaveLength(1);
     expect(second.shipment.destination).toBe("Austin");
     expect(second.shipment.customerRate).toBe(0);
+  });
+});
+
+describe("lane place", () => {
+  it("splits and joins city/state without inventing a state", () => {
+    expect(splitLanePlace("Dallas, TX")).toEqual({ city: "Dallas", state: "TX" });
+    expect(splitLanePlace("Houston TX")).toEqual({ city: "Houston", state: "TX" });
+    expect(splitLanePlace("Austin")).toEqual({ city: "Austin", state: "" });
+    expect(joinLanePlace("Dallas", "tx")).toBe("Dallas, TX");
+    expect(joinLanePlace("Austin", "")).toBe("Austin");
+  });
+});
+
+describe("finishConnectedCall", () => {
+  it("saves measured specs onto the yard and opens a $0 quote", () => {
+    const lead = blankProspect("Michael", {
+      id: "lead-1",
+      name: "HOLT CAT Dallas (North)",
+      city: "Dallas",
+      state: "TX",
+      status: "Contacted",
+    });
+    const workspace = {
+      ...emptyWorkspace(),
+      leads: [lead],
+      callbacks: [
+        {
+          id: "cb1",
+          leadId: "lead-1",
+          type: "hot" as const,
+          dueAt: "2026-09-08T12:00:00.000Z",
+          reason: "Talked to Maria. Dest, specs, blank quote.",
+          assignedUser: "Michael",
+          notes: "",
+          status: "open" as const,
+          createdAt: "2026-09-08T12:00:00.000Z",
+        },
+      ],
+    };
+    const next = finishConnectedCall(workspace, "lead-1", {
+      booker: "Maria",
+      destination: "Austin, TX",
+      lengthFt: 12,
+      widthFt: 6,
+      heightFt: 8,
+      weightLbs: 9000,
+      unit: "forklift",
+    });
+    expect(next.ok).toBe(true);
+    if (!next.ok) return;
+    expect(next.specsSaved).toBe(true);
+    expect(next.lead.booker).toBe("Maria");
+    expect(next.lead.destination).toBe("Austin, TX");
+    expect(next.lead.dimensions).toBe("12 x 6 x 8");
+    expect(next.lead.weight).toBe("9000");
+    expect(next.shipment.customerRate).toBe(0);
+    expect(next.shipment.destination).toBe("Austin, TX");
+    expect(next.shipment.dimensions).toBe("12 x 6 x 8");
+    expect(next.workspace.callbacks[0].status).toBe("completed");
   });
 });

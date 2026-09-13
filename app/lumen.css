@@ -2360,8 +2360,8 @@ button.desk-open-row {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   gap: 10px;
-  align-items: start;
-  padding: 12px 14px 12px 16px;
+  align-items: center;
+  padding: 8px 12px 8px 14px;
   background: var(--bg2);
   border: 1px solid var(--br);
   border-radius: var(--radius);
@@ -2510,7 +2510,21 @@ button.desk-open-row {
 .desk-next {
   position: relative;
   overflow: hidden;
-  padding: 16px 18px 16px 20px;
+  padding: 14px 16px 14px 18px;
+}
+
+.desk-next > header {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.desk-next > header h3 {
+  margin: 2px 0 0;
+  font-family: var(--fh);
+  font-size: 22px;
+  letter-spacing: 0.02em;
 }
 
 .desk-next::before {
@@ -2532,6 +2546,42 @@ button.desk-open-row {
   flex-wrap: wrap;
   gap: 6px;
   justify-content: flex-end;
+  align-items: center;
+}
+
+.desk-wrap-disp {
+  display: flex;
+  gap: 2px;
+}
+
+.desk-wrap-disp button {
+  border: 0;
+  background: transparent;
+  padding: 4px 7px;
+  font-size: 12px;
+  color: var(--tx3);
+  cursor: pointer;
+  border-radius: 4px;
+}
+
+.desk-wrap-disp button:hover {
+  color: var(--tx);
+  background: var(--bg3);
+}
+
+.desk-specs {
+  margin: 12px 0 0;
+  padding: 10px 12px;
+  background: var(--bg2);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+}
+
+.desk-specs-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 6px;
 }
 
 .desk-call-who em {
@@ -3386,6 +3436,86 @@ button.desk-open-row {
   flex-direction: column;
   gap: 8px;
   margin: 8px 0;
+}
+
+.lane-sheet {
+  display: grid;
+  gap: 16px;
+  max-width: 820px;
+}
+
+.lane-block {
+  display: grid;
+  gap: 8px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--br);
+}
+
+.lane-block:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+
+.lane-places {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 56px auto minmax(0, 1fr) 56px;
+  gap: 8px;
+  align-items: end;
+}
+
+.lane-st input {
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-align: center;
+}
+
+.lane-arrow {
+  padding-bottom: 10px;
+  color: var(--tx3);
+  font-size: 16px;
+}
+
+.lane-check {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 8px;
+}
+
+.lane-rates {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) auto;
+  gap: 8px;
+  align-items: end;
+}
+
+.lane-margin {
+  min-width: 96px;
+  padding: 6px 0 2px;
+  text-align: right;
+}
+
+.lane-margin span {
+  display: block;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tx3);
+}
+
+.lane-margin b {
+  font-size: 18px;
+}
+
+@media (max-width: 720px) {
+  .lane-places,
+  .lane-rates,
+  .desk-specs-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  .lane-arrow {
+    display: none;
+  }
 }
 
 .script-now-say {
