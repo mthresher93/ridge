@@ -17,6 +17,7 @@ import { bookerOf, contactsForLead, skipQuote, unfinishedTalked, upsertBooker } 
 import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { HuntDance } from "./hunt-dance";
 import { callReason, todayStrip, weekCounts } from "@/lib/desk-rules";
+import { deskFlow } from "@/lib/flow";
 import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
 import { money, nowIso, phonePretty, relativeDue } from "@/lib/format";
@@ -81,6 +82,7 @@ export function TodayView() {
   const wrapBooker = nextCall ? bookerOf(workspace, nextCall) : null;
   const strip = useMemo(() => todayStrip(workspace), [workspace]);
   const week = useMemo(() => weekCounts(workspace), [workspace]);
+  const counts = useMemo(() => deskFlow(workspace, hunt), [workspace, hunt]);
   const wrapFit = recommendEquipment({
     text: nextCall?.equipmentType || nextCall?.listingTitle || "",
     lengthFt: parseMeasure(specL),
@@ -299,7 +301,7 @@ export function TodayView() {
               {pendingTalked
                 ? `Stay with ${live.find((item) => item.id === pendingTalked.leadId)?.name || "this yard"}. Quote still blank.`
                 : callBook.length
-                  ? `${callBook.length} untried with a published phone. The next number is waiting.`
+                  ? `${callBook.length} untried · published phone.`
                   : live.length
                     ? `${hunt.weekday} in ${hunt.place}. Hunt, paste, then the floor fills.`
                     : `${hunt.weekday} · ${hunt.play.title} in ${hunt.place}. Open a page and come back.`}
@@ -330,11 +332,19 @@ export function TodayView() {
         </header>
 
         <div className="desk-floor">
+        <dl className="count-strip">
+          {counts.steps.map((step) => (
+            <div key={step.id}>
+              <dt>{step.label}</dt>
+              <dd>{step.count}</dd>
+            </div>
+          ))}
+        </dl>
         <section className="az-panel freight-panel desk-next-calls">
           <header>
             <div>
               <div className="home-kicker">Next 3 calls</div>
-              <h3>Published numbers, untried first</h3>
+              <h3>Untried first</h3>
             </div>
           </header>
           {strip.nextCalls.length === 0 ? (
@@ -495,7 +505,7 @@ export function TodayView() {
                   </label>
                 </div>
                 <div className="desk-next-actions">
-                  <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(nextCall.phone)}>
+                  <button className="az-btn gold" type="button" onClick={() => browserTelephony().startCall(nextCall.phone)}>
                     Call {phonePretty(nextCall.phone)}
                   </button>
                   <button className="az-btn pri" type="button" onClick={() => noteCall(nextCall, "talked")}>

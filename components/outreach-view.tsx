@@ -271,18 +271,21 @@ export function OutreachView() {
           </div>
         </header>
         <div className="outreach-grid">
-          <article className="az-panel freight-panel outreach-main">
-            <div className="az-kicker">{lead.source}</div>
+          <article className="az-panel freight-panel outreach-main work-ticket">
+            <div className="az-kicker">{lead.source} · {lead.label || suggested || "Unlabeled"}</div>
             <h2>{lead.name}</h2>
-            <p className="cd-mono">
-              {lead.label || suggested || "Unlabeled"} · {companyName(lead)} · {leadLocation(lead) || metroOf(lead)?.label || "Location unset"}
+            <p className="work-meta">
+              {leadLocation(lead) || metroOf(lead)?.label || "Location unset"}
               {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : " · untried"}
+              {hours ? ` · ${hours.label}` : ""}
             </p>
-            {hours ? (
-              <p className={hours.ok ? "cd-mono" : "rec-warn"}>
-                {hours.label}. {hours.why}
-              </p>
-            ) : null}
+            {lead.phone ? (
+              <a className="work-phone" href={`tel:${lead.phone}`}>
+                {phonePretty(lead.phone)}
+              </a>
+            ) : (
+              <p className="work-phone is-empty">No published phone</p>
+            )}
             {script ? <blockquote className="desk-opener work-opener">{script.opener}</blockquote> : null}
             {script ? <p className="desk-ask">{script.ask}</p> : null}
             {suggested ? <p className="cd-mono">Looks like a {suggested}. Label it so the opener stays a yard ask.</p> : <p className="cd-mono">Label first. The opener changes for a yard vs a private seller.</p>}
@@ -328,7 +331,7 @@ export function OutreachView() {
             <p className={`pace-${pace.level}`}>{pace.text}</p>
             <p className="cd-mono">Copy, then you send it. Haul does not message anyone. Leave the rate blank.</p>
             {lead.phone ? (
-              <button className="az-btn pri" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
+              <button className="az-btn gold work-call" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
                 Call {phonePretty(lead.phone)}
               </button>
             ) : (

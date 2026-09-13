@@ -455,7 +455,7 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>Pick a city. Open a public page. Paste only if a phone is on it.</p>
+            <p>One metro. Open a public page. Paste a published phone.</p>
           </div>
         </header>
 
@@ -464,9 +464,9 @@ export function DiscoverView() {
             {error ? <p className="rec-warn">{error}</p> : null}
             {result ? <p className="rec-import-msg">{result}</p> : null}
 
-            <div className="hunt-desk desk-hunt">
-              <section className="hunt-step">
-                <div className="home-kicker">1 · City</div>
+            <div className="hunt-desk desk-hunt capture-sheet">
+              <section className="hunt-step capture-top">
+                <div className="home-kicker">City</div>
                 <div className="metro-chips">
                   {DESK_CITIES.map((metro) => (
                     <button
@@ -484,7 +484,7 @@ export function DiscoverView() {
                 </div>
               </section>
               <section className="hunt-step">
-                <div className="home-kicker">2 · Query</div>
+                <div className="home-kicker">Query</div>
                 <input className="az-input" value={huntQuery} onChange={(event) => setHuntQuery(event.target.value)} placeholder="forklift dealer Houston TX" />
                 <div className="metro-chips">
                   {cityQueries((DESK_CITIES.find((item) => item.hunt === activePlace) || DESK_CITIES[2]).label).map((item) => (
@@ -495,7 +495,7 @@ export function DiscoverView() {
                 </div>
               </section>
               <section className="hunt-step">
-                <div className="home-kicker">3 · Open a public page</div>
+                <div className="home-kicker">Open</div>
                 <div className="hunt-open-row">
                   <a className="az-btn pri" href={googleHuntUrl(huntQuery)} target="_blank" rel="noreferrer">Open Google top results</a>
                   <a className="az-btn" href={DESK_LOCATORS[0].url(activePlace)} target="_blank" rel="noreferrer">Open dealer locators</a>
@@ -509,10 +509,10 @@ export function DiscoverView() {
                   ))}
                 </div>
               </section>
-              <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={(event) => void onPaste(event, false)}>
-                <div className="home-kicker">4 · Paste</div>
-                <h3>Page with a published phone</h3>
-                <p>Name, Texas city, 10-digit phone. No phone on the page → do not save.</p>
+              <form id="hunt-paste" className="az-panel freight-panel hunt-paste capture-paste" onSubmit={(event) => void onPaste(event, false)}>
+                <div className="home-kicker">Paste</div>
+                <h3>Published phone on the page</h3>
+                <p>Name, Texas city, 10-digit number. No phone → do not save.</p>
                 <label className="rec-field">
                   Listing or Maps card
                   <textarea className="az-area" rows={11} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder="Paste the dealer or Maps page." />
@@ -595,7 +595,7 @@ export function DiscoverView() {
                   </div>
                 </>
               ) : (
-                <p className="rec-empty">Open a hunt, copy a page with a name and a published phone, paste it. The scored client lands here so you can label them.</p>
+                <p className="rec-empty">Paste a page with a published phone. Label it here, then call.</p>
               )}
               <p className="cd-mono" style={{ marginTop: 10 }}>
                 {capturedToday} captured today

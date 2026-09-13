@@ -56,10 +56,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <kbd>⌘K</kbd>
         </button>
         <div className="az-top-right">
-          <span className="cd-stat">
-            <span className={`livedot ${loadError ? "off" : ""}`} />
-            {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : saveStatus === "saving" ? "Saving" : "Ready"}
-          </span>
+          {loadError || saveStatus === "error" || saveStatus === "conflict" || saveStatus === "saving" || loading ? (
+            <span className="cd-stat">
+              <span className={`livedot ${loadError ? "off" : ""}`} />
+              {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : "Saving"}
+            </span>
+          ) : null}
           {saveStatus === "error" ? (
             <button className="az-btn sm" type="button" onClick={() => retrySave()}>
               Retry
@@ -67,7 +69,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
           ) : null}
           <span className="az-num az-top-open">{toCall} ready</span>
           <span className="az-top-user">{operator}</span>
-          <button className="az-btn pri sm" type="button" onClick={() => router.push(workPath())}>
+          <button className="az-btn gold sm" type="button" onClick={() => router.push(workPath())}>
             Next call
           </button>
         </div>

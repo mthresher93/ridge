@@ -129,7 +129,7 @@ export function PlaybookView() {
 
         {!practice && !targetId ? (
           <section className="empty-desk">
-            <h2>No live machine on a call</h2>
+            <h2>No live numbers on this client yet</h2>
             <p>Finish the call first. Then type L × W × height-on-deck × pounds.</p>
             <button className="az-btn pri sm" type="button" onClick={() => router.push("/outreach")}>
               Next call
@@ -166,7 +166,7 @@ export function PlaybookView() {
             <section className="az-panel freight-panel intel-fit">
               <header>
                 <h3>What trailer?</h3>
-                <span className="az-chip">{hasInput ? fit.confidence : "—"}</span>
+                {hasInput ? <span className="az-chip">{fit.confidence}</span> : null}
               </header>
               <div className="call-ask-block">
                 <div className="home-kicker">Ask these four, then type the numbers</div>
@@ -178,7 +178,7 @@ export function PlaybookView() {
               </div>
               {practice ? (
               <div className="intel-presets">
-                <span className="cd-mono">Practice only — catalog sizes, not a live load</span>
+                <span className="cd-mono">Practice</span>
                 {UNIT_PRESETS.map((preset) => (
                   <button key={preset.id} type="button" className="az-btn sm" onClick={() => applyPreset(preset)}>
                     {preset.label}

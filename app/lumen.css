@@ -4945,7 +4945,305 @@ button.desk-open-row {
 
 .work-opener {
   font-size: 18px;
-  line-height: 1.35;
+  line-height: 1.45;
+  max-width: 42em;
+}
+
+/* ——— Dispatch ticket restyle: gold for the one action, numbers as numbers ——— */
+
+.az-shell {
+  grid-template-columns: 232px minmax(0, 1fr);
+  grid-template-rows: 56px minmax(0, 1fr);
+}
+
+.az-brand {
+  padding: 6px 12px;
+}
+
+.az-brand-mark,
+.az-rail .az-brand-mark {
+  width: 36px;
+  height: 36px;
+}
+
+.az-brand-word {
+  width: 88px;
+  height: 24px;
+}
+
+.az-top {
+  height: 56px;
+  padding: 0 14px;
+}
+
+.cd-search {
+  height: 34px;
+  max-width: 420px;
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+
+.az-rail-nav a,
+.az-rail-more-btn,
+.az-rail-settings {
+  gap: 8px;
+  padding: 7px 10px;
+  margin: 0 8px;
+  border-radius: 6px;
+  border-left: 2px solid transparent;
+  font-weight: 500;
+}
+
+.az-rail-nav a.active,
+.az-rail-settings.active,
+.az-rail-more-btn.active {
+  background: rgba(255, 255, 255, 0.08);
+  border-left-color: var(--gold);
+  font-weight: 600;
+}
+
+.az-btn {
+  min-height: 32px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.az-btn.gold {
+  min-height: 34px;
+}
+
+.az-chip,
+.status-badge {
+  height: 22px;
+  border-radius: 4px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: #eef1f3;
+  border: 1px solid #d8dee4;
+  color: #3d4a55;
+}
+
+.crm-desk-head h1,
+.home-desk-head h1,
+.settings-top h1 {
+  font-size: 18px;
+  letter-spacing: 0.06em;
+}
+
+.crm-desk-head p,
+.home-desk-head p {
+  font-size: 13px;
+  color: var(--tx3);
+}
+
+.az-panel,
+.freight-panel,
+.hunt-step {
+  border: 1px solid var(--br);
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.count-strip {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0;
+  margin: 0;
+  padding: 10px 4px 14px;
+  background: transparent;
+  border: 0;
+}
+
+.count-strip > div {
+  display: grid;
+  gap: 4px;
+  padding: 4px 10px;
+  border-left: 1px solid var(--br);
+}
+
+.count-strip > div:first-child {
+  border-left: 0;
+}
+
+.count-strip dt {
+  margin: 0;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tx3);
+}
+
+.count-strip dd {
+  margin: 0;
+  font-family: var(--fh);
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+  line-height: 1;
+}
+
+.home-stats {
+  gap: 6px;
+}
+
+.home-stats > button,
+.home-stats > div {
+  min-width: 72px;
+  padding: 8px 10px;
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.home-stats > button b,
+.home-stats > div b {
+  font-size: 18px;
+}
+
+.desk-next-calls header h3 {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+  font-family: var(--fb);
+  font-weight: 650;
+}
+
+.next-call-row {
+  border-radius: 6px;
+  padding: 8px 10px;
+}
+
+.capture-sheet {
+  gap: 8px;
+}
+
+.capture-top,
+.hunt-step {
+  padding: 10px 12px;
+}
+
+.capture-paste {
+  min-height: 280px;
+}
+
+.capture-paste h3 {
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  text-transform: none;
+}
+
+.discover-rail .freight-panel {
+  padding: 12px;
+}
+
+.work-ticket h2 {
+  font-size: 22px;
+  margin: 2px 0 4px;
+}
+
+.work-meta {
+  margin: 0 0 8px;
+  font-size: 13px;
+  color: var(--tx3);
+}
+
+.work-phone {
+  display: block;
+  margin: 4px 0 14px;
+  font-family: var(--fh);
+  font-size: 42px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  line-height: 0.95;
+  color: var(--navy);
+  text-decoration: none;
+}
+
+.work-phone.is-empty {
+  font-size: 22px;
+  color: var(--tx3);
+}
+
+.work-call {
+  width: 100%;
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.call-disposition .az-btn {
+  min-height: 34px;
+}
+
+.intel-fit header h3 {
+  font-size: 18px;
+}
+
+.call-ask {
+  list-style: none;
+  padding: 8px 0 8px 0;
+  background: transparent;
+  border: 0;
+  counter-reset: ask;
+}
+
+.call-ask li {
+  position: relative;
+  padding-left: 28px;
+  margin: 0 0 8px;
+  font-size: 14px;
+}
+
+.call-ask li::before {
+  counter-increment: ask;
+  content: counter(ask);
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 20px;
+  font-family: var(--fm);
+  font-size: 11px;
+  color: var(--tx3);
+}
+
+.call-ask-block ol {
+  counter-reset: ask;
+}
+
+.intel-presets .az-btn {
+  min-height: 26px;
+  font-size: 12px;
+}
+
+.settings-body {
+  max-width: 720px;
+}
+
+.follow-buckets .az-panel,
+.follow-add {
+  border-radius: 8px;
+}
+
+.board-empty {
+  color: var(--tx4);
+  font-size: 12px;
+}
+
+.board-card {
+  border-radius: 6px;
+  box-shadow: none;
+}
+
+.status-badge.warn {
+  background: #f4f0e6;
+  color: #7a5b16;
+  border-color: #e2d6b4;
+}
+
+@media (max-width: 1100px) {
+  .count-strip {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 980px) {
