@@ -110,6 +110,7 @@ const TRACK_STATUSES = new Set(["Pickup Scheduled", "In Transit"]);
 
 export function deskFlow(workspace: Workspace, hunt: { href: string; place: string; query: string }): FlowState {
   const live = workspace.leads.filter((lead) => !lead.archivedAt);
+  const liveIds = new Set(live.map((lead) => lead.id));
   const callBook = callableUncontacted(workspace, 200);
   const wrap = unfinishedTalked(workspace);
   const wrapLead = wrap ? live.find((lead) => lead.id === wrap.leadId) : null;
@@ -117,7 +118,10 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
   const cover = (workspace.shipments || []).filter((item) => COVER_STATUSES.has(item.status) && !(item.carrierId || item.carrier.trim()));
   const track = (workspace.shipments || []).filter((item) => TRACK_STATUSES.has(item.status));
   const unlabeled = live.filter((lead) => !lead.label).length;
-  const overdue = (workspace.callbacks || []).filter((item) => item.status === "open" && Date.parse(item.dueAt) < Date.now()).length;
+  const captured = (workspace.listings || []).filter((item) => !item.leadId || liveIds.has(item.leadId)).length;
+  const overdue = (workspace.callbacks || []).filter(
+    (item) => item.status === "open" && liveIds.has(item.leadId) && Date.parse(item.dueAt) < Date.now(),
+  ).length;
 
   const current: FlowStepId = wrap
     ? "wrap"
@@ -140,9 +144,11 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
       id: "hunt",
       n: "1",
       label: "Hunt",
-      count: 0,
+      count: captured,
       href: hunt.href,
-      hint: `Open public pages for ${hunt.query} in ${hunt.place}. Haul does not scrape them.`,
+      hint: captured
+        ? `${captured} captured page${captured === 1 ? "" : "s"} on file.`
+        : `Open public pages for ${hunt.query} in ${hunt.place}. Haul does not scrape them.`,
     },
     {
       id: "paste",
@@ -162,9 +168,9 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
       stay: true,
       hot: overdue > 0,
       hint: overdue
-        ? `${overdue} follow-up${overdue === 1 ? "" : "s"} waiting. Call the published number.`
+        ? `${overdue} overdue follow-up${overdue === 1 ? "" : "s"} on the live book. Call the published number.`
         : callBook.length
-          ? `${callBook.length} untried in ${hunt.place}. Ask who books outbound freight.`
+          ? `${callBook.length} untried with a published phone. Ask who books outbound freight.`
           : "Call book is empty. Hunt a metro, then paste.",
     },
     {

@@ -76,8 +76,9 @@ export function hydrateContacts(workspace: Workspace) {
 }
 
 export function unfinishedTalked(workspace: Workspace) {
+  const live = new Set(workspace.leads.filter((lead) => !lead.archivedAt).map((lead) => lead.id));
   const hot = (workspace.callbacks || [])
-    .filter((item) => item.status === "open" && item.type === "hot")
+    .filter((item) => item.status === "open" && item.type === "hot" && live.has(item.leadId))
     .sort((a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt));
   for (const row of hot) {
     const quoted = (workspace.shipments || []).some((item) => item.leadId === row.leadId && item.status === "Quote");

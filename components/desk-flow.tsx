@@ -129,11 +129,9 @@ export function DeskFlow({
                 <line className="desk-flow-tick" x1={point.x} x2={point.x} y1={baseline} y2={baseline + 6} />
                 <circle className="desk-flow-dot-hit" cx={point.x} cy={point.y} r="16" />
                 <circle className="desk-flow-dot" cx={point.x} cy={point.y} r={step.id === flow.current || focus === step.id ? 7 : 5} />
-                {step.count ? (
-                  <text className="desk-flow-value" x={point.x} y={point.y - 14}>
-                    {step.count}
-                  </text>
-                ) : null}
+                <text className="desk-flow-value" x={point.x} y={point.y - 14}>
+                  {step.count}
+                </text>
                 <text className="desk-flow-label" x={point.x} y={baseline + 22}>
                   {step.label}
                 </text>

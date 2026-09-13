@@ -41,6 +41,76 @@ describe("deskFlow", () => {
     expect(flow.edges.every((item) => item.tone === "ok")).toBe(true);
   });
 
+  it("plots captured listings and ignores archived follow-ups", () => {
+    const live = blankProspect("Michael", {
+      id: "lead-1",
+      name: "Briggs Equipment — Dallas",
+      phone: "214-351-4511",
+      status: "Discovered",
+      label: "Dealer",
+    });
+    const dead = blankProspect("Michael", {
+      id: "lead-2",
+      name: "Westside Machinery LLC",
+      status: "Contacted",
+      archivedAt: "2026-09-08T17:32:57.209Z",
+    });
+    const flow = deskFlow(
+      {
+        ...emptyWorkspace(),
+        leads: [live, dead],
+        listings: [
+          {
+            id: "list-1",
+            leadId: "lead-1",
+            source: "Google",
+            sourceUrl: "https://example.com",
+            title: "Briggs",
+            description: "",
+            sellerName: "Briggs",
+            sellerUrl: "",
+            city: "Dallas",
+            state: "TX",
+            askingPrice: null,
+            category: "",
+            equipmentType: "",
+            dimensions: "",
+            weight: "",
+            quantity: null,
+            pickupLocation: "",
+            destination: "",
+            phone: "214-351-4511",
+            email: "",
+            website: "",
+            notes: "",
+            imageUrls: [],
+            discoveredAt: "2026-09-07T00:00:00.000Z",
+            priceHistory: [],
+          },
+        ],
+        callbacks: [
+          {
+            id: "cb-1",
+            leadId: "lead-2",
+            type: "standard",
+            dueAt: "2020-01-01T00:00:00.000Z",
+            reason: "No reply after first message.",
+            assignedUser: "Michael",
+            notes: "",
+            status: "open",
+            createdAt: "2020-01-01T00:00:00.000Z",
+          },
+        ],
+      },
+      hunt,
+    );
+    expect(flow.steps.find((item) => item.id === "hunt")?.count).toBe(1);
+    expect(flow.steps.find((item) => item.id === "call")?.count).toBe(1);
+    expect(flow.steps.find((item) => item.id === "call")?.hot).toBeFalsy();
+    expect(flow.steps.find((item) => item.id === "call")?.hint).toMatch(/published phone/);
+    expect(flow.steps.find((item) => item.id === "call")?.hint).not.toMatch(/Dallas TX|Laredo/);
+  });
+
   it("draws a green graph and a red hop into Wrap when a call is unfinished", () => {
     const lead = blankProspect("Michael", {
       id: "lead-1",

@@ -40,6 +40,17 @@ describe("booker contacts", () => {
     expect(quoted.workspace.contacts[0].name).toBe("Maria");
   });
 
+  it("does not keep wrap open on an archived yard", () => {
+    const lead = blankProspect("Michael", {
+      id: "lead-1",
+      name: "Westside Machinery LLC",
+      phone: "214-351-4511",
+      archivedAt: "2026-09-08T17:32:57.209Z",
+    });
+    const workspace = wrapCall({ ...emptyWorkspace(), leads: [lead] }, "lead-1", "talked", { booker: "Maria" });
+    expect(unfinishedTalked(workspace)).toBeNull();
+  });
+
   it("turns a skipped quote into a follow-up instead of losing the yard", () => {
     const lead = blankProspect("Michael", { id: "lead-1", name: "HOLT CAT Dallas (North)" });
     const workspace = wrapCall({ ...emptyWorkspace(), leads: [lead] }, "lead-1", "talked", { booker: "Maria" });

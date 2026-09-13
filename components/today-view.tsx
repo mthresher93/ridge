@@ -299,7 +299,7 @@ export function TodayView() {
               {pendingTalked
                 ? `Stay with ${live.find((item) => item.id === pendingTalked.leadId)?.name || "this yard"}. Quote still blank.`
                 : callBook.length
-                  ? `${callBook.length} untried in ${hunt.place}. The next published number is waiting.`
+                  ? `${callBook.length} untried with a published phone. The next number is waiting.`
                   : live.length
                     ? `${hunt.weekday} in ${hunt.place}. Hunt, paste, then the floor fills.`
                     : `${hunt.weekday} · ${hunt.play.title} in ${hunt.place}. Open a page and come back.`}
