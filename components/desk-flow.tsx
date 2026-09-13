@@ -67,33 +67,17 @@ export function DeskFlow({
         <svg className="desk-flow-svg" viewBox="0 0 760 300" role="img">
           <title>Hunt to Track load flowchart</title>
           <defs>
-            <filter id="flow-glow-ok" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2.2" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-            <filter id="flow-glow-hot" x="-50%" y="-50%" width="200%" height="200%">
-              <feGaussianBlur stdDeviation="2.6" result="blur" />
-              <feMerge>
-                <feMergeNode in="blur" />
-                <feMergeNode in="SourceGraphic" />
-              </feMerge>
-            </filter>
-            <marker id="flow-arrow-ok" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#3dba6a" />
+            <marker id="flow-arrow-ok" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#22e36a" />
             </marker>
-            <marker id="flow-arrow-hot" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#e24b4b" />
-            </marker>
-            <marker id="flow-arrow-idle" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
-              <path d="M 0 0 L 10 5 L 0 10 z" fill="#5a6670" />
+            <marker id="flow-arrow-hot" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+              <path d="M 0 0 L 10 5 L 0 10 z" fill="#ff3b3b" />
             </marker>
           </defs>
           {flow.edges.map((edge) => {
             const key = `${edge.from}-${edge.to}`;
-            const live = lit.has(key) || (!focus && edge.tone !== "idle");
+            const live = lit.has(key) || !focus;
+            const hot = edge.tone === "hot";
             const d = flowEdgePath(edge.from, edge.to);
             return (
               <g key={key}>
@@ -106,9 +90,15 @@ export function DeskFlow({
                 />
                 <path
                   d={d}
-                  className={`desk-flow-edge is-${edge.tone}${live ? " is-live" : ""}`}
-                  markerEnd={`url(#flow-arrow-${edge.tone})`}
-                  filter={edge.tone === "idle" ? undefined : `url(#flow-glow-${edge.tone === "hot" ? "hot" : "ok"})`}
+                  className={`desk-flow-glow is-${hot ? "hot" : "ok"}${live ? " is-live" : ""}`}
+                  stroke={hot ? "#ff3b3b" : "#22e36a"}
+                  pointerEvents="none"
+                />
+                <path
+                  d={d}
+                  className={`desk-flow-edge is-${hot ? "hot" : "ok"}${live ? " is-live" : ""}`}
+                  stroke={hot ? "#ff3b3b" : "#22e36a"}
+                  markerEnd={`url(#flow-arrow-${hot ? "hot" : "ok"})`}
                   pointerEvents="none"
                 />
               </g>

@@ -35,5 +35,20 @@ describe("deskFlow", () => {
     const flow = deskFlow({ ...emptyWorkspace(), leads: [lead] }, hunt);
     expect(flow.current).toBe("call");
     expect(flow.steps.find((item) => item.id === "call")?.count).toBe(1);
+    expect(flow.edges.every((item) => item.tone === "ok")).toBe(true);
+  });
+
+  it("draws a green graph and a red hop into Wrap when a call is unfinished", () => {
+    const lead = blankProspect("Michael", {
+      id: "lead-1",
+      name: "HOLT CAT Dallas (North)",
+      phone: "214-342-6700",
+      label: "Dealer",
+    });
+    const workspace = wrapCall({ ...emptyWorkspace(), leads: [lead] }, "lead-1", "talked", { booker: "Maria" });
+    const flow = deskFlow(workspace, hunt);
+    expect(flow.edges.find((item) => item.from === "hunt" && item.to === "paste")?.tone).toBe("ok");
+    expect(flow.edges.find((item) => item.from === "call" && item.to === "wrap")?.tone).toBe("hot");
+    expect(flow.edges.filter((item) => item.tone === "ok").length).toBeGreaterThanOrEqual(4);
   });
 });

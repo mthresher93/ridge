@@ -33,13 +33,13 @@ export type FlowShape = "start" | "process" | "decision" | "end";
 export type FlowBox = { x: number; y: number; w: number; h: number; shape: FlowShape };
 
 export const FLOW_BOXES: Record<FlowStepId, FlowBox> = {
-  hunt: { x: 28, y: 40, w: 132, h: 58, shape: "start" },
-  paste: { x: 210, y: 40, w: 132, h: 58, shape: "process" },
-  call: { x: 392, y: 40, w: 132, h: 58, shape: "process" },
-  wrap: { x: 574, y: 22, w: 118, h: 94, shape: "decision" },
-  quote: { x: 574, y: 210, w: 132, h: 58, shape: "process" },
-  cover: { x: 392, y: 210, w: 132, h: 58, shape: "process" },
-  track: { x: 210, y: 210, w: 132, h: 58, shape: "end" },
+  hunt: { x: 16, y: 48, w: 124, h: 56, shape: "start" },
+  paste: { x: 220, y: 48, w: 124, h: 56, shape: "process" },
+  call: { x: 424, y: 48, w: 124, h: 56, shape: "process" },
+  wrap: { x: 628, y: 28, w: 108, h: 96, shape: "decision" },
+  quote: { x: 616, y: 208, w: 124, h: 56, shape: "process" },
+  cover: { x: 412, y: 208, w: 124, h: 56, shape: "process" },
+  track: { x: 208, y: 208, w: 124, h: 56, shape: "end" },
 };
 
 export function flowPort(box: FlowBox, side: "l" | "r" | "t" | "b") {
@@ -173,14 +173,9 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
     },
   ];
 
-  const order = steps.map((item) => item.id);
-  const at = order.indexOf(current);
   const edges: FlowEdge[] = EDGE_PAIRS.map(([from, to]) => {
-    const toAt = order.indexOf(to);
     const dest = steps.find((item) => item.id === to);
-    let tone: FlowEdge["tone"] = "idle";
-    if (toAt < at) tone = "ok";
-    else if (toAt === at) tone = dest?.hot ? "hot" : "ok";
+    const tone: FlowEdge["tone"] = dest?.hot ? "hot" : "ok";
     return { from, to, tone };
   });
 
