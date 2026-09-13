@@ -134,10 +134,10 @@ body::before {
   height: 52px;
   color: #111;
   background: #d4a84a;
-  border: 2px solid rgba(255, 252, 245, 0.96);
+  border: 2.5px solid #fff;
   border-radius: 50%;
   box-shadow:
-    0 0 0 1px #111,
+    0 0 0 1.5px #111,
     0 6px 14px rgba(0, 0, 0, 0.32);
   padding: 0;
   display: block;
@@ -156,10 +156,18 @@ body::before {
   background: none;
   -webkit-background-clip: unset;
   background-clip: unset;
-  color: #e2b84a;
-  -webkit-text-stroke: 0.65px #111;
+  color: #e8c15a;
+  -webkit-text-stroke: 0.9px #111;
   paint-order: stroke fill;
-  text-shadow: none;
+  text-shadow:
+    -1.2px -1.2px 0 #fff,
+    1.2px -1.2px 0 #fff,
+    -1.2px 1.2px 0 #fff,
+    1.2px 1.2px 0 #fff,
+    -1.6px 0 0 #fff,
+    1.6px 0 0 #fff,
+    0 -1.6px 0 #fff,
+    0 1.6px 0 #fff;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
 }
@@ -171,12 +179,16 @@ body::before {
   font-weight: 600;
   letter-spacing: 0.28em;
   text-transform: uppercase;
-  color: rgba(247, 244, 238, 0.92);
+  color: #f7f4ee;
   margin-top: 0;
   padding-left: 1px;
   -webkit-text-stroke: 0;
   paint-order: fill;
-  text-shadow: none;
+  text-shadow:
+    -0.6px -0.6px 0 rgba(17, 17, 17, 0.9),
+    0.6px -0.6px 0 rgba(17, 17, 17, 0.9),
+    -0.6px 0.6px 0 rgba(17, 17, 17, 0.9),
+    0.6px 0.6px 0 rgba(17, 17, 17, 0.9);
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
 }
@@ -2779,13 +2791,16 @@ button.desk-open-row {
 .login-card .az-brand-mark {
   width: 56px;
   height: 56px;
-  color: var(--gold);
+  color: #111;
+  background: #d4a84a;
+  border: 2.5px solid #fff;
+  box-shadow: 0 0 0 1.5px #111;
 }
 
 .login-card .az-brand-name {
   font-size: 28px;
   letter-spacing: 0.18em;
-  color: #e2b84a;
+  color: #e8c15a;
 }
 
 .login-card h1 {
@@ -4156,8 +4171,9 @@ button.desk-open-row {
 .login-card .az-brand-mark {
   color: #111;
   background: #d4a84a;
-  border: 2px solid #fff8ee;
+  border: 2.5px solid #fff;
   border-radius: 50%;
+  box-shadow: 0 0 0 1.5px #111;
 }
 
 .intel-cards > div,
