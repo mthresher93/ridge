@@ -4453,6 +4453,225 @@ button.desk-open-row {
   padding: 4px 4px;
 }
 
+/* ——— One desk: quieter chrome, tighter cards, flowchart as an instrument ——— */
+
+.az-main,
+.cd-page,
+.home-desk,
+.az-fill.crm-desk {
+  background: #e8ecf0;
+}
+
+.cd-page.fill,
+.cd-page:has(> .crm-desk-head) {
+  padding: 12px 16px 16px;
+  gap: 12px;
+}
+
+.home-desk {
+  gap: 12px;
+  padding: 4px 2px 10px;
+}
+
+.home-desk-head h1,
+.crm-desk-head h1 {
+  font-size: 20px;
+  letter-spacing: 0.08em;
+}
+
+.home-desk-head p,
+.crm-desk-head p {
+  font-size: 14px;
+  max-width: 62ch;
+}
+
+.az-panel,
+.freight-panel,
+.hunt-strip,
+.hunt-play-pick,
+.desk-today,
+.desk-body,
+.hunt-command {
+  box-shadow: none;
+  border: 1px solid #d0d7de;
+  background: #fff;
+}
+
+.freight-panel {
+  padding: 14px 16px 16px;
+  border-radius: 10px;
+}
+
+.freight-panel header h3,
+.desk-call-book header h3,
+.desk-attention header h3,
+.desk-loads header h3 {
+  margin: 0;
+  font-family: var(--fh);
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.desk-floor {
+  display: grid;
+  gap: 12px;
+}
+
+.desk-flow {
+  border: 1px solid #0c1116;
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.06),
+    0 12px 28px rgba(12, 17, 22, 0.22);
+}
+
+.desk-next {
+  padding: 16px 18px 16px 20px;
+}
+
+.desk-next > header h3 {
+  font-size: 20px;
+  letter-spacing: 0.03em;
+}
+
+.desk-opener {
+  background: #f4f6f8;
+  border-left-color: var(--navy);
+  font-size: 15px;
+}
+
+.desk-call-row {
+  padding: 9px 12px 9px 14px;
+  border-radius: 8px;
+}
+
+.desk-call-row::before {
+  background: var(--navy);
+  top: 10px;
+  bottom: 10px;
+  width: 2px;
+}
+
+.desk-call-row:hover {
+  border-color: var(--navy);
+  background: #f6f8fa;
+}
+
+.desk-call-who b {
+  font-size: 14px;
+}
+
+.home-stats > button {
+  min-width: 68px;
+  padding: 8px 10px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.home-stats > button b {
+  font-family: var(--fh);
+  font-size: 18px;
+  letter-spacing: 0.02em;
+  color: var(--navy);
+}
+
+.cd-search {
+  height: 36px;
+  background: rgba(255, 255, 255, 0.06);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.az-clocks {
+  padding: 5px 8px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.az-btn {
+  min-height: 32px;
+  font-size: 13px;
+}
+
+.az-btn.sm,
+.az-btn-sm {
+  min-height: 30px;
+  font-size: 12px;
+  padding: 0 10px;
+}
+
+.az-input,
+.az-select,
+.az-area {
+  min-height: 36px;
+  font-size: 14px;
+}
+
+.az-area {
+  min-height: 96px;
+}
+
+.az-table {
+  font-size: 13px;
+}
+
+.az-table th {
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--tx3);
+  background: #f4f6f8;
+}
+
+.az-table td,
+.az-table th {
+  padding: 8px 10px;
+}
+
+.az-rail-nav a.active,
+.az-rail-settings.active {
+  background: rgba(196, 154, 50, 0.14);
+}
+
+.hunt-command {
+  box-shadow: none;
+  padding: 18px 20px;
+}
+
+.hunt-command h2 {
+  font-size: 22px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.load-ops {
+  background: #fff;
+  border-top-color: #d0d7de;
+}
+
+.load-ops-head h2 {
+  font-size: 18px;
+}
+
+.work-row {
+  padding: 8px 10px;
+  border-bottom: 1px solid #e6eaee;
+}
+
+.empty-desk {
+  padding: 28px 24px;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+}
+
+.desk-today {
+  box-shadow: none;
+  padding: 18px 20px;
+}
+
 
 
 

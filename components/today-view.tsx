@@ -329,6 +329,7 @@ export function TodayView() {
           </div>
         </header>
 
+        <div className="desk-floor">
         <DeskFlow
           flow={flow}
           onStay={() => {
@@ -521,6 +522,7 @@ export function TodayView() {
             ) : null}
           </section>
         ) : null}
+        </div>
 
         {attention.length ? (
           <section className="az-panel freight-panel desk-attention">
