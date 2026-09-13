@@ -137,7 +137,7 @@ body::before {
   border: 2.5px solid #fff;
   border-radius: 50%;
   box-shadow:
-    0 0 0 1.5px #111,
+    0 0 0 2.5px #111,
     0 6px 14px rgba(0, 0, 0, 0.32);
   padding: 0;
   display: block;
@@ -157,17 +157,25 @@ body::before {
   -webkit-background-clip: unset;
   background-clip: unset;
   color: #e8c15a;
-  -webkit-text-stroke: 0.9px #111;
+  -webkit-text-stroke: 0.85px #fff;
   paint-order: stroke fill;
   text-shadow:
-    -1.2px -1.2px 0 #fff,
-    1.2px -1.2px 0 #fff,
-    -1.2px 1.2px 0 #fff,
-    1.2px 1.2px 0 #fff,
-    -1.6px 0 0 #fff,
-    1.6px 0 0 #fff,
-    0 -1.6px 0 #fff,
-    0 1.6px 0 #fff;
+    -1.15px -1.15px 0 #fff,
+    1.15px -1.15px 0 #fff,
+    -1.15px 1.15px 0 #fff,
+    1.15px 1.15px 0 #fff,
+    -1.5px 0 0 #fff,
+    1.5px 0 0 #fff,
+    0 -1.5px 0 #fff,
+    0 1.5px 0 #fff,
+    -2.25px -2.25px 0 #111,
+    2.25px -2.25px 0 #111,
+    -2.25px 2.25px 0 #111,
+    2.25px 2.25px 0 #111,
+    -2.7px 0 0 #111,
+    2.7px 0 0 #111,
+    0 -2.7px 0 #111,
+    0 2.7px 0 #111;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
 }
@@ -2794,7 +2802,7 @@ button.desk-open-row {
   color: #111;
   background: #d4a84a;
   border: 2.5px solid #fff;
-  box-shadow: 0 0 0 1.5px #111;
+  box-shadow: 0 0 0 2.5px #111;
 }
 
 .login-card .az-brand-name {
@@ -4173,7 +4181,7 @@ button.desk-open-row {
   background: #d4a84a;
   border: 2.5px solid #fff;
   border-radius: 50%;
-  box-shadow: 0 0 0 1.5px #111;
+  box-shadow: 0 0 0 2.5px #111;
 }
 
 .intel-cards > div,
