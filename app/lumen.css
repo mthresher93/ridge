@@ -760,12 +760,19 @@ input[type="range"] {
 }
 
 .desk-flow {
-  padding: 14px 16px 16px;
+  padding: 14px 16px 12px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, var(--gold) 10%, #fff) 0%, #fff 42%);
-  border: 1px solid var(--br);
+    radial-gradient(720px 180px at 80% 0%, rgba(61, 186, 106, 0.12), transparent 56%),
+    radial-gradient(520px 160px at 12% 100%, rgba(226, 75, 75, 0.1), transparent 50%),
+    #121820;
+  border: 1px solid #1f2a33;
   border-radius: var(--radius-lg);
-  box-shadow: var(--lift);
+  color: #f4f7fa;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.desk-flow .home-kicker {
+  color: #c49a32;
 }
 
 .desk-flow-head {
@@ -773,7 +780,7 @@ input[type="range"] {
   align-items: flex-end;
   justify-content: space-between;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 
 .desk-flow-line {
@@ -788,64 +795,121 @@ input[type="range"] {
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
+  color: #fff;
 }
 
 .desk-flow-line span {
-  color: var(--tx2);
+  color: rgba(244, 247, 250, 0.72);
   font-size: 14px;
 }
 
-.desk-flow-rail {
-  list-style: none;
+.desk-flow-legend {
+  display: flex;
+  gap: 14px;
   margin: 0;
-  padding: 0;
-  display: flex;
-  align-items: stretch;
-  gap: 0;
-  overflow-x: auto;
+  font-family: var(--fm);
+  font-size: 11px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
 }
 
-.desk-flow-step {
-  display: flex;
-  align-items: center;
-  flex: 1 1 0;
-  min-width: 92px;
+.desk-flow-legend .ok {
+  color: #3dba6a;
+  text-shadow: 0 0 10px rgba(61, 186, 106, 0.7);
 }
 
-.desk-flow-wire {
-  width: 12px;
-  height: 2px;
-  margin: 0 2px;
-  flex: none;
-  background: var(--br);
-  border-radius: 2px;
+.desk-flow-legend .hot {
+  color: #e24b4b;
+  text-shadow: 0 0 10px rgba(226, 75, 75, 0.7);
 }
 
-.desk-flow-wire.on {
-  background: var(--gold);
+.desk-flow-chart {
+  position: relative;
+  min-height: 228px;
 }
 
-.desk-flow-step button {
+.desk-flow-svg {
+  position: absolute;
+  inset: 0;
   width: 100%;
+  height: 100%;
+  overflow: visible;
+}
+
+.desk-flow-hit {
+  fill: none;
+  stroke: transparent;
+  stroke-width: 18;
+  stroke-linecap: round;
+  cursor: pointer;
+}
+
+.desk-flow-edge {
+  fill: none;
+  stroke-width: 3.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.desk-flow-edge.is-ok {
+  stroke: #3dba6a;
+  opacity: 0.55;
+}
+
+.desk-flow-edge.is-hot {
+  stroke: #e24b4b;
+  opacity: 0.7;
+  stroke-dasharray: 10 8;
+  animation: flow-dash 1.1s linear infinite;
+}
+
+.desk-flow-edge.is-idle {
+  stroke: #3a4652;
+  opacity: 0.55;
+}
+
+.desk-flow-edge.is-live.is-ok {
+  opacity: 1;
+  stroke-width: 4;
+}
+
+.desk-flow-edge.is-live.is-hot {
+  opacity: 1;
+  stroke-width: 4.2;
+}
+
+.desk-flow-nodes {
+  position: relative;
+  z-index: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-rows: 1fr 1fr;
+  gap: 28px 18px;
+  min-height: 228px;
+  padding: 8px 10px;
+}
+
+.desk-flow-node {
   display: grid;
   justify-items: center;
+  align-content: center;
   gap: 4px;
-  padding: 10px 6px 8px;
-  border: 1px solid var(--br);
-  border-radius: 10px;
-  background: #fff;
-  color: var(--tx);
+  min-height: 86px;
+  padding: 10px 8px;
+  border: 1px solid #33404a;
+  border-radius: 12px;
+  background: #1a222c;
+  color: #f4f7fa;
   cursor: pointer;
-  transition: border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, border-color 0.12s ease;
 }
 
-.desk-flow-step button:hover,
-.desk-flow-step.is-focus button {
-  border-color: var(--navy);
-  transform: translateY(-1px);
+.desk-flow-node:hover,
+.desk-flow-node.is-focus {
+  transform: translateY(-2px);
 }
 
-.desk-flow-step button em {
+.desk-flow-node em {
   width: 22px;
   height: 22px;
   display: grid;
@@ -855,54 +919,85 @@ input[type="range"] {
   font-size: 11px;
   font-style: normal;
   font-weight: 600;
-  background: var(--bg3);
-  color: var(--tx2);
+  background: #2a3340;
+  color: #c5ced6;
 }
 
-.desk-flow-step button strong {
-  font-size: 13px;
+.desk-flow-node strong {
+  font-size: 14px;
   font-weight: 650;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
 }
 
-.desk-flow-step button span {
+.desk-flow-node span {
   font-family: var(--fm);
   font-size: 11px;
-  color: var(--tx3);
+  color: #8a939b;
 }
 
-.desk-flow-step.is-done button em {
-  background: var(--navy);
+.desk-flow-node.is-now {
+  border-color: #3dba6a;
+  box-shadow: 0 0 0 1px rgba(61, 186, 106, 0.35), 0 0 22px rgba(61, 186, 106, 0.35);
+}
+
+.desk-flow-node.is-now em {
+  background: #3dba6a;
+  color: #0b140f;
+}
+
+.desk-flow-node.is-hot {
+  border-color: #e24b4b;
+  box-shadow: 0 0 0 1px rgba(226, 75, 75, 0.4), 0 0 24px rgba(226, 75, 75, 0.4);
+  animation: flow-pulse 1.6s ease-in-out infinite;
+}
+
+.desk-flow-node.is-hot em {
+  background: #e24b4b;
   color: #fff;
 }
 
-.desk-flow-step.is-now button {
-  border-color: var(--gold);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent);
-  background: color-mix(in srgb, var(--gold) 12%, #fff);
+.desk-flow-node.is-live {
+  border-color: #c49a32;
+  box-shadow: 0 0 16px rgba(196, 154, 50, 0.28);
 }
 
-.desk-flow-step.is-now button em {
-  background: var(--gold);
-  color: #111;
+.desk-flow-node.is-wait {
+  border-color: #8a3a3a;
 }
 
-.desk-flow-step.is-wait button em {
-  background: var(--navy);
-  color: #fff;
+@keyframes flow-dash {
+  to {
+    stroke-dashoffset: -36;
+  }
+}
+
+@keyframes flow-pulse {
+  0%,
+  100% {
+    box-shadow: 0 0 0 1px rgba(226, 75, 75, 0.35), 0 0 16px rgba(226, 75, 75, 0.28);
+  }
+  50% {
+    box-shadow: 0 0 0 1px rgba(226, 75, 75, 0.7), 0 0 28px rgba(226, 75, 75, 0.55);
+  }
 }
 
 @media (max-width: 860px) {
-  .desk-flow-rail {
-    display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 8px;
+  .desk-flow-chart {
+    min-height: 0;
   }
-  .desk-flow-wire {
+  .desk-flow-svg {
     display: none;
   }
-  .desk-flow-step {
-    min-width: 0;
+  .desk-flow-nodes {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: none;
+    min-height: 0;
+    gap: 8px;
+  }
+  .desk-flow-node {
+    min-height: 72px;
+    grid-column: auto !important;
+    grid-row: auto !important;
   }
 }
 

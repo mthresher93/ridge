@@ -12,13 +12,40 @@ export type FlowStep = {
   href: string;
   hint: string;
   stay?: boolean;
+  hot?: boolean;
+};
+
+export type FlowEdge = {
+  from: FlowStepId;
+  to: FlowStepId;
+  tone: "ok" | "hot" | "idle";
 };
 
 export type FlowState = {
   steps: FlowStep[];
+  edges: FlowEdge[];
   current: FlowStepId;
   line: string;
 };
+
+export const FLOW_POINTS: Record<FlowStepId, { col: number; row: number }> = {
+  hunt: { col: 1, row: 1 },
+  paste: { col: 2, row: 1 },
+  call: { col: 3, row: 1 },
+  wrap: { col: 4, row: 1 },
+  quote: { col: 4, row: 2 },
+  cover: { col: 3, row: 2 },
+  track: { col: 2, row: 2 },
+};
+
+const EDGE_PAIRS: [FlowStepId, FlowStepId][] = [
+  ["hunt", "paste"],
+  ["paste", "call"],
+  ["call", "wrap"],
+  ["wrap", "quote"],
+  ["quote", "cover"],
+  ["cover", "track"],
+];
 
 const COVER_STATUSES = new Set(["Carrier Needed", "Booked", "Carrier Booked"]);
 const TRACK_STATUSES = new Set(["Pickup Scheduled", "In Transit"]);
@@ -65,6 +92,7 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
       label: "Paste",
       count: unlabeled,
       href: "/discover?tab=paste",
+      hot: unlabeled > 0,
       hint: unlabeled ? `${unlabeled} unlabeled. Paste the page, then label the yard.` : "Paste a page you already opened. Phone only if it was published.",
     },
     {
@@ -74,6 +102,7 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
       count: callBook.length,
       href: "/",
       stay: true,
+      hot: overdue > 0,
       hint: overdue
         ? `${overdue} follow-up${overdue === 1 ? "" : "s"} waiting. Call the published number.`
         : callBook.length
@@ -87,6 +116,7 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
       count: wrap ? 1 : 0,
       href: "/",
       stay: true,
+      hot: Boolean(wrap),
       hint: wrapLead
         ? `Stay on ${wrapLead.name}. Booker is a contact. Dest, specs, blank quote.`
         : "After they pick up, this yard stays here until a $0 quote is saved.",
@@ -105,6 +135,7 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
       label: "Cover",
       count: cover.length,
       href: cover[0] ? `/shipments?id=${encodeURIComponent(cover[0].id)}` : "/carriers",
+      hot: cover.length > 0,
       hint: cover.length ? `${cover.length} load${cover.length === 1 ? "" : "s"} need a carrier on file.` : "Paste a real MC/DOT page. Do not invent a truck.",
     },
     {
@@ -117,7 +148,18 @@ export function deskFlow(workspace: Workspace, hunt: { href: string; place: stri
     },
   ];
 
+  const order = steps.map((item) => item.id);
+  const at = order.indexOf(current);
+  const edges: FlowEdge[] = EDGE_PAIRS.map(([from, to]) => {
+    const toAt = order.indexOf(to);
+    const dest = steps.find((item) => item.id === to);
+    let tone: FlowEdge["tone"] = "idle";
+    if (toAt < at) tone = "ok";
+    else if (toAt === at) tone = dest?.hot ? "hot" : "ok";
+    return { from, to, tone };
+  });
+
   const now = steps.find((item) => item.id === current) || steps[0];
   const line = `${now.label} · ${now.hint}`;
-  return { steps, current, line };
+  return { steps, edges, current, line };
 }

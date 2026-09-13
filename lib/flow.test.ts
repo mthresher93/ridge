@@ -19,6 +19,7 @@ describe("deskFlow", () => {
     const flow = deskFlow(workspace, hunt);
     expect(flow.current).toBe("wrap");
     expect(flow.line).toMatch(/HOLT CAT/);
+    expect(flow.edges.find((item) => item.to === "wrap")?.tone).toBe("hot");
   });
 
   it("lights Call when untried phones are on the book", () => {
