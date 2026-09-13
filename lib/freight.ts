@@ -1215,6 +1215,7 @@ export function ingestCapture(workspace: Workspace, payload: CapturePayload, ove
 
 export type ProspectFilter =
   | "all"
+  | "ready"
   | "unlabeled"
   | "uncontacted"
   | "talking"
@@ -1230,6 +1231,7 @@ export type ProspectFilter =
 
 export function matchesProspectFilter(lead: Lead, filter: ProspectFilter, now = Date.now()) {
   if (filter === "all") return true;
+  if (filter === "ready") return Boolean(lead.label) && Boolean(lead.phone) && (lead.attempts || 0) === 0 && UNCONTACTED_STAGES.has(lead.status);
   if (filter === "unlabeled") return !lead.label;
   if (filter === "high") return (lead.freightScore || 0) >= 80 || lead.priority === "High" || lead.priority === "Critical";
   if (filter === "uncontacted") return UNCONTACTED_STAGES.has(lead.status);

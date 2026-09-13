@@ -48,6 +48,14 @@ export function extractCarrierFacts(pageText: string, url = "") {
 export function ingestCarrier(workspace: Workspace, payload: ReturnType<typeof extractCarrierFacts>) {
   const stamp = nowIso();
   const mc = payload.mc.trim();
+  if (!mc || !String(payload.dot || "").trim() || !isCallablePhone(payload.phone)) {
+    return {
+      workspace,
+      carrier: (workspace.carriers || [])[0] || { id: "", name: "", mc: "", dot: "", phone: "", email: "", city: "", state: "", equipment: "", sourceUrl: "", notes: "", createdAt: stamp },
+      duplicate: false,
+      error: "Need an MC, DOT, and a dispatch phone from the page.",
+    };
+  }
   const phone = normalizePhone(payload.phone);
   const existing = (workspace.carriers || []).find((item) => {
     if (mc && item.mc === mc) return true;

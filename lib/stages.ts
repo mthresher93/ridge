@@ -35,8 +35,8 @@ export const PIPELINE_GROUPS = [
     stages: ["Quote Requested", "Quote Sent", "Negotiating"],
   },
   {
-    id: "close",
-    label: "Close",
+    id: "cover",
+    label: "Cover",
     drop: "Load Won",
     stages: ["Load Won", "Load Lost", "Recurring Account"],
   },

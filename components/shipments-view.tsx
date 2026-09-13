@@ -97,12 +97,12 @@ export function ShipmentsView() {
 
   function saveCarrierPaste() {
     const facts = extractCarrierFacts(carrierPaste, carrierUrl);
-    if (!facts.mc && !facts.dot && !facts.phone) {
-      setCarrierMsg("Need an MC, DOT, or a published local phone from the page. Do not invent one.");
-      return;
-    }
     setWorkspace((prev) => {
       const result = ingestCarrier(prev, facts);
+      if (result.error) {
+        setCarrierMsg(result.error);
+        return prev;
+      }
       setCarrierMsg(
         result.duplicate
           ? `Updated ${result.carrier.name}${result.carrier.mc ? ` · MC ${result.carrier.mc}` : ""}.`
@@ -182,7 +182,7 @@ export function ShipmentsView() {
             <h1>Shipments</h1>
             <p>
               {rows.length === 0
-                ? "No shipments yet. Quote only after you have a real customer rate. Paste a carrier page below when you cover a load."
+                ? "No shipments until a real customer and lane exist. Rates stay blank until you type them."
                 : `Customer ${money(totals.customer)} · carrier ${money(totals.carrier)} · gross margin ${money(totals.margin)}`}
             </p>
           </div>

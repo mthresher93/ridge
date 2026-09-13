@@ -39,6 +39,7 @@ export function PlaybookView() {
   const [paste, setPaste] = useState("");
   const [showAllDecks, setShowAllDecks] = useState(false);
   const [fromTraining, setFromTraining] = useState(false);
+  const [practice, setPractice] = useState(false);
   const [saveMsg, setSaveMsg] = useState("");
 
   const liveClients = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
@@ -119,10 +120,22 @@ export function PlaybookView() {
         <header className="crm-desk-head">
           <div>
             <h1>Intel</h1>
-            <p>Type specs from the call. Training buttons are catalog examples, not a live load.</p>
+            <p>Four questions from a live call. Rate stays blank.</p>
           </div>
+          <button className={`az-btn sm ${practice ? "pri" : ""}`} type="button" onClick={() => setPractice((on) => !on)}>
+            {practice ? "Live only" : "Practice mode"}
+          </button>
         </header>
 
+        {!practice && !targetId ? (
+          <section className="empty-desk">
+            <h2>No live machine on a call</h2>
+            <p>Finish the call first. Then type L × W × height-on-deck × pounds.</p>
+            <button className="az-btn pri sm" type="button" onClick={() => router.push("/outreach")}>
+              Next call
+            </button>
+          </section>
+        ) : (
         <div className="intel-desk">
           <aside className="intel-nav">
             <input className="az-input" value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Search trailers, auctions, DOT…" />
@@ -163,14 +176,16 @@ export function PlaybookView() {
                   ))}
                 </ol>
               </div>
+              {practice ? (
               <div className="intel-presets">
-                <span className="cd-mono">Training examples — catalog sizes, not a live load</span>
+                <span className="cd-mono">Practice only — catalog sizes, not a live load</span>
                 {UNIT_PRESETS.map((preset) => (
                   <button key={preset.id} type="button" className="az-btn sm" onClick={() => applyPreset(preset)}>
                     {preset.label}
                   </button>
                 ))}
               </div>
+              ) : null}
               <div className="intel-work">
               <div className="intel-form">
               <div className="intel-fit-grid">
@@ -183,7 +198,7 @@ export function PlaybookView() {
                       setFromTraining(false);
                       setUnit(event.target.value);
                     }}
-                    placeholder="sleeper cab, mini excavator…"
+                    placeholder="What they called it"
                   />
                 </label>
                 <label className="rec-field">
@@ -196,7 +211,7 @@ export function PlaybookView() {
                       setFromTraining(false);
                       setLength(event.target.value);
                     }}
-                    placeholder="26"
+                    placeholder="ft"
                   />
                 </label>
                 <label className="rec-field">
@@ -209,7 +224,7 @@ export function PlaybookView() {
                       setFromTraining(false);
                       setWidth(event.target.value);
                     }}
-                    placeholder="8.5"
+                    placeholder="ft"
                   />
                 </label>
                 <label className="rec-field">
@@ -222,7 +237,7 @@ export function PlaybookView() {
                       setFromTraining(false);
                       setHeight(event.target.value);
                     }}
-                    placeholder="10"
+                    placeholder="on deck, ft"
                   />
                 </label>
                 <label className="rec-field">
@@ -235,7 +250,7 @@ export function PlaybookView() {
                       setFromTraining(false);
                       setWeight(event.target.value);
                     }}
-                    placeholder="18000"
+                    placeholder="lb"
                   />
                 </label>
                 <label className="rec-field intel-paste">
@@ -252,7 +267,7 @@ export function PlaybookView() {
                       if (parsed.widthFt != null) setWidth(String(parsed.widthFt));
                       if (parsed.heightFt != null) setHeight(String(parsed.heightFt));
                     }}
-                    placeholder="26 x 8.5 x 10 or 312 x 102 x 120 in"
+                    placeholder="L x W x H from the call"
                   />
                 </label>
               </div>
@@ -323,6 +338,7 @@ export function PlaybookView() {
             ) : null}
           </div>
         </div>
+        )}
       </div>
     </div>
   );

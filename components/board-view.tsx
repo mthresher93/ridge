@@ -3,43 +3,15 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useWorkspace } from "@/lib/workspace-context";
-import { PIPELINE_GROUPS, STAGES } from "@/lib/stages";
-import { nowIso } from "@/lib/format";
-import { DealDrawer } from "./deal-drawer";
+import { phonePretty } from "@/lib/format";
+import { deskColumn } from "@/lib/desk-rules";
+import { workPath } from "@/lib/nav";
+import { leadLocation } from "@/lib/freight";
 
 export function BoardView() {
   const router = useRouter();
-  const { workspace, setWorkspace, log, loading, setSelectedLeadId } = useWorkspace();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const [dragging, setDragging] = useState<string | null>(null);
-  const [dropOn, setDropOn] = useState<string | null>(null);
+  const { workspace, loading, setSelectedLeadId } = useWorkspace();
   const [mode, setMode] = useState<"board" | "table">("board");
-
-  const selected = workspace.opportunities.find((item) => item.id === selectedId) || null;
-  const live = workspace.opportunities.filter((item) => item.stage !== "Load Lost");
-
-  function moveDeal(id: string, stage: string) {
-    setWorkspace((prev) => ({
-      ...prev,
-      opportunities: prev.opportunities.map((item) => {
-        if (item.id !== id || item.stage === stage) return item;
-        return {
-          ...item,
-          stage,
-          stageEnteredAt: nowIso(),
-          updatedAt: nowIso(),
-          history: [{ from: item.stage, to: stage, at: nowIso(), source: "board" }, ...item.history],
-        };
-      }),
-      leads: prev.leads.map((lead) => {
-        const opp = prev.opportunities.find((item) => item.id === id);
-        if (!opp || opp.leadId !== lead.id) return lead;
-        return { ...lead, status: stage, updatedAt: nowIso() };
-      }),
-      updatedAt: nowIso(),
-    }));
-    log("opportunity", id, "stage_change", `Moved to ${stage}`);
-  }
 
   if (loading) return <div className="cd-body text-[var(--tx4)]">Loading pipeline…</div>;
 
@@ -49,7 +21,7 @@ export function BoardView() {
         <header className="crm-desk-head">
           <div>
             <h1>Pipeline</h1>
-            <p>{live.length} open · Hunt → Talk → Quote → Close. Rates stay blank until you enter one.</p>
+            <p>{workspace.leads.filter((lead) => !lead.archivedAt).length} on the book · Hunt → Talk → Quote → Cover. Cards move from Work outcomes.</p>
           </div>
           <div className="work-tabs">
             <button type="button" className={`az-btn sm ${mode === "board" ? "pri" : ""}`} onClick={() => setMode("board")}>
@@ -65,75 +37,46 @@ export function BoardView() {
         </header>
 
         {mode === "board" ? (
-          workspace.opportunities.length === 0 ? (
+          workspace.leads.filter((lead) => !lead.archivedAt).length === 0 ? (
             <section className="empty-desk">
               <h2>Pipeline is empty</h2>
-              <p>Capture a live listing. Deals appear here from clients you saved — no sample loads.</p>
+              <p>Capture a live listing. Cards appear from Work outcomes — Hunt, Talk, Quote, Cover.</p>
               <div className="empty-desk-actions">
                 <button className="az-btn pri sm" type="button" onClick={() => router.push("/discover")}>
                   Hunt a listing
-                </button>
-                <button className="az-btn sm" type="button" onClick={() => router.push("/people")}>
-                  Clients
                 </button>
               </div>
             </section>
           ) : (
           <div className="board pipeline-board">
-            {PIPELINE_GROUPS.map((group) => {
-              const rows = workspace.opportunities.filter((item) => (group.stages as readonly string[]).includes(item.stage));
+            {(["hunt", "talk", "quote", "cover"] as const).map((id) => {
+              const rows = workspace.leads.filter((lead) => !lead.archivedAt && deskColumn(lead, workspace) === id);
               return (
-                <section
-                  key={group.id}
-                  className={`board-col${dropOn === group.id ? " drop" : ""}`}
-                  onDragOver={(event) => {
-                    event.preventDefault();
-                    setDropOn(group.id);
-                  }}
-                  onDragLeave={() => setDropOn((value) => (value === group.id ? null : value))}
-                  onDrop={() => {
-                    if (dragging) moveDeal(dragging, group.drop);
-                    setDragging(null);
-                    setDropOn(null);
-                  }}
-                >
+                <section key={id} className="board-col">
                   <div className="board-col-head">
-                    <div className="board-col-title">{group.label}</div>
+                    <div className="board-col-title">{id === "hunt" ? "Hunt" : id === "talk" ? "Talk" : id === "quote" ? "Quote" : "Cover"}</div>
                     <div className="board-col-meta">{rows.length}</div>
                   </div>
                   <div className="board-col-body">
-                    {rows.length === 0 ? <p className="board-empty">Drop here</p> : null}
-                    {rows.map((item) => {
-                      const person = workspace.leads.find((lead) => lead.id === item.leadId);
-                      return (
-                        <button
-                          key={item.id}
-                          type="button"
-                          draggable
-                          onDragStart={() => setDragging(item.id)}
-                          onClick={() => {
-                            setSelectedId(item.id);
-                            if (item.leadId) setSelectedLeadId(item.leadId);
-                          }}
-                          className={`board-card${dragging === item.id ? " dragging" : ""}`}
-                        >
-                          <div className="board-card-top">
-                            <span className="az-chip">{item.stage}</span>
-                            {person?.label ? <span className="az-chip">{person.label}</span> : null}
-                            {person?.source ? <span className="az-chip">{person.source}</span> : null}
-                          </div>
-                          <div className="board-card-name">{item.property || item.name || person?.name}</div>
-                          <div className="board-card-sub">
-                            {[person?.name, person ? [person.city, person.state].filter(Boolean).join(", ") : ""].filter(Boolean).join(" · ") || "—"}
-                          </div>
-                          <div className="board-card-sub">{item.nextAction || person?.nextAction || "No next action"}</div>
-                          <div className="board-card-foot">
-                            <span>{person?.lastContactAt ? "Touched" : "No contact"}</span>
-                            <span>{item.value ? `$${item.value}` : "Rate unset"}</span>
-                          </div>
-                        </button>
-                      );
-                    })}
+                    {rows.length === 0 ? <p className="board-empty">None yet</p> : null}
+                    {rows.map((person) => (
+                      <button
+                        key={person.id}
+                        type="button"
+                        onClick={() => {
+                          setSelectedLeadId(person.id);
+                          router.push(workPath(person.id));
+                        }}
+                        className="board-card"
+                      >
+                        <div className="board-card-top">
+                          {person.label ? <span className="az-chip">{person.label}</span> : <span className="az-chip">Unlabeled</span>}
+                        </div>
+                        <div className="board-card-name">{person.name}</div>
+                        <div className="board-card-sub">{leadLocation(person) || "Texas"} · {person.phone ? phonePretty(person.phone) : "no phone"}</div>
+                        <div className="board-card-sub">{person.nextAction || (person.attempts ? `${person.attempts} tries` : "Never tried")}</div>
+                      </button>
+                    ))}
                   </div>
                 </section>
               );
@@ -154,48 +97,31 @@ export function BoardView() {
                 </tr>
               </thead>
               <tbody>
-                {workspace.opportunities.length === 0 ? (
+                {workspace.leads.filter((lead) => !lead.archivedAt).length === 0 ? (
                   <tr className="cursor-default">
                     <td colSpan={6} className="py-10 text-center text-[var(--muted)]">
-                      No clients on the board yet. Hunt a listing — this board only shows people you captured.
+                      No clients on the board yet. Hunt a listing.
                     </td>
                   </tr>
                 ) : null}
-                {workspace.opportunities.map((item) => {
-                  const person = workspace.leads.find((lead) => lead.id === item.leadId);
-                  return (
-                    <tr key={item.id} onClick={() => setSelectedId(item.id)}>
+                {workspace.leads.filter((lead) => !lead.archivedAt).map((person) => (
+                    <tr key={person.id} onClick={() => { setSelectedLeadId(person.id); router.push(workPath(person.id)); }}>
                       <td>
-                        <div className="font-medium">{item.property || item.name}</div>
-                        <div className="text-[12px] text-[var(--muted)]">{item.name}</div>
+                        <div className="font-medium">{person.name}</div>
                       </td>
-                      <td>{person?.label || "—"}</td>
+                      <td>{person.label || "—"}</td>
+                      <td>{deskColumn(person, workspace)}</td>
                       <td>
-                        <select
-                          className="az-select"
-                          value={item.stage}
-                          onClick={(event) => event.stopPropagation()}
-                          onChange={(event) => moveDeal(item.id, event.target.value)}
-                        >
-                          {STAGES.map((stage) => (
-                            <option key={stage}>{stage}</option>
-                          ))}
-                        </select>
+                        {person.origin || "—"} → {person.destination || "—"}
                       </td>
-                      <td>
-                        {item.origin || person?.origin || "—"} → {item.destination || person?.destination || "—"}
-                      </td>
-                      <td className="az-num">{item.value ? item.value : "—"}</td>
-                      <td className="text-[12px] text-[var(--muted)]">{item.nextAction || "—"}</td>
+                      <td className="az-num">—</td>
+                      <td className="text-[12px] text-[var(--muted)]">{person.nextAction || "—"}</td>
                     </tr>
-                  );
-                })}
+                  ))}
               </tbody>
             </table>
           </div>
         )}
-
-        {selected ? <DealDrawer opportunity={selected} onClose={() => setSelectedId(null)} /> : null}
       </div>
     </div>
   );

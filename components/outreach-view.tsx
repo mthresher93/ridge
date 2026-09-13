@@ -283,6 +283,7 @@ export function OutreachView() {
                 {hours.label}. {hours.why}
               </p>
             ) : null}
+            {script ? <blockquote className="desk-opener work-opener">{script.opener}</blockquote> : null}
             {script ? <p className="desk-ask">{script.ask}</p> : null}
             {suggested ? <p className="cd-mono">Looks like a {suggested}. Label it so the opener stays a yard ask.</p> : <p className="cd-mono">Label first. The opener changes for a yard vs a private seller.</p>}
             <div className="label-chips">
@@ -313,12 +314,11 @@ export function OutreachView() {
                 <span>Trailer guess</span>
                 <b>{hasMeasuredSpecs(lead) ? lead.trailerHint || (fit ? `${fit.trailerName} · ${fit.loadClass}` : "—") : "Ask on the call"}</b>
               </div>
-              <div>
-                <span>Screen</span>
-                <b>{lead.freightScore ?? "—"}/100</b>
-              </div>
             </div>
-            <ScriptPanel lead={lead} beat={beat} onBeat={setBeat} large mode="split" />
+            <details className="outreach-more">
+              <summary>Scripts and objections</summary>
+              <ScriptPanel lead={lead} beat={beat} onBeat={setBeat} large mode="split" />
+            </details>
             {follow ? <p className="cd-mono">Follow-up already set: {follow.reason}</p> : null}
             <h3>Listing</h3>
             <p>{lead.listingTitle || listing?.title || "No title"}</p>
@@ -349,29 +349,29 @@ export function OutreachView() {
               <input className="az-input" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Saved on the call event" />
             </label>
             <div className="call-disposition">
-              <button className={`az-btn${lastDisp === "no_pickup" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("no_pickup"); noteCall("no_pickup"); }}>
-                No pickup
-              </button>
-              <button className={`az-btn${lastDisp === "voicemail" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("voicemail"); noteCall("voicemail"); }}>
-                Voicemail
-              </button>
-              <button className={`az-btn${lastDisp === "talked" ? " on pri" : ""}`} type="button" onClick={() => { setLastDisp("talked"); noteCall("talked", false); }}>
+              <button className={`az-btn${lastDisp === "talked" ? " on pri" : ""}`} type="button" onClick={() => { setLastDisp("talked"); noteCall("talked", true); }}>
                 Talked
               </button>
-              <button className={`az-btn${lastDisp === "wrong_number" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("wrong_number"); noteCall("wrong_number"); }}>
+              <button className={`az-btn${lastDisp === "voicemail" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("voicemail"); noteCall("voicemail", true); }}>
+                Voicemail
+              </button>
+              <button className={`az-btn${lastDisp === "no_pickup" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("no_pickup"); noteCall("no_pickup", true); }}>
+                No pickup
+              </button>
+              <button className={`az-btn${lastDisp === "wrong_number" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("wrong_number"); noteCall("wrong_number", true); }}>
                 Wrong number
               </button>
-              <button className={`az-btn${lastDisp === "not_interested" ? " on danger" : ""}`} type="button" onClick={() => { setLastDisp("not_interested"); mark("Load Lost", "Not interested"); }}>
+              <button className={`az-btn${lastDisp === "not_interested" ? " on danger" : ""}`} type="button" onClick={() => { setLastDisp("not_interested"); mark("Load Lost", "Not interested", undefined, true); }}>
                 Not interested
               </button>
-              <button className={`az-btn${lastDisp === "interested" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("interested"); mark("Replied", "Interested"); }}>
+              <button className={`az-btn${lastDisp === "interested" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("interested"); mark("Replied", "Interested", undefined, true); }}>
                 Interested
               </button>
-              <button className={`az-btn${lastDisp === "quote" ? " on pri" : ""}`} type="button" onClick={() => { setLastDisp("quote"); mark("Quote Requested", "Quote opportunity"); }}>
-                Quote opportunity
+              <button className={`az-btn${lastDisp === "quote" ? " on pri" : ""}`} type="button" onClick={() => { setLastDisp("quote"); mark("Quote Requested", "Quote requested", undefined, true); }}>
+                Quote requested
               </button>
-              <button className={`az-btn${lastDisp === "follow" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("follow"); mark("Replied", "Follow up", 1); }}>
-                Follow up
+              <button className={`az-btn${lastDisp === "follow" ? " on" : ""}`} type="button" onClick={() => { setLastDisp("follow"); mark("Replied", "Follow up", 1, true); }}>
+                Follow-up
               </button>
             </div>
             <p className="cd-mono">Voicemail stays here and sets a follow-up for tomorrow. Not a sent message.</p>

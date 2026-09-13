@@ -15,9 +15,8 @@ import { companyName, finishConnectedCall, leadLocation, outreachQueue, parseMea
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
 import { bookerOf, contactsForLead, skipQuote, unfinishedTalked, upsertBooker } from "@/lib/people";
 import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
-import { DeskFlow } from "./desk-flow";
 import { HuntDance } from "./hunt-dance";
-import { deskFlow } from "@/lib/flow";
+import { callReason, todayStrip, weekCounts } from "@/lib/desk-rules";
 import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
 import { money, nowIso, phonePretty, relativeDue } from "@/lib/format";
@@ -80,7 +79,8 @@ export function TodayView() {
   const pendingTalked = useMemo(() => unfinishedTalked(workspace), [workspace]);
   const wrapContacts = nextCall ? contactsForLead(workspace, nextCall.id) : [];
   const wrapBooker = nextCall ? bookerOf(workspace, nextCall) : null;
-  const flow = useMemo(() => deskFlow(workspace, hunt), [workspace, hunt]);
+  const strip = useMemo(() => todayStrip(workspace), [workspace]);
+  const week = useMemo(() => weekCounts(workspace), [workspace]);
   const wrapFit = recommendEquipment({
     text: nextCall?.equipmentType || nextCall?.listingTitle || "",
     lengthFt: parseMeasure(specL),
@@ -307,36 +307,63 @@ export function TodayView() {
           </div>
           <div className="home-stats">
             <button type="button" onClick={() => router.push(workPath())}>
-              <b>{callBook.length}</b>
-              <span>to call</span>
-            </button>
-            <button type="button" onClick={() => router.push("/people?filter=unlabeled")}>
-              <b>{unlabeledAll.length}</b>
-              <span>unlabeled</span>
+              <b>{strip.ready}</b>
+              <span>Ready to call</span>
             </button>
             <button type="button" onClick={() => router.push(workPath())}>
-              <b>{toMessage.length}</b>
-              <span>to message</span>
+              <b>{strip.calledToday}</b>
+              <span>Called today</span>
+            </button>
+            <button type="button" onClick={() => router.push("/people")}>
+              <b>{strip.namedBooker}</b>
+              <span>Named a booker</span>
             </button>
             <button type="button" onClick={() => router.push("/shipments")}>
-              <b>{books.booked}</b>
-              <span>loads</span>
+              <b>{strip.quoteRequested}</b>
+              <span>Quote requested</span>
             </button>
-            <button type="button" onClick={() => router.push("/callbacks")}>
-              <b className={metrics.overdueCallbacks.length ? "bad" : ""}>{metrics.overdueCallbacks.length}</b>
-              <span>overdue</span>
+            <button type="button" onClick={() => router.push("/shipments")}>
+              <b>{strip.loadLive}</b>
+              <span>Load live</span>
             </button>
           </div>
         </header>
 
         <div className="desk-floor">
-        <DeskFlow
-          flow={flow}
-          onStay={() => {
-            const el = document.querySelector(".desk-next, .desk-call-book, .desk-today");
-            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
-          }}
-        />
+        <section className="az-panel freight-panel desk-next-calls">
+          <header>
+            <div>
+              <div className="home-kicker">Next 3 calls</div>
+              <h3>Published numbers, untried first</h3>
+            </div>
+          </header>
+          {strip.nextCalls.length === 0 ? (
+            <p className="cd-mono">No published phones waiting. Hunt a metro and paste a page.</p>
+          ) : (
+            <div className="next-call-list">
+              {strip.nextCalls.map((lead) => (
+                <button
+                  key={lead.id}
+                  type="button"
+                  className="next-call-row"
+                  onClick={() => {
+                    setSelectedLeadId(lead.id);
+                    router.push(workPath(lead.id));
+                  }}
+                >
+                  <div>
+                    <b>{lead.name}</b>
+                    <span>{[lead.city, lead.state].filter(Boolean).join(", ") || "Texas"} · {phonePretty(lead.phone)}</span>
+                  </div>
+                  <em>{callReason(lead)}</em>
+                </button>
+              ))}
+            </div>
+          )}
+          <p className="week-counts">
+            This week · {week.hunts} hunts · {week.pastes} pastes · {week.voicemails} voicemails · {week.talks} talks
+          </p>
+        </section>
 
         {nextCall && nextScript ? (
           <section className={`az-panel freight-panel desk-next${wrappedLead && lastOutcome ? " desk-wrap" : ""}`}>

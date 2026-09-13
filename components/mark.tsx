@@ -75,7 +75,7 @@ export function BrandLockup() {
     <>
       <BrandMark />
       <BrandWord />
-      <div className="az-brand-sub">{PRODUCT_SUB}</div>
+      {PRODUCT_SUB ? <div className="az-brand-sub">{PRODUCT_SUB}</div> : null}
     </>
   );
 }

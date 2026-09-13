@@ -3,6 +3,7 @@ import { generateOpeningMessage, openingLines, suggestClientKind } from "./freig
 import { looksLikeYardName } from "./yard";
 import { nowIso, uid } from "./format";
 import { upsertBooker } from "./people";
+import { yardOpener } from "./desk-rules";
 
 export function yardRole(lead: Lead): ShipperRole {
   if (lead.shipperRole && lead.shipperRole !== "Unknown") return lead.shipperRole;
@@ -44,12 +45,13 @@ export function openerForLead(lead: Lead, sentToday = 0) {
 
 export function firstCall(lead: Lead, sentToday = 0) {
   const role = yardRole(lead);
+  const opener = role === "Yard" || lead.label === "Dealer" || lead.label === "Rental" ? yardOpener(lead) : openerForLead(lead, sentToday);
   return {
     ask:
       role === "Yard"
         ? "Who books outbound freight when a machine sells? Backup on the routing guide — not replace their guy."
         : "Pickup only, or do they need a truck if the buyer is out of state?",
-    opener: openerForLead(lead, sentToday),
+    opener,
     why:
       lead.scoreWhy ||
       (role === "Yard"

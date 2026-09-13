@@ -8,6 +8,8 @@ import { workPath } from "@/lib/nav";
 import { daysBetween, nowIso, relativeDue, uid } from "@/lib/format";
 import { browserTelephony } from "@/lib/telephony";
 import type { Callback, CallbackType, Lead } from "@/lib/types";
+import { followUpSaveError } from "@/lib/desk-rules";
+import { bookerOf } from "@/lib/people";
 
 const TYPES: CallbackType[] = ["hot", "promising", "standard", "confirmation"];
 const SNOOZE = [
@@ -53,6 +55,7 @@ export function CallbacksView() {
   const [filter, setFilter] = useState<BucketId>("all");
   const [leadId, setLeadId] = useState(workspace.leads[0]?.id || "");
   const [reason, setReason] = useState("");
+  const [addError, setAddError] = useState("");
   const [when, setWhen] = useState("tomorrow");
   const [custom, setCustom] = useState("");
   const now = Date.now();
@@ -89,6 +92,14 @@ export function CallbacksView() {
   function add(event: React.FormEvent) {
     event.preventDefault();
     if (!leadId) return;
+    const person = workspace.leads.find((item) => item.id === leadId);
+    const name = bookerOf(workspace, person || ({} as Lead))?.name || person?.booker || "";
+    const blocked = followUpSaveError({ personName: name, reason });
+    if (blocked) {
+      setAddError(blocked);
+      return;
+    }
+    setAddError("");
     const id = uid("cb");
     const dueAt = dueFrom(when, custom);
     setWorkspace((prev) => ({
@@ -186,6 +197,7 @@ export function CallbacksView() {
           <button className="az-btn pri sm" type="submit">
             Schedule
           </button>
+          {addError ? <p className="rec-warn">{addError}</p> : null}
             </>
           )}
         </form>

@@ -5,6 +5,7 @@ import { enrichCapture } from "@/lib/freight-llm";
 import { captureAllowed, validSession } from "@/lib/auth";
 import { corsHeaders, corsJson, logError } from "@/lib/http";
 import { parseCapturePayload, type CaptureInput } from "@/lib/validate";
+import { clientSaveError } from "@/lib/desk-rules";
 import { loadAzimuth, saveAzimuth, WorkspaceConflictError } from "@/lib/workspace-io";
 
 function captureResponse(result: ReturnType<typeof ingestCapture>, extra: Record<string, unknown>, updatedAt: string, revision: number) {
@@ -56,6 +57,14 @@ export async function POST(request: Request) {
   try {
     const { workspace } = await loadAzimuth();
     const preview = extractListingData(capture.payload);
+    const blocked = clientSaveError({
+      name: preview.sellerName || preview.title || capture.payload.sellerName,
+      city: preview.city,
+      state: preview.state,
+      phone: preview.phone || capture.payload.phone,
+      location: capture.payload.location || [preview.city, preview.state].filter(Boolean).join(", "),
+    });
+    if (blocked) return corsJson({ ok: false, error: blocked }, 400);
     const dup = detectPossibleDuplicate(workspace, preview);
     const listingCount = Math.max(1, (workspace.listings || []).filter((item) => item.leadId === dup?.lead.id).length);
     const enriched = await enrichCapture(capture.payload, listingCount);

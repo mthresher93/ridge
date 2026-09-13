@@ -6,11 +6,13 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { CLIENT_KINDS, LEAD_SOURCES, captureFacts, extractListingData, ingestCapture, suggestClientKind, type CapturePayload, type ClientKind } from "@/lib/freight";
 import { workPath } from "@/lib/nav";
 import { todayHunt } from "@/lib/desk";
-import { HUNT_CONNECTIONS, HUNT_PLAYS, HUNT_PRESETS, HUNT_RULES, huntLane, huntPack, huntPackText, huntSearchUrl, sourceFromLane, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import { HUNT_PLAYS, huntLane, huntPack, huntPackText, huntSearchUrl, sourceFromLane, type HuntPackItem, type HuntRank } from "@/lib/hunt";
+import type { SavedSearch } from "@/lib/types";
 import { bookCensus } from "@/lib/book";
 import { densestHuntPlace, leadsInPlace, METROS } from "@/lib/metro";
 import { firstCall } from "@/lib/prospect";
 import { isCallablePhone } from "@/lib/carriers";
+import { cityQueries, clientSaveError, DESK_CITIES, DESK_LOCATORS, googleHuntUrl, osmHuntUrl } from "@/lib/desk-rules";
 import { nowIso, phonePretty, uid } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv } from "@/lib/contacts";
 import type { FinderHit } from "@/lib/finder";
@@ -217,14 +219,14 @@ export function DiscoverView() {
       ),
       updatedAt: stamp,
     }));
-    setLastCapture((prev) => (prev && prev.leadId === leadId ? { ...prev, suggested: next && next !== "Unlabeled" ? (next as LastCapture["suggested"]) : prev.suggested } : prev));
+    setLastCapture((prev) => (prev && prev.leadId === leadId ? { ...prev, suggested: next ? (next as LastCapture["suggested"]) : prev.suggested } : prev));
   }
 
   async function onPaste(event: React.FormEvent, andWork = false) {
     event.preventDefault();
     const blob = [form.title, form.description, form.url, form.location].join("\n");
     if (!blob.trim()) {
-      setError("Paste a title, URL, or listing details.");
+      setError("Paste the page you opened.");
       return;
     }
     if (blob.length > 8000) {
@@ -242,6 +244,17 @@ export function DiscoverView() {
       price: form.price,
       pageText: blob,
     });
+    const blocked = clientSaveError({
+      name: form.sellerName || pulledListing.sellerName || pulledListing.title,
+      city: pulledListing.city,
+      state: pulledListing.state,
+      phone: form.phone || pulledListing.phone,
+      location: form.location || [pulledListing.city, pulledListing.state].filter(Boolean).join(", "),
+    });
+    if (blocked) {
+      setError(blocked);
+      return;
+    }
     const id = await capture({
       source: form.source,
       url: form.url,
@@ -442,505 +455,94 @@ export function DiscoverView() {
         <header className="crm-desk-head">
           <div>
             <h1>Discover</h1>
-            <p>One metro. Open a public search. Paste what was published.</p>
-          </div>
-          <div className="freight-row-actions">
-            <span className="az-chip">{ai?.ready ? ai.ollama?.detail || ai.provider : "Local rules · start Ollama"}</span>
-            <button className="az-btn sm" type="button" onClick={() => void copyBookmarklet()}>
-              Copy bookmarklet
-            </button>
+            <p>Pick a city. Open a public page. Paste only if a phone is on it.</p>
           </div>
         </header>
 
         <div className="discover-desk">
           <div className="discover-main">
-            <div className="work-tabs wrap">
-              {(["hunt", "finder", "paste", "csv", "searches", "logins"] as const).map((item) => (
-                <button key={item} type="button" className={`az-btn sm ${tab === item ? "pri" : ""}`} onClick={() => setTab(item)}>
-                  {item === "hunt"
-                    ? "Hunt"
-                    : item === "finder"
-                      ? "Customer finder"
-                      : item === "paste"
-                        ? "Paste"
-                        : item === "csv"
-                          ? "CSV"
-                          : item === "searches"
-                            ? "Saved searches"
-                            : "What you need"}
-                </button>
-              ))}
-            </div>
-
             {error ? <p className="rec-warn">{error}</p> : null}
             {result ? <p className="rec-import-msg">{result}</p> : null}
 
-            {tab === "hunt" ? (
-              <div className="hunt-desk">
-                <section className="hunt-command">
-                  <div className="home-kicker">
-                    {activePlay.id === dayHunt.play.id ? `${dayHunt.weekday} hunt` : "This hunt"}
-                  </div>
-                  <h2>{activePlay.title}</h2>
-                  <p>{activePlay.why}</p>
-                  <p className="cd-mono">{activePlay.talkTo}</p>
-                  <div className="rec-grid hunt-command-fields">
-                    <label className="rec-field">
-                      What to hunt
-                      <input className="az-input" value={huntQuery} onChange={(event) => setHuntQuery(event.target.value)} placeholder="forklift, skid steer, CNC" />
-                    </label>
-                    <label className="rec-field">
-                      Area
-                      <input className="az-input" value={activePlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Dallas TX" />
-                    </label>
-                  </div>
-                  <div className="metro-chips">
-                    {METROS.map((metro) => (
-                      <button
-                        key={metro.id}
-                        type="button"
-                        className={`az-chip-ctrl${activePlace === metro.hunt ? " on" : ""}`}
-                        onClick={() => setHuntPlace(metro.hunt)}
-                      >
-                        {metro.label}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="hunt-presets">
-                    {HUNT_PRESETS.map((preset) => (
-                      <button
-                        key={`${preset.query}-${preset.place}`}
-                        type="button"
-                        className={`az-chip-ctrl${huntQuery === preset.query && activePlace === preset.place ? " on" : ""}`}
-                        onClick={() => {
-                          setHuntQuery(preset.query);
-                          setHuntPlace(preset.place);
-                        }}
-                      >
-                        {preset.query} · {preset.place}
-                      </button>
-                    ))}
-                  </div>
-                  <div className="hunt-actions">
-                    <button className="az-btn gold" type="button" onClick={openFirstSearch}>
-                      Open {pack[0]?.name || "first search"}
-                    </button>
-                    <button className="az-btn" type="button" onClick={() => document.getElementById("hunt-paste")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
-                      Paste a page
-                    </button>
-                    <button className="az-btn sm" type="button" onClick={openTopPack}>
-                      Open top {pack.length}
-                    </button>
-                    <button className="az-btn sm" type="button" onClick={() => void copyHuntLinks()}>
-                      Copy links
-                    </button>
-                    <button className="az-btn sm" type="button" onClick={saveCurrentHunt}>
-                      Save this hunt
-                    </button>
-                  </div>
-                </section>
-
-                {census.live ? (
-                  <div className="hunt-census">
-                    <span>{census.live} on file</span>
-                    <span>{census.withPhone} callable</span>
-                    <span>{census.yards} yards</span>
-                    <span>{census.sellers} private / marketplace</span>
-                    {census.sources.slice(0, 6).map((item) => (
-                      <span key={item.name}>
-                        {item.name} {item.count}
-                      </span>
-                    ))}
-                    {census.metros.slice(0, 6).map((metro) => (
-                      <span key={metro.id}>
-                        {metro.label} {metro.count}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="hunt-play-grid">
-                  {HUNT_PLAYS.map((play) => (
+            <div className="hunt-desk desk-hunt">
+              <section className="hunt-step">
+                <div className="home-kicker">1 · City</div>
+                <div className="metro-chips">
+                  {DESK_CITIES.map((metro) => (
                     <button
-                      key={play.id}
+                      key={metro.id}
                       type="button"
-                      className={`hunt-play-pick ${activePlay.id === play.id ? "on" : ""}`}
-                      onClick={() => setPlayFilter(play.id)}
+                      className={`az-btn sm ${activePlace === metro.hunt ? "pri" : ""}`}
+                      onClick={() => {
+                        setHuntPlace(metro.hunt);
+                        setHuntQuery(cityQueries(metro.label)[0]);
+                      }}
                     >
-                      <span className={rankChip(play.rank)}>{play.rank}</span>
-                      <b>{play.title}</b>
-                      <p>{play.why}</p>
+                      {metro.label}
                     </button>
                   ))}
                 </div>
-
-                {lastLane ? (
-                  <div className="hunt-next">
-                    <p>
-                      You opened <b>{lastLane.name}</b>. Copy the dealer or listing, then paste below. Phone only if it was published.
-                    </p>
-                    <button className="az-btn pri sm" type="button" onClick={() => document.getElementById("hunt-paste")?.scrollIntoView({ behavior: "smooth", block: "center" })}>
-                      Paste it
+              </section>
+              <section className="hunt-step">
+                <div className="home-kicker">2 · Query</div>
+                <input className="az-input" value={huntQuery} onChange={(event) => setHuntQuery(event.target.value)} placeholder="forklift dealer Houston TX" />
+                <div className="metro-chips">
+                  {cityQueries((DESK_CITIES.find((item) => item.hunt === activePlace) || DESK_CITIES[2]).label).map((item) => (
+                    <button key={item} type="button" className={`az-btn sm ${huntQuery === item ? "pri" : ""}`} onClick={() => setHuntQuery(item)}>
+                      {item}
                     </button>
-                  </div>
-                ) : null}
-                {blockedPack.length ? (
-                  <div className="hunt-blocked">
-                    <p>Browser blocked these. Open them one at a time:</p>
-                    {blockedPack.map((item) => (
-                      <a key={item.id} className="az-btn sm" href={item.url} target="_blank" rel="noreferrer">
-                        {item.name}
-                      </a>
-                    ))}
-                  </div>
-                ) : null}
-
-                <div className="hunt-floor">
-                <div className="hunt-floor-lanes">
-                <section className="hunt-lanes">
-                  <header>
-                    <div>
-                      <div className="home-kicker">Where to open</div>
-                      <h3>{activePlay.title} · {huntQuery} in {activePlace}</h3>
-                    </div>
-                    <span className="cd-mono">{activePlay.laneIds.length} public searches · you open them</span>
-                  </header>
-                  <div className="hunt-lane-grid">
-                    {activePlay.laneIds.map((laneId) => {
-                      const lane = huntLane(laneId);
-                      if (!lane) return null;
-                      return (
-                        <article key={lane.id} className="hunt-lane-card">
-                          <header>
-                            <div>
-                              <span className={rankChip(lane.rank)}>{lane.rank}</span>
-                              <h3>{lane.name}</h3>
-                            </div>
-                            <a className="az-btn pri sm" href={huntSearchUrl(lane.id, huntQuery, activePlace)} target="_blank" rel="noreferrer" onClick={() => markOpened(lane.id)}>
-                              Open
-                            </a>
-                          </header>
-                          <p>{lane.fit}</p>
-                          <p className="cd-mono">{lane.how}</p>
-                          <p className="hunt-lane-legal">{lane.legal}</p>
-                        </article>
-                      );
-                    })}
-                  </div>
-                </section>
-
-                {nearby.length ? (
-                  <section className="az-panel freight-panel nearby-file">
-                    <header>
-                      <div>
-                        <div className="home-kicker">Already on file</div>
-                        <h3>{nearby.length} in {activePlace}</h3>
-                      </div>
-                    </header>
-                    <p className="cd-mono">Skip recapturing these. Call them from Desk if they are still uncontacted.</p>
-                    {nearby.map((lead) => (
-                      <button
-                        key={lead.id}
-                        type="button"
-                        className="work-row text-left"
-                        onClick={() => {
-                          setSelectedLeadId(lead.id);
-                          router.push(workPath(lead.id));
-                        }}
-                      >
-                        <div>
-                          <b>{lead.name}</b>
-                          <div className="cd-mono">
-                            {lead.label || "Unlabeled"} · {lead.phone ? phonePretty(lead.phone) : "no phone"} · {lead.status}
-                          </div>
-                        </div>
-                        <span className="freight-score">
-                          <b>{lead.freightScore ?? "—"}</b>
-                        </span>
-                      </button>
-                    ))}
-                  </section>
-                ) : null}
-                </div>
-
-                <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={(event) => void onPaste(event, false)}>
-                  <div className="home-kicker">{lastLane ? `Paste from ${lastLane.name}` : "Then capture"}</div>
-                  <h3>Paste the page you copied</h3>
-                  <p>Haul pulls name, published phone, and city. Leave the phone blank if it was not on the page.</p>
-                  <label className="rec-field">
-                    Listing or Maps card
-                    <textarea className="az-area" rows={11} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page.` : "Paste the whole dealer or listing page."} />
-                  </label>
-                  {form.description.trim() ? (
-                    <div className="paste-preview">
-                      {pulled.length ? (
-                        pulled.map((item) => (
-                          <span key={item.k}>
-                            <b>{item.k}</b> {item.v}
-                          </span>
-                        ))
-                      ) : (
-                        <span>Nothing parsed yet — a name, city, or dims help.</span>
-                      )}
-                      {!pastePreview.phone ? <span>No phone on the page — that&apos;s fine.</span> : null}
-                    </div>
-                  ) : null}
-                  <div className="rec-grid">
-                    <label className="rec-field">
-                      Source
-                      <select className="az-select" value={form.source} onChange={(event) => set("source", event.target.value)}>
-                        {LEAD_SOURCES.map((item) => (
-                          <option key={item}>{item}</option>
-                        ))}
-                      </select>
-                    </label>
-                    <label className="rec-field">
-                      Listing URL
-                      <input className="az-input" value={form.url} onChange={(event) => set("url", event.target.value)} placeholder="https://" />
-                    </label>
-                  </div>
-                  <div className="rec-save">
-                    <button className="az-btn pri" type="submit" disabled={busy}>
-                      {busy ? "Saving…" : "Save — keep hunting"}
-                    </button>
-                    <button className="az-btn" type="button" disabled={busy} onClick={(event) => void onPaste(event, true)}>
-                      Save and work this
-                    </button>
-                    <span className="cd-mono">Stays on this hunt so you can paste the next yard.</span>
-                  </div>
-                </form>
-                </div>
-                <p className="hunt-fine">{HUNT_RULES[0]}</p>
-              </div>
-            ) : null}
-
-            {tab === "finder" ? (
-              <div className="hunt-desk">
-                <section className="hunt-command">
-                  <div className="home-kicker">Customer finder</div>
-                  <h2>OpenStreetMap Overpass</h2>
-                  <p>
-                    Free Nominatim, Photon, and Overpass. No paid shipper database. Haul does not invent phones — if OSM has no phone, you still open their site and paste.
-                  </p>
-                  <div className="rec-grid hunt-command-fields">
-                    <label className="rec-field">
-                      What to hunt
-                      <input className="az-input" value={huntQuery} onChange={(event) => setHuntQuery(event.target.value)} placeholder="forklift, equipment rental" />
-                    </label>
-                    <label className="rec-field">
-                      Area
-                      <input className="az-input" value={activePlace} onChange={(event) => setHuntPlace(event.target.value)} placeholder="Dallas TX" />
-                    </label>
-                  </div>
-                  <div className="metro-chips">
-                    {METROS.map((metro) => (
-                      <button
-                        key={metro.id}
-                        type="button"
-                        className={`az-chip-ctrl${activePlace === metro.hunt ? " on" : ""}`}
-                        onClick={() => setHuntPlace(metro.hunt)}
-                      >
-                        {metro.label}
-                      </button>
-                    ))}
-                  </div>
-                  <button className="az-btn gold" type="button" disabled={busy} onClick={() => void runFinder()}>
-                    {busy ? "Searching OSM…" : "Find customers"}
-                  </button>
-                  {finderNote ? <p className="cd-mono">{finderNote}</p> : null}
-                </section>
-                <div className="finder-list">
-                  {finderHits.map((hit) => (
-                    <div key={hit.id} className="work-row">
-                      <div>
-                        <b>{hit.name}</b>
-                        <div className="cd-mono">
-                          {[hit.street, hit.city, hit.state].filter(Boolean).join(" · ") || "No address tagged"}
-                          {hit.phone ? ` · ${phonePretty(hit.phone)}` : " · no phone on OSM"}
-                        </div>
-                      </div>
-                      <div className="freight-row-actions">
-                        <a className="az-btn sm" href={hit.osmUrl} target="_blank" rel="noreferrer">
-                          OSM
-                        </a>
-                        {hit.website ? (
-                          <a className="az-btn sm" href={hit.website} target="_blank" rel="noreferrer">
-                            Site
-                          </a>
-                        ) : null}
-                        <button className="az-btn pri sm" type="button" disabled={busy} onClick={() => saveFinderHit(hit)}>
-                          Save
-                        </button>
-                      </div>
-                    </div>
                   ))}
                 </div>
-              </div>
-            ) : null}
-
-            {tab === "paste" ? (
-              <form className="az-panel freight-panel paste-stage" onSubmit={(event) => void onPaste(event, true)}>
-                <div className="home-kicker">Capture</div>
-                <h2>Paste the listing</h2>
-                <p>Copy a dealer card or listing you already opened. Haul only keeps facts that were on the page.</p>
+              </section>
+              <section className="hunt-step">
+                <div className="home-kicker">3 · Open a public page</div>
+                <div className="hunt-open-row">
+                  <a className="az-btn pri" href={googleHuntUrl(huntQuery)} target="_blank" rel="noreferrer">Open Google top results</a>
+                  <a className="az-btn" href={DESK_LOCATORS[0].url(activePlace)} target="_blank" rel="noreferrer">Open dealer locators</a>
+                  <a className="az-btn" href={osmHuntUrl(huntQuery, activePlace)} target="_blank" rel="noreferrer">Open OSM yards</a>
+                </div>
+                <div className="locator-links">
+                  {DESK_LOCATORS.map((item) => (
+                    <a key={item.name} className="az-btn sm" href={item.url(activePlace)} target="_blank" rel="noreferrer">
+                      {item.name}
+                    </a>
+                  ))}
+                </div>
+              </section>
+              <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={(event) => void onPaste(event, false)}>
+                <div className="home-kicker">4 · Paste</div>
+                <h3>Page with a published phone</h3>
+                <p>Name, Texas city, 10-digit phone. No phone on the page → do not save.</p>
                 <label className="rec-field">
-                  Paste the listing
-                  <textarea className="az-area" rows={8} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page. Haul pulls name, published phone, city.` : "Paste the whole dealer or listing page. Haul pulls name, published phone, city, dims, and weight."} />
+                  Listing or Maps card
+                  <textarea className="az-area" rows={11} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder="Paste the dealer or Maps page." />
                 </label>
                 {form.description.trim() ? (
                   <div className="paste-preview">
-                    {pulled.length ? (
-                      pulled.map((item) => (
-                        <span key={item.k}>
-                          <b>{item.k}</b> {item.v}
-                        </span>
-                      ))
-                    ) : (
-                      <span>Nothing parsed yet — a name, city, or dims help.</span>
-                    )}
-                    {!pastePreview.phone ? <span>No phone on the page — that&apos;s fine.</span> : null}
+                    {pulled.length ? pulled.map((item) => (
+                      <span key={item.k}><b>{item.k}</b> {item.v}</span>
+                    )) : <span>Need a name, city, and published phone.</span>}
+                    {!pastePreview.phone ? <span className="rec-warn">No published phone — will not save.</span> : null}
                   </div>
                 ) : null}
-                <div className="rec-grid">
-                  <label className="rec-field">
-                    Source
-                    <select className="az-select" value={form.source} onChange={(event) => set("source", event.target.value)}>
-                      {LEAD_SOURCES.map((item) => (
-                        <option key={item}>{item}</option>
-                      ))}
-                    </select>
-                  </label>
-                  <label className="rec-field">
-                    Listing URL
-                    <input className="az-input" value={form.url} onChange={(event) => set("url", event.target.value)} placeholder="https://" />
-                  </label>
-                </div>
-                <div className="rec-grid">
-                  <label className="rec-field">
-                    Seller / business
-                    <input className="az-input" value={form.sellerName} onChange={(event) => set("sellerName", event.target.value)} placeholder={pastePreview.sellerName || "Pulled from the paste if you leave this blank"} />
-                  </label>
-                  <label className="rec-field">
-                    City, ST
-                    <input className="az-input" value={form.location} onChange={(event) => set("location", event.target.value)} placeholder={pastePreview.city ? [pastePreview.city, pastePreview.state].filter(Boolean).join(", ") : "Chicago, IL"} />
-                  </label>
-                </div>
-                <div className="rec-grid">
-                  <label className="rec-field">
-                    Phone (only if it was on the page)
-                    <input className="az-input" value={form.phone} onChange={(event) => set("phone", event.target.value)} placeholder={pastePreview.phone || "Leave blank if it wasn't published"} />
-                  </label>
-                  <label className="rec-field">
-                    Their ask (optional — not your rate)
-                    <input className="az-input" value={form.price} onChange={(event) => set("price", event.target.value)} placeholder="Leave blank if unknown" />
-                  </label>
-                </div>
                 <div className="rec-save">
-                  <button className="az-btn pri" type="submit" disabled={busy}>
-                    {busy ? "Saving…" : "Save and work this"}
-                  </button>
-                  <span className="cd-mono">{ai?.ready ? `Classifying with ${ai.provider}` : "Local rules until Ollama is up"}</span>
+                  <button className="az-btn pri" type="submit" disabled={busy}>{busy ? "Saving…" : "Save — keep hunting"}</button>
+                  <button className="az-btn" type="button" disabled={busy} onClick={(event) => void onPaste(event, true)}>Save and call</button>
                 </div>
               </form>
-            ) : null}
-
-            {tab === "csv" ? (
-              <div className="az-panel freight-panel rec-import">
-                <div>
-                  <b>CSV import</b>
-                  <span>Headers can include name, company, phone, email, city, state, source, category, listingUrl, notes. No invented rates.</span>
-                </div>
-                <label className="az-btn pri sm rec-file">
-                  Choose file
-                  <input
-                    type="file"
-                    accept=".csv,text/csv"
-                    hidden
-                    onChange={(event) => {
-                      const file = event.target.files?.[0];
-                      if (file) onImportFile(file);
-                      event.target.value = "";
-                    }}
-                  />
-                </label>
-              </div>
-            ) : null}
-
-            {tab === "searches" ? (
-              <div className="az-panel freight-panel discover-searches">
-                <form className="discover-form" onSubmit={saveSearch}>
-                  <div className="rec-grid">
-                    <label className="rec-field">
-                      Search name
-                      <input className="az-input" value={searchForm.name} onChange={(event) => setSearchForm((prev) => ({ ...prev, name: event.target.value }))} placeholder="Heavy Equipment – Texas" />
-                    </label>
-                    <label className="rec-field">
-                      Keywords
-                      <input className="az-input" value={searchForm.keywords} onChange={(event) => setSearchForm((prev) => ({ ...prev, keywords: event.target.value }))} />
-                    </label>
-                  </div>
-                  <div className="rec-grid">
-                    <label className="rec-field">
-                      Location
-                      <input className="az-input" value={searchForm.location} onChange={(event) => setSearchForm((prev) => ({ ...prev, location: event.target.value }))} placeholder="TX" />
-                    </label>
-                    <label className="rec-field">
-                      Min score
-                      <input className="az-input" value={searchForm.minFreightScore} onChange={(event) => setSearchForm((prev) => ({ ...prev, minFreightScore: event.target.value }))} />
-                    </label>
-                  </div>
-                  <button className="az-btn pri sm" type="submit">
-                    Save search
-                  </button>
-                </form>
-                {(workspace.savedSearches || []).length === 0 ? <p className="rec-empty">No saved searches yet.</p> : null}
-                {(workspace.savedSearches || []).map((item) => (
-                  <div key={item.id} className="work-row">
-                    <div>
-                      <b>{item.name}</b>
-                      <div className="cd-mono">
-                        {[item.keywords, item.location, item.minFreightScore != null ? `score ≥ ${item.minFreightScore}` : ""].filter(Boolean).join(" · ")}
-                      </div>
-                    </div>
-                    <a className="az-btn sm" href={item.huntUrl || huntSearchUrl("machinery-trader", item.keywords, item.location)} target="_blank" rel="noreferrer">
-                      Hunt
-                    </a>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-
-            {tab === "logins" ? (
-              <div className="az-panel freight-panel hunt-desk">
-                <div className="st-ledger">
-                  {HUNT_CONNECTIONS.map((item) => (
-                    <div key={item.name} className="st-ledger-row">
-                      <div>
-                        <b>{item.name}</b>
-                        <span>{item.detail}</span>
-                      </div>
-                      <em className={item.value === "None" || item.value === "Browser" ? "ok" : ""}>{item.value}</em>
-                    </div>
-                  ))}
-                </div>
-                <p className="st-fine">
-                  Machinery Trader, Google, Cat/Toyota/Bobcat/Deere locators, Sunbelt, United, TruckPaper, Copart, IAA, Ritchie — those are websites you already open. Paste or bookmarklet on a page you are allowed to view. Haul never stores a Facebook or DAT token.
-                </p>
-              </div>
-            ) : null}
+            </div>
           </div>
 
           <aside className="discover-rail">
             <section className="az-panel freight-panel">
               <header>
-                <h3>Just captured</h3>
+                <h3>Today’s captures</h3>
               </header>
               {lastCapture ? (
                 <>
                   <b>{lastCapture.name}</b>
                   <p className="cd-mono">
-                    Screen {lastCapture.score}/100 · {lastCapture.confidence}
-                    {lastCapture.phone ? ` · ${phonePretty(lastCapture.phone)}` : " · no phone on the page"}
+                    {lastCapture.phone ? phonePretty(lastCapture.phone) : "no phone"}
                     {lastCapture.duplicate ? " · already on file" : ""}
                   </p>
                   {lastCapture.why ? <p>{lastCapture.why}</p> : null}
@@ -996,34 +598,8 @@ export function DiscoverView() {
                 <p className="rec-empty">Open a hunt, copy a page with a name and a published phone, paste it. The scored client lands here so you can label them.</p>
               )}
               <p className="cd-mono" style={{ marginTop: 10 }}>
-                {capturedToday} captured today · paste after you open a search
+                {capturedToday} captured today
               </p>
-            </section>
-
-            <section className="az-panel freight-panel">
-              <header>
-                <h3>On file</h3>
-                <button className="az-btn sm" type="button" onClick={() => downloadText("move-clients.csv", contactsToCsv(workspace.leads))}>
-                  CSV
-                </button>
-              </header>
-              {recent.length === 0 ? <p className="rec-empty">Nothing captured yet.</p> : null}
-              {recent.map((item) => {
-                const lead = workspace.leads.find((row) => row.id === item.leadId);
-                return (
-                  <button key={item.id} type="button" className="work-row text-left" onClick={() => { setSelectedLeadId(item.leadId); router.push(workPath(item.leadId)); }}>
-                    <div>
-                      <b>{lead?.name || item.sellerName || item.title}</b>
-                      <div className="cd-mono">
-                        {lead?.label || "Unlabeled"} · {item.source}
-                      </div>
-                    </div>
-                    <span className="freight-score">
-                      <b>{lead?.freightScore ?? "—"}</b>
-                    </span>
-                  </button>
-                );
-              })}
             </section>
           </aside>
         </div>

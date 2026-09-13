@@ -7,17 +7,18 @@ import { nowIso, phonePretty } from "@/lib/format";
 import { contactsToCsv, downloadText, parseContactCsv, type ImportDraft } from "@/lib/contacts";
 import { LeadDrawer } from "./lead-drawer";
 import { companyName, ingestCapture, leadLocation, matchesProspectFilter, type ProspectFilter } from "@/lib/freight";
+import { clientSaveError } from "@/lib/desk-rules";
 import { groupByMetro, metroOf } from "@/lib/metro";
 import { bookCensus } from "@/lib/book";
 import { labelObviousYards, obviousYardCount } from "@/lib/prospect";
 
 const FILTERS: { id: ProspectFilter; label: string }[] = [
+  { id: "ready", label: "Untried" },
   { id: "all", label: "All" },
   { id: "unlabeled", label: "Unlabeled" },
   { id: "uncontacted", label: "Uncontacted" },
   { id: "talking", label: "Talking" },
   { id: "quote", label: "Quote" },
-  { id: "recurring", label: "Recurring" },
 ];
 
 export function PeopleView() {
@@ -27,7 +28,7 @@ export function PeopleView() {
   const [query, setQuery] = useState(searchParams.get("q") || "");
   const [filter, setFilter] = useState<ProspectFilter>(() => {
     const fromUrl = searchParams.get("filter");
-    return FILTERS.some((item) => item.id === fromUrl) ? (fromUrl as ProspectFilter) : "all";
+    return FILTERS.some((item) => item.id === fromUrl) ? (fromUrl as ProspectFilter) : "ready";
   });
   const [shelf, setShelf] = useState<"live" | "archived">("live");
   const [importRows, setImportRows] = useState<ImportDraft[] | null>(null);
@@ -67,8 +68,9 @@ export function PeopleView() {
   function addLead(event: React.FormEvent) {
     event.preventDefault();
     const name = addForm.name.trim();
-    if (!name) {
-      setAddError("Name is required. Use a real seller or company from the listing.");
+    const blocked = clientSaveError({ name, city: addForm.city, state: addForm.state || "TX", phone: addForm.phone });
+    if (blocked) {
+      setAddError(blocked);
       return;
     }
     let savedId = "";
@@ -255,21 +257,19 @@ export function PeopleView() {
           <table className="az-table min-w-[820px]">
             <thead>
               <tr>
-                <th>Client</th>
+                <th>Name</th>
                 <th>Label</th>
-                <th>Booker</th>
-                <th>Source</th>
-                <th>Screen</th>
-                <th>Stage</th>
-                <th>Tried</th>
+                <th>City</th>
                 <th>Phone</th>
-                <th>Next</th>
+                <th>Tries</th>
+                <th>Last outcome</th>
+                <th>Next action</th>
               </tr>
             </thead>
             <tbody>
               {leads.length === 0 ? (
                 <tr className="cursor-default">
-                  <td colSpan={9} className="py-10">
+                  <td colSpan={7} className="py-10">
                     <div className="empty-desk" style={{ margin: 0, boxShadow: "none" }}>
                       <h2>No clients yet</h2>
                       <p>Paste a live listing, or type a real seller name. Haul will not invent a contact.</p>
@@ -296,19 +296,14 @@ export function PeopleView() {
                 >
                   <td>
                     <div className="font-medium">{lead.name}</div>
-                    <div className="text-[12px] text-[var(--muted)]">
-                      {companyName(lead) || "—"} · {leadLocation(lead) || "—"}
-                    </div>
                   </td>
                   <td>{lead.label || "Unlabeled"}</td>
-                  <td>{lead.booker || "—"}</td>
-                  <td>{lead.source}</td>
-                  <td className="az-num">{lead.freightScore ?? "—"}</td>
+                  <td>{leadLocation(lead) || "—"}</td>
+                  <td className="az-num">{lead.phone ? phonePretty(lead.phone) : "—"}</td>
+                  <td className="az-num">{lead.attempts || 0}</td>
                   <td>
                     <span className="az-chip">{lead.status}</span>
                   </td>
-                  <td className="az-num">{lead.attempts || 0}</td>
-                  <td className="az-num">{lead.phone ? phonePretty(lead.phone) : "—"}</td>
                   <td className="text-[12px] text-[var(--muted)] max-w-[240px]">
                     <div className="truncate">{lead.nextAction || "—"}</div>
                   </td>
@@ -332,7 +327,7 @@ export function PeopleView() {
                     className="az-input"
                     value={addForm.name}
                     onChange={(event) => setAddForm((prev) => ({ ...prev, name: event.target.value }))}
-                    placeholder="Westside Machinery LLC"
+                    placeholder="Texas First Rentals Lewisville"
                     autoFocus
                   />
                 </label>

@@ -38,7 +38,7 @@ Phone (432) 758-4410
 describe("ingestCarrier", () => {
   it("merges the same MC instead of duplicating", () => {
     const first = ingestCarrier(emptyWorkspace(), extractCarrierFacts("Acme LLC MC-111222 DOT 333444 806-745-4201"));
-    const second = ingestCarrier(first.workspace, extractCarrierFacts("Acme LLC MC-111222 806-745-4201"));
+    const second = ingestCarrier(first.workspace, extractCarrierFacts("Acme LLC MC-111222 USDOT 333444 806-745-4201"));
     expect(second.duplicate).toBe(true);
     expect(second.workspace.carriers).toHaveLength(1);
   });

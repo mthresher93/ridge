@@ -145,7 +145,7 @@ export function SettingsView() {
               <input className="az-input" value={draft.defaultOwner} onChange={(e) => set("defaultOwner", e.target.value)} />
             </Row>
             <p className="st-fine">
-              Haul is a desk, not a bot. You hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough — no custom domain. Trailer matching uses training caps, not a carrier quote.
+              Haul is a desk, not a bot. Hunt public pages, capture what you see, label yards vs private, and send from your own accounts. Localhost is enough. Trailer matching uses live call numbers, not a carrier quote.
             </p>
             <Row label="Session" hint="Sign out of this browser when a workspace password is set.">
               <button
@@ -172,7 +172,7 @@ export function SettingsView() {
                 className="az-input"
                 value={draft.companyApiUrl}
                 onChange={(event) => set("companyApiUrl", event.target.value)}
-                placeholder="https://example.com/api/locations"
+                placeholder="https://their-desk.com/api/locations"
               />
             </Row>
             <Row label="Auth" hint="Most public APIs need none. Use a key only if they issued you a free token.">

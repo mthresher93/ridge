@@ -4880,6 +4880,74 @@ button.desk-open-row {
   }
 }
 
+.az-top-user {
+  font-family: var(--fm);
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  color: rgba(255, 248, 232, 0.78);
+}
+
+.next-call-list {
+  display: grid;
+  gap: 8px;
+}
+
+.next-call-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  text-align: left;
+  padding: 10px 12px;
+  border: 1px solid #d0d7de;
+  border-radius: 8px;
+  background: #fff;
+  cursor: pointer;
+}
+
+.next-call-row:hover {
+  border-color: var(--navy);
+}
+
+.next-call-row b {
+  display: block;
+}
+
+.next-call-row span,
+.next-call-row em {
+  color: var(--tx3);
+  font-size: 13px;
+  font-style: normal;
+}
+
+.week-counts {
+  margin: 12px 0 0;
+  color: var(--tx3);
+  font-size: 13px;
+}
+
+.hunt-step {
+  display: grid;
+  gap: 8px;
+  padding: 12px 14px;
+  background: #fff;
+  border: 1px solid #d0d7de;
+  border-radius: 10px;
+}
+
+.hunt-open-row,
+.locator-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.work-opener {
+  font-size: 18px;
+  line-height: 1.35;
+}
+
 @media (max-width: 980px) {
   .discover-desk,
   .hunt-floor,

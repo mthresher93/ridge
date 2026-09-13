@@ -2,6 +2,7 @@ import type { Appointment, Callback, Company, FreightAnalysis, Lead, Listing, Op
 import { blankProspect } from "./freight";
 import { normalizeCarrier, normalizeShipment } from "./ops";
 import { hydrateContacts } from "./people";
+import { purgeWorkspace } from "./desk-rules";
 import { mapLegacyStage } from "./stages";
 
 function offset(days: number, hour = 10) {
@@ -887,7 +888,7 @@ export function normalizeWorkspace(workspace: Workspace): Workspace {
     proposals: workspace.proposals || {},
     callLogs: workspace.callLogs || [],
   };
-  return hydrateContacts(normalized);
+  return purgeWorkspace(hydrateContacts(normalized));
 }
 
 export function isWorkspace(value: unknown): value is Workspace {

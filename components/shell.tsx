@@ -9,7 +9,8 @@ import { useWorkspace } from "@/lib/workspace-context";
 import { DESK_NAV, MORE_NAV } from "@/lib/nav";
 import { NavIcon, NAV_ICONS } from "./nav-icons";
 import { settingsWithDefaults } from "@/lib/types";
-import { deskClocks } from "@/lib/us-time";
+import { workPath } from "@/lib/nav";
+import { callableUncontacted } from "@/lib/metro";
 
 function isActive(pathname: string, href: string) {
   return href === "/" ? pathname === "/" : pathname.startsWith(href);
@@ -22,17 +23,12 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const [palette, setPalette] = useState(false);
   const moreActive = MORE_NAV.some((item) => isActive(pathname, item.href));
   const [moreOpen, setMoreOpen] = useState(moreActive);
-  const [now, setNow] = useState(() => new Date());
-  const clocks = deskClocks(now);
+  const toCall = callableUncontacted(workspace, 200).length;
+  const operator = settingsWithDefaults(workspace.settings).operator || workspace.settings.defaultOwner || "Michael";
 
   useEffect(() => {
     if (moreActive) setMoreOpen(true);
   }, [moreActive]);
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setNow(new Date()), 30000);
-    return () => window.clearInterval(timer);
-  }, []);
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -60,14 +56,6 @@ export function Shell({ children }: { children: React.ReactNode }) {
           <kbd>⌘K</kbd>
         </button>
         <div className="az-top-right">
-          <div className="az-clocks" title={`${clocks.broker.zone} · ${clocks.book.zone}`}>
-            <span>
-              <em>PH</em> {clocks.broker.clock}
-            </span>
-            <span>
-              <em>CT</em> {clocks.book.clock}
-            </span>
-          </div>
           <span className="cd-stat">
             <span className={`livedot ${loadError ? "off" : ""}`} />
             {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : saveStatus === "saving" ? "Saving" : "Ready"}
@@ -77,9 +65,10 @@ export function Shell({ children }: { children: React.ReactNode }) {
               Retry
             </button>
           ) : null}
-          <span className="az-num az-top-open">{workspace.leads.filter((lead) => !lead.archivedAt).length} clients</span>
-          <button className="az-btn gold az-add-prospect" type="button" onClick={() => router.push("/discover")}>
-            Add prospect
+          <span className="az-num az-top-open">{toCall} ready</span>
+          <span className="az-top-user">{operator}</span>
+          <button className="az-btn pri sm" type="button" onClick={() => router.push(workPath())}>
+            Next call
           </button>
         </div>
       </header>
