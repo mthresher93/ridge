@@ -109,12 +109,9 @@ body::before {
 
 .az-brand {
   grid-area: brand;
-  display: grid;
-  grid-template-columns: auto minmax(0, 1fr);
-  grid-template-rows: auto auto;
+  display: flex;
   align-items: center;
-  column-gap: 10px;
-  row-gap: 1px;
+  gap: 10px;
   padding: 8px 14px 8px 12px;
   margin: 0;
   text-decoration: none;
@@ -144,38 +141,14 @@ body::before {
 }
 
 .az-brand-word {
-  grid-column: 2;
-  grid-row: 1;
   display: block;
-  width: 108px;
-  height: 30px;
-  overflow: visible;
-}
-
-.az-brand-word text {
-  font-family: var(--fh);
-  font-size: 22px;
-  font-weight: 800;
-  letter-spacing: 0.04em;
-  stroke-linejoin: miter;
-  stroke-miterlimit: 2.4;
-}
-
-.az-brand-word-ring text {
-  fill: none;
-  stroke: #fff;
-  stroke-width: 5.2;
-}
-
-.az-brand-word-edge text {
-  fill: none;
-  stroke: #111;
-  stroke-width: 2.1;
-}
-
-.az-brand-word-gold {
-  fill: #e2b84a;
-  stroke: none;
+  font-family: var(--fb);
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  color: #f0e6cc;
+  text-transform: none;
 }
 
 .az-brand-sub,
@@ -471,8 +444,8 @@ body::before {
     grid-template-rows: 72px minmax(0, 1fr);
   }
   .az-brand-word {
-    width: 96px;
-    height: 28px;
+    width: auto;
+    height: auto;
   }
   .az-brand-mark,
   .az-rail .az-brand-mark {
@@ -2993,7 +2966,13 @@ button.desk-open-row {
 }
 
 .login-card .az-brand {
-  display: grid;
+  grid-area: auto;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: transparent;
+  border: 0;
+  padding: 0;
 }
 
 .login-card .az-brand-mark {
@@ -3006,16 +2985,17 @@ button.desk-open-row {
 }
 
 .login-card .az-brand-word {
-  width: 108px;
-  height: 30px;
+  width: auto;
+  height: auto;
+  color: var(--navy);
 }
 
 .login-card h1 {
-  font-family: var(--fh);
-  font-size: 28px;
-  font-weight: 800;
-  letter-spacing: -0.04em;
-  text-transform: uppercase;
+  font-family: var(--fb);
+  font-size: 22px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
   margin: 8px 0 0;
 }
 
@@ -4967,8 +4947,13 @@ button.desk-open-row {
 }
 
 .az-brand-word {
-  width: 88px;
-  height: 24px;
+  width: auto;
+  height: auto;
+  font-family: var(--fb);
+  font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.1em;
+  color: #f0e6cc;
 }
 
 .az-top {
@@ -5026,9 +5011,14 @@ button.desk-open-row {
 
 .crm-desk-head h1,
 .home-desk-head h1,
-.settings-top h1 {
-  font-size: 18px;
-  letter-spacing: 0.06em;
+.settings-top h1,
+.login-card h1 {
+  font-family: var(--fb);
+  font-size: 20px;
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  text-transform: none;
+  line-height: 1.2;
 }
 
 .crm-desk-head p,
@@ -5076,10 +5066,10 @@ button.desk-open-row {
 
 .count-strip dd {
   margin: 0;
-  font-family: var(--fh);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
+  font-family: var(--fm);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
   color: var(--navy);
   line-height: 1;
 }
@@ -5098,15 +5088,20 @@ button.desk-open-row {
 
 .home-stats > button b,
 .home-stats > div b {
+  font-family: var(--fm);
   font-size: 18px;
+  font-weight: 500;
+  letter-spacing: 0;
 }
 
-.desk-next-calls header h3 {
-  font-size: 15px;
+.desk-next-calls header h3,
+.desk-next > header h3,
+.freight-panel header h3 {
+  font-size: 14px;
   letter-spacing: 0.02em;
   text-transform: none;
   font-family: var(--fb);
-  font-weight: 650;
+  font-weight: 600;
 }
 
 .next-call-row {
@@ -5151,11 +5146,11 @@ button.desk-open-row {
 .work-phone {
   display: block;
   margin: 4px 0 14px;
-  font-family: var(--fh);
-  font-size: 42px;
-  font-weight: 700;
-  letter-spacing: 0.02em;
-  line-height: 0.95;
+  font-family: var(--fm);
+  font-size: 36px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  line-height: 1;
   color: var(--navy);
   text-decoration: none;
 }
