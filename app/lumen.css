@@ -183,12 +183,12 @@ body::before {
 
 .az-brand-name::before {
   z-index: 0;
-  -webkit-text-stroke: 4.25px #111;
+  -webkit-text-stroke: 5px #fff;
 }
 
 .az-brand-name::after {
   z-index: 1;
-  -webkit-text-stroke: 2.15px #fff;
+  -webkit-text-stroke: 2.6px #111;
 }
 
 .az-brand-name span {
