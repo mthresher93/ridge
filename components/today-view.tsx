@@ -15,8 +15,9 @@ import { companyName, finishConnectedCall, leadLocation, outreachQueue, parseMea
 import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
 import { bookerOf, contactsForLead, skipQuote, unfinishedTalked, upsertBooker } from "@/lib/people";
 import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
+import { DeskFlow } from "./desk-flow";
 import { HuntDance } from "./hunt-dance";
-import { bookCensus } from "@/lib/book";
+import { deskFlow } from "@/lib/flow";
 import { workPath } from "@/lib/nav";
 import { messagesSentOnDay } from "@/lib/pacing";
 import { money, nowIso, phonePretty, relativeDue } from "@/lib/format";
@@ -74,12 +75,12 @@ export function TodayView() {
         .slice(0, 6),
     [live],
   );
-  const census = useMemo(() => bookCensus(workspace.leads), [workspace.leads]);
   const sentToday = useMemo(() => messagesSentOnDay(workspace.kpiEvents || []), [workspace.kpiEvents]);
   const nextScript = nextCall ? firstCall(nextCall, sentToday) : null;
   const pendingTalked = useMemo(() => unfinishedTalked(workspace), [workspace]);
   const wrapContacts = nextCall ? contactsForLead(workspace, nextCall.id) : [];
   const wrapBooker = nextCall ? bookerOf(workspace, nextCall) : null;
+  const flow = useMemo(() => deskFlow(workspace, hunt), [workspace, hunt]);
   const wrapFit = recommendEquipment({
     text: nextCall?.equipmentType || nextCall?.listingTitle || "",
     lengthFt: parseMeasure(specL),
@@ -295,9 +296,13 @@ export function TodayView() {
             <div className="home-kicker">{deskDay}</div>
             <h1>Dashboard</h1>
             <p>
-              {live.length
-                ? `${hunt.place} · ${callBook.length} untried · ${census.yards} yards`
-                : `${hunt.weekday} · ${hunt.play.title} · ${hunt.place}`}
+              {pendingTalked
+                ? `Stay with ${live.find((item) => item.id === pendingTalked.leadId)?.name || "this yard"}. Quote still blank.`
+                : callBook.length
+                  ? `${callBook.length} untried in ${hunt.place}. The next published number is waiting.`
+                  : live.length
+                    ? `${hunt.weekday} in ${hunt.place}. Hunt, paste, then the floor fills.`
+                    : `${hunt.weekday} · ${hunt.play.title} in ${hunt.place}. Open a page and come back.`}
             </p>
           </div>
           <div className="home-stats">
@@ -323,6 +328,14 @@ export function TodayView() {
             </button>
           </div>
         </header>
+
+        <DeskFlow
+          flow={flow}
+          onStay={() => {
+            const el = document.querySelector(".desk-next, .desk-call-book, .desk-today");
+            if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+          }}
+        />
 
         {nextCall && nextScript ? (
           <section className={`az-panel freight-panel desk-next${wrappedLead && lastOutcome ? " desk-wrap" : ""}`}>

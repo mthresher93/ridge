@@ -754,8 +754,156 @@ input[type="range"] {
 
 .home-desk-head p {
   margin: 6px 0 0;
-  font-size: 14px;
+  font-size: 15px;
   color: var(--tx2);
+  max-width: 46ch;
+}
+
+.desk-flow {
+  padding: 14px 16px 16px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 10%, #fff) 0%, #fff 42%);
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift);
+}
+
+.desk-flow-head {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.desk-flow-line {
+  margin: 4px 0 0;
+  display: grid;
+  gap: 2px;
+}
+
+.desk-flow-line b {
+  font-family: var(--fh);
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.desk-flow-line span {
+  color: var(--tx2);
+  font-size: 14px;
+}
+
+.desk-flow-rail {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  align-items: stretch;
+  gap: 0;
+  overflow-x: auto;
+}
+
+.desk-flow-step {
+  display: flex;
+  align-items: center;
+  flex: 1 1 0;
+  min-width: 92px;
+}
+
+.desk-flow-wire {
+  width: 12px;
+  height: 2px;
+  margin: 0 2px;
+  flex: none;
+  background: var(--br);
+  border-radius: 2px;
+}
+
+.desk-flow-wire.on {
+  background: var(--gold);
+}
+
+.desk-flow-step button {
+  width: 100%;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
+  padding: 10px 6px 8px;
+  border: 1px solid var(--br);
+  border-radius: 10px;
+  background: #fff;
+  color: var(--tx);
+  cursor: pointer;
+  transition: border-color 0.12s ease, transform 0.12s ease, box-shadow 0.12s ease;
+}
+
+.desk-flow-step button:hover,
+.desk-flow-step.is-focus button {
+  border-color: var(--navy);
+  transform: translateY(-1px);
+}
+
+.desk-flow-step button em {
+  width: 22px;
+  height: 22px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font-family: var(--fm);
+  font-size: 11px;
+  font-style: normal;
+  font-weight: 600;
+  background: var(--bg3);
+  color: var(--tx2);
+}
+
+.desk-flow-step button strong {
+  font-size: 13px;
+  font-weight: 650;
+  letter-spacing: 0.02em;
+}
+
+.desk-flow-step button span {
+  font-family: var(--fm);
+  font-size: 11px;
+  color: var(--tx3);
+}
+
+.desk-flow-step.is-done button em {
+  background: var(--navy);
+  color: #fff;
+}
+
+.desk-flow-step.is-now button {
+  border-color: var(--gold);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--gold) 45%, transparent);
+  background: color-mix(in srgb, var(--gold) 12%, #fff);
+}
+
+.desk-flow-step.is-now button em {
+  background: var(--gold);
+  color: #111;
+}
+
+.desk-flow-step.is-wait button em {
+  background: var(--navy);
+  color: #fff;
+}
+
+@media (max-width: 860px) {
+  .desk-flow-rail {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+  }
+  .desk-flow-wire {
+    display: none;
+  }
+  .desk-flow-step {
+    min-width: 0;
+  }
 }
 
 .home-stats {
@@ -2029,7 +2177,8 @@ input[type="range"] {
   grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
   gap: 18px;
   padding: 22px 24px 24px;
-  background: var(--panel);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, var(--gold) 8%, #fff) 0%, #fff 36%);
   border: 1px solid var(--br);
   border-radius: var(--radius-lg);
   box-shadow: var(--lift);
