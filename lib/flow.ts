@@ -28,15 +28,40 @@ export type FlowState = {
   line: string;
 };
 
-export const FLOW_POINTS: Record<FlowStepId, { col: number; row: number }> = {
-  hunt: { col: 1, row: 1 },
-  paste: { col: 2, row: 1 },
-  call: { col: 3, row: 1 },
-  wrap: { col: 4, row: 1 },
-  quote: { col: 4, row: 2 },
-  cover: { col: 3, row: 2 },
-  track: { col: 2, row: 2 },
+export type FlowShape = "start" | "process" | "decision" | "end";
+
+export type FlowBox = { x: number; y: number; w: number; h: number; shape: FlowShape };
+
+export const FLOW_BOXES: Record<FlowStepId, FlowBox> = {
+  hunt: { x: 28, y: 40, w: 132, h: 58, shape: "start" },
+  paste: { x: 210, y: 40, w: 132, h: 58, shape: "process" },
+  call: { x: 392, y: 40, w: 132, h: 58, shape: "process" },
+  wrap: { x: 574, y: 22, w: 118, h: 94, shape: "decision" },
+  quote: { x: 574, y: 210, w: 132, h: 58, shape: "process" },
+  cover: { x: 392, y: 210, w: 132, h: 58, shape: "process" },
+  track: { x: 210, y: 210, w: 132, h: 58, shape: "end" },
 };
+
+export function flowPort(box: FlowBox, side: "l" | "r" | "t" | "b") {
+  const cx = box.x + box.w / 2;
+  const cy = box.y + box.h / 2;
+  if (side === "l") return { x: box.x, y: cy };
+  if (side === "r") return { x: box.x + box.w, y: cy };
+  if (side === "t") return { x: cx, y: box.y };
+  return { x: cx, y: box.y + box.h };
+}
+
+export function flowEdgePath(from: FlowStepId, to: FlowStepId) {
+  const a = FLOW_BOXES[from];
+  const b = FLOW_BOXES[to];
+  const down = b.y > a.y + 40;
+  const left = b.x + b.w < a.x - 8;
+  const start = down ? flowPort(a, "b") : left ? flowPort(a, "l") : flowPort(a, "r");
+  const end = down ? flowPort(b, "t") : left ? flowPort(b, "r") : flowPort(b, "l");
+  if (start.x === end.x || start.y === end.y) return `M ${start.x} ${start.y} L ${end.x} ${end.y}`;
+  const midY = (start.y + end.y) / 2;
+  return `M ${start.x} ${start.y} L ${start.x} ${midY} L ${end.x} ${midY} L ${end.x} ${end.y}`;
+}
 
 const EDGE_PAIRS: [FlowStepId, FlowStepId][] = [
   ["hunt", "paste"],

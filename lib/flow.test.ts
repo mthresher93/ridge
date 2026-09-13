@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { blankProspect } from "./freight";
-import { deskFlow } from "./flow";
+import { deskFlow, flowEdgePath } from "./flow";
 import { wrapCall } from "./prospect";
 import { emptyWorkspace } from "./seed";
 
@@ -11,6 +11,8 @@ describe("deskFlow", () => {
     const flow = deskFlow(emptyWorkspace(), hunt);
     expect(flow.current).toBe("hunt");
     expect(flow.steps).toHaveLength(7);
+    expect(flowEdgePath("hunt", "paste")).toMatch(/^M /);
+    expect(flowEdgePath("wrap", "quote")).toMatch(/^M /);
   });
 
   it("lights Wrap after a connected call with no quote", () => {
