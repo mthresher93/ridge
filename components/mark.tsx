@@ -55,7 +55,9 @@ export function BrandLockup() {
     <>
       <BrandMark />
       <div className="az-brand-copy">
-        <div className="az-brand-name">{PRODUCT_WORD}</div>
+        <div className="az-brand-name" data-word={PRODUCT_WORD}>
+          <span>{PRODUCT_WORD}</span>
+        </div>
         <div className="az-brand-sub">{PRODUCT_SUB}</div>
       </div>
     </>

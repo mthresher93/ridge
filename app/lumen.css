@@ -118,6 +118,7 @@ body::before {
   background: var(--navy-deep);
   border-bottom: 0;
   border-right: 1px solid rgba(255, 255, 255, 0.08);
+  overflow: visible;
 }
 
 .az-brand-copy {
@@ -126,6 +127,7 @@ body::before {
   justify-content: center;
   min-width: 0;
   gap: 5px;
+  overflow: visible;
 }
 
 .az-brand-mark,
@@ -147,37 +149,53 @@ body::before {
 
 .az-brand-name,
 .az-rail .az-brand-name {
+  position: relative;
+  isolation: isolate;
+  display: block;
   font-family: var(--fh);
   font-size: 28px;
   font-weight: 700;
-  letter-spacing: 0.18em;
-  line-height: 0.92;
+  letter-spacing: 0.16em;
+  line-height: 1;
   text-transform: none;
   background: none;
-  -webkit-background-clip: unset;
-  background-clip: unset;
   color: #e8c15a;
-  -webkit-text-stroke: 0.85px #fff;
-  paint-order: stroke fill;
-  text-shadow:
-    -1.15px -1.15px 0 #fff,
-    1.15px -1.15px 0 #fff,
-    -1.15px 1.15px 0 #fff,
-    1.15px 1.15px 0 #fff,
-    -1.5px 0 0 #fff,
-    1.5px 0 0 #fff,
-    0 -1.5px 0 #fff,
-    0 1.5px 0 #fff,
-    -2.25px -2.25px 0 #111,
-    2.25px -2.25px 0 #111,
-    -2.25px 2.25px 0 #111,
-    2.25px 2.25px 0 #111,
-    -2.7px 0 0 #111,
-    2.7px 0 0 #111,
-    0 -2.7px 0 #111,
-    0 2.7px 0 #111;
+  -webkit-text-stroke: 0;
+  text-shadow: none;
   text-rendering: geometricPrecision;
   -webkit-font-smoothing: antialiased;
+}
+
+.az-brand-name::before,
+.az-brand-name::after {
+  content: attr(data-word);
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: transparent;
+  font: inherit;
+  letter-spacing: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
+.az-brand-name::before {
+  z-index: 0;
+  -webkit-text-stroke: 4.25px #111;
+}
+
+.az-brand-name::after {
+  z-index: 1;
+  -webkit-text-stroke: 2.15px #fff;
+}
+
+.az-brand-name span {
+  position: relative;
+  z-index: 2;
+  color: #e8c15a;
+  -webkit-text-stroke: 0;
 }
 
 .az-brand-sub,
