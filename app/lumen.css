@@ -1818,9 +1818,12 @@ input[type="range"] {
   .desk-home-grid,
   .desk-work-grid,
   .discover-desk,
+  .hunt-floor,
   .hunt-plays,
   .hunt-play-grid,
   .hunt-lane-grid,
+  .ship-desk,
+  .intel-work,
   .hunt-ritual,
   .desk-today,
   .desk-connect,
@@ -3379,10 +3382,13 @@ button.desk-open-row {
 
 @media (max-width: 980px) {
   .intel-desk,
+  .intel-work,
   .intel-cards,
   .intel-checks,
   .intel-fit-grid,
   .intel-spec-grid,
+  .ship-desk,
+  .hunt-floor,
   .empty-start,
   .hunt-brief {
     grid-template-columns: 1fr;
@@ -4601,6 +4607,278 @@ button.desk-open-row {
 .desk-today {
   box-shadow: none;
   padding: 18px 20px;
+}
+
+/* ——— Discover / Work / Intel / Shipments share the dashboard desk ——— */
+
+.work-tabs.wrap {
+  box-shadow: none;
+  background: #fff;
+  border-color: #d0d7de;
+  border-radius: 8px;
+  padding: 4px;
+}
+
+.hunt-desk {
+  gap: 10px;
+}
+
+.hunt-command {
+  padding: 14px 16px 16px;
+}
+
+.hunt-command h2 {
+  font-size: 20px;
+}
+
+.hunt-command > p {
+  margin: 6px 0 0;
+  font-size: 14px;
+}
+
+.hunt-command-fields {
+  margin: 10px 0 8px;
+}
+
+.hunt-play-grid {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.hunt-play-pick {
+  padding: 8px 10px 10px;
+  border-radius: 8px;
+  box-shadow: none;
+}
+
+.hunt-play-pick p {
+  display: none;
+}
+
+.hunt-play-pick b {
+  font-size: 13px;
+  letter-spacing: 0.02em;
+}
+
+.hunt-floor {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(280px, 0.9fr);
+  gap: 12px;
+  align-items: start;
+  min-height: 0;
+}
+
+.hunt-floor-lanes {
+  display: grid;
+  gap: 10px;
+  min-width: 0;
+}
+
+.hunt-lane-grid {
+  gap: 8px;
+}
+
+.hunt-lane-card {
+  padding: 10px 12px 12px;
+  border-radius: 8px;
+  box-shadow: none;
+  border-color: #d0d7de;
+}
+
+.hunt-lane-card h3 {
+  font-size: 16px;
+  letter-spacing: 0.02em;
+}
+
+.hunt-lane-card > p {
+  font-size: 13px;
+}
+
+.hunt-lane-legal {
+  font-size: 12px !important;
+}
+
+.hunt-paste {
+  position: sticky;
+  top: 0;
+}
+
+.hunt-paste h3 {
+  font-size: 16px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.hunt-paste > p {
+  font-size: 13px;
+}
+
+.paste-preview span {
+  box-shadow: none;
+}
+
+.outreach-desk {
+  min-height: 0;
+}
+
+.outreach-grid {
+  gap: 12px;
+}
+
+.outreach-main h2 {
+  margin: 2px 0 6px;
+  font-family: var(--fh);
+  font-size: 22px;
+  letter-spacing: 0.03em;
+}
+
+.freight-intel-grid {
+  margin: 8px 0 10px;
+  gap: 8px;
+}
+
+.freight-intel-grid span {
+  font-size: 11px;
+}
+
+.desk-ask {
+  margin: 8px 0;
+  font-size: 15px;
+}
+
+.intel-nav {
+  gap: 2px;
+}
+
+.intel-nav .az-input {
+  margin-bottom: 8px;
+}
+
+.intel-nav-group > span {
+  display: block;
+  margin: 8px 2px 4px;
+  font-size: 10px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tx3);
+}
+
+.intel-nav button {
+  padding: 7px 10px;
+  font-size: 13px;
+  background: transparent;
+  border-color: transparent;
+  border-radius: 6px;
+}
+
+.intel-nav button:hover {
+  background: #fff;
+  border-color: #d0d7de;
+}
+
+.intel-nav button.on {
+  background: #1a222c;
+  color: #f6f7f8;
+  border-color: #121820;
+}
+
+.call-ask {
+  padding: 8px 12px 8px 26px;
+  font-size: 13px;
+}
+
+.call-ask li {
+  font-size: 13px;
+  margin: 0 0 4px;
+}
+
+.intel-work {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  align-items: start;
+}
+
+.intel-form,
+.intel-match {
+  min-width: 0;
+}
+
+.intel-result {
+  background: #f4f6f8;
+  box-shadow: none;
+}
+
+.intel-result-hero h4 {
+  font-size: 20px;
+}
+
+.ship-stats {
+  justify-content: flex-start;
+}
+
+.ship-desk {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  min-height: 0;
+  flex: 1;
+}
+
+.ship-desk .crm-table-wrap {
+  min-height: 240px;
+}
+
+.ship-carriers {
+  min-width: 0;
+  overflow: auto;
+  max-height: 280px;
+}
+
+.ship-carriers h3 {
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ship-carriers .az-area {
+  min-height: 64px;
+}
+
+@media (min-width: 1500px) {
+  .ship-desk {
+    grid-template-columns: minmax(0, 1fr) minmax(260px, 300px);
+  }
+
+  .ship-carriers {
+    max-height: none;
+  }
+}
+
+@media (max-width: 1100px) {
+  .hunt-play-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 980px) {
+  .discover-desk,
+  .hunt-floor,
+  .ship-desk,
+  .intel-work,
+  .intel-desk,
+  .outreach-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .hunt-play-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .hunt-paste {
+    position: static;
+  }
 }
 
 

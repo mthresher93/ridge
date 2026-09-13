@@ -261,7 +261,7 @@ export function OutreachView() {
 
   return (
     <div className="cd-page fill">
-      <div className="outreach-desk">
+      <div className="az-fill crm-desk outreach-desk">
         <header className="crm-desk-head">
           <div>
             <h1>Work</h1>
@@ -274,32 +274,6 @@ export function OutreachView() {
           <article className="az-panel freight-panel outreach-main">
             <div className="az-kicker">{lead.source}</div>
             <h2>{lead.name}</h2>
-            <div className="work-facts">
-              <div>
-                <span>Who</span>
-                <b>{companyName(lead)}</b>
-              </div>
-              <div>
-                <span>Contact</span>
-                <b>{bookerOf(workspace, lead)?.name || lead.booker || "Ask who books freight"}</b>
-              </div>
-              <div>
-                <span>Why this call</span>
-                <b>{script?.ask || lead.nextAction || "Qualify outbound freight"}</b>
-              </div>
-              <div>
-                <span>Source</span>
-                <b>{lead.source || "—"}</b>
-              </div>
-              <div>
-                <span>City</span>
-                <b>{leadLocation(lead) || metroOf(lead)?.label || "Location unset"}</b>
-              </div>
-              <div>
-                <span>Last touch</span>
-                <b>{lead.lastContactAt ? `${lead.attempts || 0} tries` : "Untried"}</b>
-              </div>
-            </div>
             <p className="cd-mono">
               {lead.label || suggested || "Unlabeled"} · {companyName(lead)} · {leadLocation(lead) || metroOf(lead)?.label || "Location unset"}
               {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : " · untried"}

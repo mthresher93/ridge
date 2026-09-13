@@ -595,6 +595,8 @@ export function DiscoverView() {
                   </div>
                 ) : null}
 
+                <div className="hunt-floor">
+                <div className="hunt-floor-lanes">
                 <section className="hunt-lanes">
                   <header>
                     <div>
@@ -659,6 +661,7 @@ export function DiscoverView() {
                     ))}
                   </section>
                 ) : null}
+                </div>
 
                 <form id="hunt-paste" className="az-panel freight-panel hunt-paste" onSubmit={(event) => void onPaste(event, false)}>
                   <div className="home-kicker">{lastLane ? `Paste from ${lastLane.name}` : "Then capture"}</div>
@@ -666,7 +669,7 @@ export function DiscoverView() {
                   <p>Haul pulls name, published phone, and city. Leave the phone blank if it was not on the page.</p>
                   <label className="rec-field">
                     Listing or Maps card
-                    <textarea className="az-area" rows={7} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page.` : "Paste the whole dealer or listing page."} />
+                    <textarea className="az-area" rows={11} value={form.description} onChange={(event) => set("description", event.target.value)} placeholder={lastLane ? `Paste the ${lastLane.name} page.` : "Paste the whole dealer or listing page."} />
                   </label>
                   {form.description.trim() ? (
                     <div className="paste-preview">
@@ -706,6 +709,7 @@ export function DiscoverView() {
                     <span className="cd-mono">Stays on this hunt so you can paste the next yard.</span>
                   </div>
                 </form>
+                </div>
                 <p className="hunt-fine">{HUNT_RULES[0]}</p>
               </div>
             ) : null}

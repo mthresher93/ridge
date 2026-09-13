@@ -190,55 +190,25 @@ export function ShipmentsView() {
             New shipment
           </button>
         </header>
-        <section className="az-panel freight-panel">
-          <header>
-            <div>
-              <div className="home-kicker">Carrier file</div>
-              <h3>Paste a real page — MC / DOT / published phone</h3>
-            </div>
-          </header>
-          <p className="cd-mono">FMCSA snapshot or their site. No invented trucks. {(workspace.carriers || []).length} on file.</p>
-          <textarea
-            className="az-area"
-            rows={4}
-            value={carrierPaste}
-            onChange={(event) => setCarrierPaste(event.target.value)}
-            placeholder="Paste the page. Need MC, DOT, or a local dispatch phone that was actually printed."
-          />
-          <input className="az-input" value={carrierUrl} onChange={(event) => setCarrierUrl(event.target.value)} placeholder="Page URL (optional)" />
-          <button className="az-btn pri sm" type="button" onClick={saveCarrierPaste}>
-            Save carrier
-          </button>
-          {carrierMsg ? <p className="cd-mono">{carrierMsg}</p> : null}
-          {(workspace.carriers || []).length ? (
-            <div className="az-table min-w-0" style={{ marginTop: 12 }}>
-              {(workspace.carriers || []).map((item) => (
-                <div key={item.id} className="work-row">
-                  <div>
-                    <b>{item.name}</b>
-                    <div className="cd-mono">{carrierLabel(item)}</div>
-                  </div>
-                  <button
-                    className="az-btn sm"
-                    type="button"
-                    onClick={() => {
-                      if (!editing) {
-                        const linked = workspace.leads.find((row) => row.id === selectedLeadId);
-                        setEditing("new");
-                        setDraft(fillFromLead(linked, { ...EMPTY, carrierId: item.id, carrier: item.name }));
-                        setFormError("");
-                        return;
-                      }
-                      setDraft((prev) => ({ ...prev, carrierId: item.id, carrier: item.name }));
-                    }}
-                  >
-                    Attach
-                  </button>
-                </div>
-              ))}
-            </div>
-          ) : null}
-        </section>
+        <div className="home-stats ship-stats">
+          <div>
+            <b>{rows.length}</b>
+            <span>Loads</span>
+          </div>
+          <div>
+            <b>{rows.filter((item) => item.status === "Quote").length}</b>
+            <span>Quotes</span>
+          </div>
+          <div>
+            <b>{money(totals.margin)}</b>
+            <span>Margin</span>
+          </div>
+          <div>
+            <b>{(workspace.carriers || []).length}</b>
+            <span>Carriers</span>
+          </div>
+        </div>
+        <div className="ship-desk">
         <div className="az-panel overflow-auto min-h-0 crm-table-wrap">
           <table className="az-table min-w-[1100px]">
             <thead>
@@ -291,6 +261,56 @@ export function ShipmentsView() {
               ))}
             </tbody>
           </table>
+        </div>
+        <section className="az-panel freight-panel ship-carriers">
+          <header>
+            <div>
+              <div className="home-kicker">Carrier file</div>
+              <h3>Paste a real page — MC / DOT / published phone</h3>
+            </div>
+          </header>
+          <p className="cd-mono">FMCSA snapshot or their site. No invented trucks. {(workspace.carriers || []).length} on file.</p>
+          <textarea
+            className="az-area"
+            rows={2}
+            value={carrierPaste}
+            onChange={(event) => setCarrierPaste(event.target.value)}
+            placeholder="Paste the page. Need MC, DOT, or a local dispatch phone that was actually printed."
+          />
+          <input className="az-input" value={carrierUrl} onChange={(event) => setCarrierUrl(event.target.value)} placeholder="Page URL (optional)" />
+          <button className="az-btn pri sm" type="button" onClick={saveCarrierPaste}>
+            Save carrier
+          </button>
+          {carrierMsg ? <p className="cd-mono">{carrierMsg}</p> : null}
+          {(workspace.carriers || []).length ? (
+            <div className="az-table min-w-0" style={{ marginTop: 12 }}>
+              {(workspace.carriers || []).map((item) => (
+                <div key={item.id} className="work-row">
+                  <div>
+                    <b>{item.name}</b>
+                    <div className="cd-mono">{carrierLabel(item)}</div>
+                  </div>
+                  <button
+                    className="az-btn sm"
+                    type="button"
+                    onClick={() => {
+                      if (!editing) {
+                        const linked = workspace.leads.find((row) => row.id === selectedLeadId);
+                        setEditing("new");
+                        setDraft(fillFromLead(linked, { ...EMPTY, carrierId: item.id, carrier: item.name }));
+                        setFormError("");
+                        return;
+                      }
+                      setDraft((prev) => ({ ...prev, carrierId: item.id, carrier: item.name }));
+                    }}
+                  >
+                    Attach
+                  </button>
+                </div>
+              ))}
+            </div>
+          ) : null}
+        </section>
         </div>
         {editing && editing !== "new"
           ? (() => {

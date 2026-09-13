@@ -171,6 +171,8 @@ export function PlaybookView() {
                   </button>
                 ))}
               </div>
+              <div className="intel-work">
+              <div className="intel-form">
               <div className="intel-fit-grid">
                 <label className="rec-field intel-unit">
                   Unit
@@ -294,6 +296,8 @@ export function PlaybookView() {
                 </button>
                 {saveMsg ? <p className="cd-mono">{saveMsg}</p> : null}
               </div>
+              </div>
+              <div className="intel-match">
               {hasInput ? (
                 <>
                   <MatcherResult fit={fit} showAll={showAllDecks} onToggle={() => setShowAllDecks((prev) => !prev)} />
@@ -302,6 +306,8 @@ export function PlaybookView() {
               ) : (
                 <p className="intel-why">Nothing to match yet. Type what they told you, or paste L × W × H.</p>
               )}
+              </div>
+              </div>
             </section>
 
             {active ? (
