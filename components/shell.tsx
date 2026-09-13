@@ -50,7 +50,7 @@ export function Shell({ children }: { children: React.ReactNode }) {
 
   return (
     <div className={`az-shell density-${density}`} data-accent={prefs.accent}>
-      <Link href="/" className="az-brand">
+      <Link href="/" className="az-brand" aria-label="Haul">
         <BrandLockup />
       </Link>
 

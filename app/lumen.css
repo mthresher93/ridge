@@ -126,7 +126,7 @@ body::before {
   flex-direction: column;
   justify-content: center;
   min-width: 0;
-  gap: 5px;
+  gap: 3px;
   overflow: visible;
 }
 
@@ -147,67 +147,49 @@ body::before {
   overflow: visible;
 }
 
-.az-brand-name,
-.az-rail .az-brand-name {
-  position: relative;
-  isolation: isolate;
+.az-brand-word {
   display: block;
+  width: 112px;
+  height: 32px;
+  overflow: visible;
+}
+
+.az-brand-word text {
   font-family: var(--fh);
-  font-size: 28px;
+  font-size: 26px;
   font-weight: 700;
-  letter-spacing: 0.16em;
-  line-height: 1;
-  text-transform: none;
-  background: none;
-  color: #e8c15a;
-  -webkit-text-stroke: 0;
-  text-shadow: none;
-  text-rendering: geometricPrecision;
-  -webkit-font-smoothing: antialiased;
+  letter-spacing: 0.08em;
+  stroke-linejoin: round;
+  stroke-linecap: round;
 }
 
-.az-brand-name::before,
-.az-brand-name::after {
-  content: attr(data-word);
-  position: absolute;
-  left: 0;
-  top: 0;
-  color: transparent;
-  font: inherit;
-  letter-spacing: inherit;
-  line-height: inherit;
-  text-transform: inherit;
-  white-space: nowrap;
-  pointer-events: none;
+.az-brand-word-white {
+  fill: none;
+  stroke: #fff;
+  stroke-width: 5.4;
 }
 
-.az-brand-name::before {
-  z-index: 0;
-  -webkit-text-stroke: 5px #fff;
+.az-brand-word-black {
+  fill: none;
+  stroke: #111;
+  stroke-width: 2.7;
 }
 
-.az-brand-name::after {
-  z-index: 1;
-  -webkit-text-stroke: 2.6px #111;
-}
-
-.az-brand-name span {
-  position: relative;
-  z-index: 2;
-  color: #e8c15a;
-  -webkit-text-stroke: 0;
+.az-brand-word-gold {
+  fill: #e2b84a;
+  stroke: none;
 }
 
 .az-brand-sub,
 .az-rail .az-brand-sub {
   font-family: var(--fm);
-  font-size: 10px;
+  font-size: 9px;
   font-weight: 600;
-  letter-spacing: 0.28em;
+  letter-spacing: 0.34em;
   text-transform: uppercase;
-  color: #f7f4ee;
+  color: rgba(247, 244, 238, 0.9);
   margin-top: 0;
-  padding-left: 1px;
+  padding-left: 4px;
   -webkit-text-stroke: 0;
   paint-order: fill;
   text-shadow:
@@ -488,8 +470,9 @@ body::before {
     grid-template-columns: 196px minmax(0, 1fr);
     grid-template-rows: 68px minmax(0, 1fr);
   }
-  .az-brand-name {
-    font-size: 22px;
+  .az-brand-word {
+    width: 94px;
+    height: 28px;
   }
   .az-page {
     padding-left: 0;
@@ -2823,10 +2806,8 @@ button.desk-open-row {
   box-shadow: 0 0 0 2.5px #111;
 }
 
-.login-card .az-brand-name {
-  font-size: 28px;
-  letter-spacing: 0.18em;
-  color: #e8c15a;
+.login-card .az-brand-word {
+  width: 112px;
 }
 
 .login-card h1 {
