@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model WorkspaceStore {
+  id        String   @id
+  payload   String
+  updatedAt DateTime @updatedAt
+}
+
+model RoofDesignRecord {
+  leadId     String   @id
+  payload    String
+  updatedAt  DateTime @updatedAt
+}
+
+model ProposalRecord {
+  leadId    String   @id
+  payload   String
+  updatedAt DateTime @updatedAt
+}
+
+model CallLogRecord {
+  id        String   @id
+  leadId    String
+  outcome   String
+  duration  Int      @default(0)
+  notes     String   @default("")
+  at        DateTime
+}
+
+model WorkspaceBackup {
+  id        String   @id
+  payload   String
+  reason    String
+  createdAt DateTime @default(now())
+}

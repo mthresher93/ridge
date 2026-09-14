@@ -1,0 +1,98 @@
+/* Final legibility layer. Keep operational metadata above WCAG AA contrast
+   without flattening the section-specific color language. */
+
+/* Inbox and practical contact landing. */
+.conversation-channel-mark,
+.conversation-customer-strip span,
+.contact-profile-card small,
+.contact-focus > span,
+.contact-detail-grid span,
+.contact-signal-grid span,
+.contact-compliance header span,
+.contact-reach small { color: #4b6470; }
+.thread-item.outbound > span,
+.contact-reach a > span { color: #00677d; }
+.conversation-composer button.primary { background: #006d84; }
+.contact-compliance > div span { color: #3c5e50; }
+
+/* Dialer queue, planner, audit trail, and connected-record context. */
+.dialer-record-context small,
+.conduit-dialer-script-coach > header p,
+.conduit-queue-metrics span,
+.conduit-planner-output span,
+.conduit-server-audit span,
+.conduit-server-audit time { color: #4b6571; }
+.conduit-dialer-script-coach > header p { color: #4b6571 !important; }
+body[data-crm-product="true"][data-conduit-surface="light"]
+  .page[data-page="dialer"]
+  .dialer-integrated-context
+  .dialer-record-context small { color: #4b6571 !important; }
+
+/* Proposal Buildout labels. The ridge gets its own opaque plate because it
+   sits over a variable aerial/roof surface. */
+.roof-design-heading span,
+.roof-design-metrics span,
+.roof-design-metrics small { color: #4a6370; }
+.roof-design-ridge {
+  padding: 3px 6px;
+  border-radius: 4px;
+  background: rgba(7, 36, 48, .92);
+  color: #fff;
+}
+
+/* Lead connector studio. */
+.connector-studio-head span,
+.connector-section > header span { color: #006b80; }
+.connector-card header > span { color: #00677b; }
+.connector-card.ready header > span { color: #006748; }
+
+/* Purpose-built reports. */
+.attention-desk > article span { color: #875000; }
+.sales-leaderboard > article > div span,
+.report-donut span,
+.call-ledger > article > div span,
+.appointment-board > article > div span,
+.setter-board article > div:first-child span,
+.risk-queue > article span,
+.marketing-source-grid > article > span,
+.agent-workflow-stack footer span,
+.agent-boundaries > article span { color: #4c6571; }
+
+/* Operational legibility and target floors found by the full prompt audit. */
+.page[data-page="conversations-inbox"] :is(small,.crm-inbox-meta,.crm-inbox-stat span),
+.page[data-page="dialer"] :is(.dialer-integrated-context span,.dialer-integrated-context small,.dialer-power-strip span,.dialer-power-strip small,.dialer-call-workbench small,.dialer-queue-panel small),
+.page[data-page="conversations-sunroof"] :is(.solar-eyebrow,small,.solar-estimate-form label,.solar-estimate-results span,.solar-estimate-results small,.solar-price-stack),
+.page[data-page^="reports-"] :is(.report-shell span,.report-shell small,.report-shell p,.report-shell dt,.report-shell dd),
+.page[data-page="marketing-capture"] :is(small,.marketing-capture-layout span) { font-size: max(11px, 1em); }
+.page[data-page="conversations-sunroof"] :is(.solar-upload-card small,.solar-bill-analysis p,.solar-estimate-summary>p) { font-size: 10px; }
+.page[data-page="conversations-sunroof"] :is(.roof-existing-card span,.roof-existing-card small,.roof-plane-health span,.roof-design-heading span,.roof-design-metrics span,.roof-design-metrics small,.solar-roof-design-summary span,.solar-plane-summary span) { font-size: 10px; }
+.page[data-page="dialer"] .dialer-lead { min-width: 0; overflow: hidden; }
+.page[data-page="dialer"] .dialer-lead .flags { display: flex; max-width: 100%; flex-wrap: wrap; }
+.page[data-page="dialer"] .dialer-lead .chip { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.page[data-page="dialer"] .dialer-tabs { max-width: 100%; scrollbar-width: thin; }
+.page[data-page="dialer"] .dialer-tabs .dialer-tab { min-height: 38px; }
+.page[data-page="marketing-capture"] :is(button,.btn),
+.home-solar-calendar>footer button { min-height: 36px !important; }
+
+/* Preserve compact density without making operating facts microscopic. */
+.page[data-page="conversations-inbox"] .conversation-workspace :is(span,small,b),
+.page[data-page="dialer"] :is(#dialerActiveMeta,#dialerActivePhone,.dialer-integrated-context,.dialer-call-workbench,.conduit-dialer-preflight,.conduit-live-call-coach) :is(span,small,b,strong,p),
+.page[data-page="conversations-sunroof"] :is(.proposal-command,.solar-roof-card) :is(span,small,b),
+.page[data-page="marketing-capture"] .marketing-capture-layout span,
+.page[data-page="reports-agents"] .agent-workflow-stack strong,
+.home-solar-calendar > header b { font-size: max(11px, 1em) !important; }
+.page[data-page="conversations-inbox"] [data-context-collapse] { min-width: 36px; min-height: 36px; }
+
+/* Route aliases resolve to legacy page ids in the canonical shell. */
+.page[data-page="conversations"] .conversation-workspace :is(span,small,b),
+.page[data-page="dialer"] :is(.dialer-integrated-context,.dialer-call-workbench,.conduit-dialer-preflight,.conduit-live-call-coach) :is(span,small,b,strong,p,button),
+.page[data-page="marketing-capture"] span,
+.page[data-page="reports-agents"] strong { font-size: max(11px, 1em) !important; }
+.page[data-page="dialer"] :is(#dialerActiveMeta,#dialerActivePhone),
+.page[data-page="conversations"] [data-context-collapse] { font-size: 11px !important; }
+.page[data-page="conversations"] [data-context-collapse] { min-width: 36px; min-height: 36px; }
+.page[data-page="conversations"] .conversation-workspace p,
+.page[data-page="dialer"] .body :is(label,button,span,small,b,strong,p),
+.page[data-page="conversations-calls"] .body :is(label,button,span,small,b,strong,p,th,td),
+.page[data-page="marketing-capture"] .body :is(label,button,span,small,b,strong,p,th,td) { font-size: max(11px, 1em) !important; }
+#dialpadUseNumber { font-size: 11px !important; }
