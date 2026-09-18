@@ -313,19 +313,19 @@ export function PipelineView() {
 
         <div className="pipe-metrics">
           <div>
-            <b className="tabular-nums font-display">{metrics.open ? money(metrics.open) : "—"}</b>
+            <b className="tabular-nums font-display">{money(metrics.open)}</b>
             <span>Open pipeline</span>
           </div>
           <div>
-            <b className="tabular-nums font-display">{metrics.weighted ? money(metrics.weighted) : "—"}</b>
+            <b className="tabular-nums font-display">{money(metrics.weighted)}</b>
             <span>Weighted</span>
           </div>
           <div>
-            <b className="tabular-nums font-display">{metrics.won ? money(metrics.won) : "—"}</b>
+            <b className="tabular-nums font-display">{money(metrics.won)}</b>
             <span>Won this month</span>
           </div>
           <div>
-            <b className="tabular-nums font-display">{metrics.velocity || "—"}d</b>
+            <b className="tabular-nums font-display">{metrics.velocity}d</b>
             <span>Avg cycle</span>
           </div>
         </div>
@@ -386,11 +386,11 @@ export function PipelineView() {
                         <button type="button" className="pipeline-col-toggle" aria-label={`${isCollapsed ? "Expand" : "Collapse"} ${stage.label}`} onClick={() => toggleCollapse(stage.id)}>
                           <div className="pipeline-col-title">{stage.label}</div>
                           <div className="pipeline-col-meta tabular-nums">
-                            {rows.length} · {value ? money(value) : "—"}
+                            {rows.length} · {money(value)}
                           </div>
                           {!isCollapsed ? (
                             <div className="pipeline-col-sub tabular-nums">
-                              Weighted {weighted ? money(weighted) : "—"} · {avgProbability}% avg
+                              Weighted {money(weighted)} · {avgProbability}% avg
                             </div>
                           ) : null}
                         </button>

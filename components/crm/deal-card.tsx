@@ -34,8 +34,10 @@ export function DealCard({
   const next = nextStageId(deal.stageId);
   const chip = closeChip(close);
   const weighted = weightedValue(deal);
-  const title = deal.lead.listingTitle || deal.lane || deal.lead.nextAction || "Freight opportunity";
-  const badge = `${deal.lead.trailerHint || deal.lead.freightType || deal.lead.label || "Yard"} · ${health}/100 Yard Score`;
+  const rawTitle = deal.lead.listingTitle || deal.lane || "";
+  const title = rawTitle && rawTitle !== deal.company && rawTitle !== deal.lead.name ? rawTitle : deal.lead.label || "Freight";
+  const badge = `${deal.lead.freightType || deal.lead.label || "Yard"} · ${health}/100`;
+  const ageLabel = ageDays >= 365 ? `${Math.round(ageDays / 365)}y in stage` : ageDays >= 60 ? `${Math.round(ageDays / 30)}mo in stage` : `${ageDays}d in stage`;
 
   return (
     <article
@@ -65,7 +67,7 @@ export function DealCard({
       </div>
       <div className="deal-card-zone deal-z2">
         <strong className="tabular-nums deal-value">{deal.value ? money(deal.value) : "Rate unset"}</strong>
-        <span className="tabular-nums deal-weighted">{weighted ? `Weighted ${money(weighted)}` : "Weighted —"}</span>
+        <span className="tabular-nums deal-weighted">Weighted {money(weighted)}</span>
         <div className="deal-meter" aria-label={`${stage.probability} percent`}>
           <span style={{ width: `${stage.probability}%` }} />
         </div>
@@ -81,7 +83,7 @@ export function DealCard({
       </div>
       <div className="deal-card-zone deal-z4">
         <span className="tabular-nums">Health {health}</span>
-        <span className={`tabular-nums${stale ? " tone-warn" : ""}`}>{ageDays}d in stage</span>
+        <span className={`tabular-nums${stale ? " tone-warn" : ""}`}>{ageLabel}</span>
         <span className="deal-stake">
           <span className="deal-avatar" aria-hidden="true">
             {(deal.contact || deal.lead.name).slice(0, 1).toUpperCase()}

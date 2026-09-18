@@ -115,18 +115,23 @@ body::before {
 
 .az-shell {
   display: grid !important;
-  grid-template-columns: minmax(0, 1fr);
-  grid-template-rows: auto minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) !important;
+  grid-template-rows: auto minmax(0, 1fr) !important;
   grid-template-areas:
     "chrome"
-    "main";
+    "main" !important;
   flex-direction: unset;
+  width: 100% !important;
+  max-width: none !important;
   height: 100vh;
+  overflow: hidden;
   background: var(--canvas);
 }
 
 .az-chrome {
   grid-area: chrome;
+  width: 100%;
+  min-width: 0;
   background: var(--navy-deep);
   color: #f3ead8;
   box-shadow: 0 8px 24px rgba(17, 14, 11, 0.28);
@@ -429,6 +434,7 @@ body::before {
   grid-area: main;
   display: flex;
   flex-direction: column;
+  width: 100%;
   min-width: 0;
   min-height: 0;
   background: var(--canvas);
@@ -545,8 +551,17 @@ body::before {
 .az-page {
   flex: 1;
   min-height: 0;
+  width: 100%;
   overflow: hidden;
   padding: 0;
+}
+
+.cd-page.fill {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
 }
 
 @media (max-width: 980px) {
@@ -4505,7 +4520,9 @@ button.desk-open-row {
 .cd-page,
 .home-desk,
 .az-fill.crm-desk {
-  background: #e8ecf0;
+  background: var(--canvas);
+  width: 100%;
+  min-width: 0;
 }
 
 .cd-page.fill,
@@ -5042,11 +5059,6 @@ button.desk-open-row {
 
 /* ——— Dispatch ticket restyle: gold for the one action, numbers as numbers ——— */
 
-.az-shell {
-  grid-template-columns: 232px minmax(0, 1fr);
-  grid-template-rows: 56px minmax(0, 1fr);
-}
-
 .az-brand {
   padding: 6px 12px;
 }
@@ -5360,6 +5372,7 @@ button.desk-open-row {
   justify-content: space-between;
   gap: 16px;
   align-items: flex-start;
+  flex-wrap: wrap;
 }
 
 .crm-page-head-copy h1 {
@@ -5389,6 +5402,7 @@ button.desk-open-row {
   flex-wrap: wrap;
   gap: 10px;
   align-items: end;
+  width: 100%;
 }
 
 .crm-filter {
@@ -5554,6 +5568,7 @@ button.desk-open-row {
   border-radius: 2px;
   color: var(--vx-text-1);
   box-shadow: none;
+  overflow: hidden;
 }
 
 .deal-card:hover {
@@ -5611,9 +5626,19 @@ button.desk-open-row {
   display: none;
 }
 
-.deal-z1 {
+.deal-z1,
+.deal-z2,
+.deal-z3 {
   display: grid;
   gap: 4px;
+}
+
+.deal-z4 {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 12px;
+  font-size: 12px;
+  color: var(--vx-text-2);
 }
 
 .deal-z1 b {
