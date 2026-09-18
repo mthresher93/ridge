@@ -1,0 +1,395 @@
+/* Settings — compact task desk, no station chrome, no nested cards. */
+
+.az-page:has(.settings-desk) {
+  padding: 0;
+}
+
+.az-page > .settings-desk {
+  flex: 1;
+}
+
+.settings-desk {
+  display: grid;
+  grid-template-rows: auto auto minmax(0, 1fr);
+  height: 100%;
+  min-height: 0;
+  padding: 10px;
+  gap: 8px;
+  background: var(--bg3);
+  color: var(--tx);
+}
+
+.settings-top {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-height: 40px;
+  padding: 0 12px;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+}
+
+.settings-top h1 {
+  margin: 0;
+  font-family: var(--fh);
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.04em;
+  text-transform: uppercase;
+}
+
+.settings-status {
+  font-family: var(--fm);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tx2);
+}
+
+.settings-desk.is-dirty .settings-status {
+  color: var(--gold);
+}
+
+.settings-top-actions {
+  margin-left: auto;
+  display: flex;
+  gap: 6px;
+}
+
+.settings-top-actions .az-btn {
+  min-height: 26px;
+}
+
+.settings-tabs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  padding: 0 8px;
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+  background: var(--panel);
+}
+
+.settings-tabs button {
+  border: 0;
+  background: transparent;
+  color: var(--tx2);
+  min-height: 36px;
+  padding: 0 12px;
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.settings-tabs button.on {
+  color: var(--gold);
+  box-shadow: inset 0 -2px 0 var(--gold);
+}
+
+.settings-body {
+  overflow: auto;
+  padding: 0;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+}
+
+.st-list {
+  display: grid;
+  max-width: 720px;
+}
+
+.st-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 16px;
+  align-items: center;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--br);
+}
+
+.st-row-copy {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.st-row-copy b {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.st-row-copy small {
+  font-size: 14px;
+  line-height: 1.4;
+  color: var(--tx2);
+}
+
+.st-row-ctrl {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.st-row .az-input {
+  min-height: 30px;
+  min-width: 200px;
+  background: var(--bg2);
+  border-color: var(--br);
+}
+
+.st-narrow {
+  min-width: 88px !important;
+  width: 88px;
+  text-align: right;
+}
+
+.st-fine {
+  margin: 12px 16px 4px;
+  font-size: 15px;
+  line-height: 1.5;
+  color: var(--tx2);
+}
+
+.st-seg {
+  display: inline-flex;
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: var(--bg2);
+}
+
+.st-seg button {
+  border: 0;
+  background: transparent;
+  color: var(--tx);
+  padding: 0 12px;
+  min-height: 32px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.st-seg button + button {
+  border-left: 1px solid var(--br);
+}
+
+.st-seg button.on {
+  background: var(--gold-dim);
+  color: var(--gold);
+}
+
+.st-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 200px;
+}
+
+.st-range input[type="range"] {
+  flex: 1;
+  accent-color: var(--gold);
+}
+
+.st-range b {
+  min-width: 36px;
+  text-align: right;
+  font-size: 14px;
+}
+
+.st-pair {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.st-pair span {
+  font-size: 14px;
+  color: var(--tx2);
+}
+
+.st-pair .az-input {
+  min-width: 0;
+  width: 118px;
+  font-family: var(--fm);
+}
+
+.st-toggle {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 0;
+  background: transparent;
+  color: var(--tx);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.st-toggle i {
+  position: relative;
+  width: 32px;
+  height: 18px;
+  border-radius: 999px;
+  background: var(--bg4);
+  border: 1px solid var(--br);
+}
+
+.st-toggle i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--tx3);
+}
+
+.st-toggle.on i {
+  background: var(--gold-dim);
+  border-color: var(--gold);
+}
+
+.st-toggle.on i::after {
+  transform: translateX(14px);
+  background: var(--gold);
+}
+
+.st-swatches {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.st-swatches button {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--br);
+  border-radius: var(--radius-sm);
+  background: var(--bg2);
+  color: var(--tx);
+  padding: 0 10px 0 7px;
+  min-height: 32px;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.st-swatches button i {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+}
+
+.st-swatches button.on {
+  border-color: var(--gold);
+  color: var(--tx);
+}
+
+.st-ledger {
+  display: grid;
+  margin: 4px 0 8px;
+  border-top: 1px solid var(--br);
+}
+
+.st-ledger-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  align-items: start;
+  padding: 8px 16px;
+  border-bottom: 1px solid var(--br);
+}
+
+.st-ledger-row b {
+  display: block;
+  font-size: 15px;
+}
+
+.st-ledger-row span {
+  display: block;
+  margin-top: 2px;
+  font-size: 14px;
+  color: var(--tx2);
+}
+
+.st-ledger-row em {
+  font-style: normal;
+  font-family: var(--fm);
+  font-size: 13px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--tx2);
+  white-space: nowrap;
+}
+
+.st-ledger-row em.ok {
+  color: var(--up);
+}
+
+.st-disclose {
+  border: 0;
+  background: transparent;
+  color: var(--gold-2);
+  font-size: 14px;
+  font-weight: 600;
+  padding: 0;
+}
+
+.st-danger {
+  padding: 8px 16px 14px;
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+}
+
+.st-danger p {
+  margin: 0;
+  font-size: 15px;
+  color: var(--tx3);
+}
+
+.az-shell[data-accent="cyan"] {
+  --cy: #d4b06a;
+  --cy2: #d4b06a66;
+  --gold: #d4b06a;
+  --gold-2: #e8c98a;
+  --gold-dim: rgba(212, 176, 106, 0.16);
+  --volt: #d4b06a;
+  --action: #d4b06a;
+}
+
+.az-shell[data-accent="violet"] {
+  --cy: #9d7bff;
+  --cy2: #9d7bff66;
+  --gold: #9d7bff;
+  --gold-dim: rgba(157, 123, 255, 0.16);
+  --volt: #9d7bff;
+}
+
+.az-shell[data-accent="amber"] {
+  --cy: #ffb84d;
+  --cy2: #ffb84d66;
+  --gold: #ffb84d;
+  --gold-dim: rgba(255, 184, 77, 0.16);
+  --volt: #ffb84d;
+}
+
+.az-shell[data-accent="teal"] {
+  --cy: #2ee6c5;
+  --cy2: #2ee6c566;
+  --gold: #2ee6c5;
+  --gold-dim: rgba(46, 230, 197, 0.16);
+  --volt: #2ee6c5;
+}
+
+@media (max-width: 720px) {
+  .st-row {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+  .st-row-ctrl {
+    justify-content: flex-start;
+  }
+}

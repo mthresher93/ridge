@@ -1,0 +1,714 @@
+/* Lumen design desk — toolbar, tool rail, dominant canvas, inspector. */
+
+.az-page:has(.cad-desk) {
+  padding: 0;
+}
+
+.az-page > .cad-desk {
+  flex: 1;
+}
+
+.cad-desk {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+  height: 100%;
+  min-height: 0;
+  padding: 14px;
+  gap: 12px;
+  background:
+    radial-gradient(800px 360px at 12% -20%, rgba(176, 137, 58, 0.08), transparent 50%),
+    var(--bg3);
+  color: var(--tx);
+  border: 0;
+  overflow: hidden;
+}
+
+.cad-top,
+.cad-status {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 14px;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift);
+}
+
+.cad-top {
+  min-height: 40px;
+}
+
+.cad-status {
+  min-height: 28px;
+  justify-content: space-between;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.04em;
+  color: var(--tx4);
+}
+
+.cad-project {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--tx4);
+}
+
+.cad-project > span {
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cad-project select {
+  background: var(--bg);
+  border: 1px solid var(--br);
+  color: var(--tx);
+  min-height: 28px;
+  border-radius: var(--radius-sm);
+  font-family: var(--fh);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.cad-address {
+  flex: 1;
+  min-width: 0;
+  font-size: 12px;
+  color: var(--tx3);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.cad-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cad-top-actions .az-btn {
+  min-height: 26px;
+  white-space: nowrap;
+}
+
+.cad-zoom {
+  display: flex;
+  border: 1px solid var(--br);
+  border-radius: var(--radius-sm);
+  overflow: hidden;
+  background: var(--bg);
+}
+
+.cad-zoom button {
+  border: 0;
+  background: transparent;
+  color: var(--tx2);
+  min-height: 24px;
+  min-width: 26px;
+  padding: 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.cad-zoom button + button {
+  border-left: 1px solid var(--br);
+}
+
+.cad-zoom button:hover {
+  background: var(--gold-dim);
+  color: var(--tx);
+}
+
+.cad-body {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) 220px;
+  gap: 8px;
+  min-height: 0;
+}
+
+.cad-desk.has-prop .cad-body {
+  grid-template-columns: 44px minmax(0, 1fr) 268px;
+}
+
+.cad-tools {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  background: var(--panel);
+  padding: 8px 6px;
+  gap: 4px;
+  box-shadow: var(--lift);
+}
+
+.cad-tools button,
+.cad-tools button.on {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 1px;
+  padding: 7px 2px 6px;
+  border: 0;
+  border-left: 2px solid transparent;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  color: var(--tx4);
+  font-size: 8px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-weight: 600;
+  font-family: var(--fm);
+}
+
+.cad-tools button i {
+  font-style: normal;
+  font-size: 14px;
+  line-height: 1;
+  color: var(--tx3);
+}
+
+.cad-tools button kbd {
+  position: absolute;
+  top: 2px;
+  right: 3px;
+  font-family: var(--fm);
+  font-size: 7px;
+  color: var(--tx4);
+  opacity: 0.55;
+}
+
+.cad-tools button:hover {
+  color: var(--tx2);
+  background: var(--gold-dim);
+}
+
+.cad-tools button.on {
+  border-left-color: var(--action);
+  background: var(--gold-dim);
+  color: var(--gold-2);
+}
+
+.cad-tools button.on i {
+  color: var(--gold-2);
+}
+
+.cad-canvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  background: #121418;
+  border: 1px solid #1e232b;
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--lift-2);
+}
+
+.cad-hint {
+  position: absolute;
+  left: 10px;
+  bottom: 10px;
+  z-index: 4;
+  font-family: var(--fm);
+  font-size: 10px;
+  color: #fff8f0;
+  background: rgba(28, 25, 21, 0.72);
+  border: 1px solid rgba(255, 248, 240, 0.12);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  max-width: 360px;
+}
+
+.tile-map {
+  cursor: default;
+}
+
+.tile-map:has(.site-svg.tool-pan) {
+  cursor: grab;
+}
+
+.tile-map:has(.site-svg.tool-draw),
+.tile-map:has(.site-svg.tool-measure) {
+  cursor: crosshair;
+}
+
+.roof-face {
+  fill: rgba(194, 65, 12, 0.22);
+  stroke: #fff8f0;
+  stroke-width: 1.75;
+}
+
+.roof-face.on {
+  fill: rgba(194, 65, 12, 0.32);
+  stroke: #ea580c;
+  stroke-width: 2.25;
+}
+
+.roof-face.hot {
+  fill: rgba(194, 65, 12, 0.28);
+  stroke: #fb923c;
+}
+
+.roof-face.blocked {
+  fill: rgba(180, 35, 24, 0.2);
+  stroke: #b42318;
+}
+
+.roof-setback {
+  fill: none;
+  stroke: rgba(255, 248, 240, 0.55);
+  stroke-dasharray: 4 3;
+}
+
+.roof-edge-on {
+  stroke: #ea580c;
+  stroke-width: 3;
+}
+
+.roof-edge-hot {
+  stroke: #fb923c;
+  stroke-width: 2.25;
+}
+
+.roof-vert {
+  fill: #fff8f0;
+  stroke: #1c1915;
+  stroke-width: 1.25;
+}
+
+.roof-vert.on {
+  fill: #c2410c;
+  stroke: #fff8f0;
+}
+
+.roof-vert.hot {
+  fill: #ea580c;
+  stroke: #fff8f0;
+}
+
+.mod-cell {
+  fill: rgba(28, 25, 21, 0.58);
+  stroke: rgba(255, 248, 240, 0.85);
+  stroke-width: 0.7;
+}
+
+.mod-cell.on {
+  stroke: #ea580c;
+  stroke-width: 1.6;
+}
+
+.mod-cell.hot {
+  stroke: #fb923c;
+  stroke-width: 1.2;
+}
+
+.mod-ghost {
+  fill: rgba(194, 65, 12, 0.22);
+  stroke: #ea580c;
+  stroke-width: 1;
+  stroke-dasharray: 3 2;
+  pointer-events: none;
+}
+
+.obs-box {
+  fill: rgba(28, 25, 21, 0.72);
+  stroke: #fff8f0;
+}
+
+.obs-tree {
+  fill: rgba(15, 122, 90, 0.35);
+  stroke: #0f7a5a;
+}
+
+.draft-line {
+  fill: none;
+  stroke: #ea580c;
+  stroke-width: 1.5;
+}
+
+.measure-line {
+  stroke: #ea580c;
+  stroke-width: 1.5;
+}
+
+.cad-label {
+  fill: #fff8f0;
+  font-size: 10px;
+  font-family: var(--fm);
+  paint-order: stroke;
+  stroke: rgba(28, 25, 21, 0.75);
+  stroke-width: 3px;
+}
+
+.cad-label.dim {
+  fill: #fed7aa;
+}
+
+.cad-inspector {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  overflow: auto;
+  min-height: 0;
+  padding: 10px 12px 14px;
+  background: var(--panel);
+  border: 1px solid var(--br);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--lift);
+}
+
+.cad-num-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 6px;
+}
+
+.cad-system .cad-metrics b {
+  font-size: 13px;
+}
+
+.cad-insp-block {
+  display: grid;
+  gap: 8px;
+  padding: 10px;
+  background: var(--bg3);
+  border: 1px solid var(--br);
+  border-radius: var(--radius);
+}
+
+.cad-insp-block .az-kicker {
+  color: var(--gold-2);
+  font-family: var(--fm);
+  letter-spacing: 0.1em;
+  font-size: 9px;
+  padding-bottom: 5px;
+  border-bottom: 1px solid var(--br);
+}
+
+.cad-insp-block label {
+  display: grid;
+  gap: 3px;
+  color: var(--tx4);
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.cad-insp-block .az-input,
+.cad-insp-block .az-select {
+  background: var(--bg);
+  border-color: var(--br);
+  min-height: 28px;
+  font-size: 12px;
+  font-family: var(--fm);
+  color: var(--tx);
+}
+
+.cad-metrics {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px 10px;
+}
+
+.cad-metrics span {
+  display: block;
+  font-family: var(--fm);
+  font-size: 9px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--tx4);
+}
+
+.cad-metrics b {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--tx);
+}
+
+.cad-note {
+  margin: 0;
+  color: var(--tx4);
+  font-size: 11px;
+  line-height: 1.4;
+}
+
+.cad-check {
+  display: flex !important;
+  align-items: center;
+  gap: 8px;
+  grid-template-columns: none;
+}
+
+.cad-inspector .az-btn {
+  min-height: 26px;
+  font-size: 11px;
+}
+
+.prop-insp {
+  padding-top: 2px;
+}
+
+.prop-insp .prop-title {
+  font-family: var(--fh);
+  font-style: normal;
+  letter-spacing: 0;
+  text-transform: none;
+  font-size: 18px;
+  color: var(--tx);
+}
+
+.prop-insp .prop-kicker {
+  color: #c2410c;
+}
+
+.prop-insp .prop-steps {
+  border-color: var(--br);
+  background: var(--bg);
+}
+
+.prop-insp .prop-steps button.on {
+  color: #c2410c;
+  background: var(--gold-dim);
+}
+
+.prop-insp .prop-dl > div {
+  border-bottom-color: var(--br);
+}
+
+.cad-inspector .prop-actions,
+.cad-inspector .prop-pane > .az-btn {
+  position: sticky;
+  bottom: 0;
+  z-index: 2;
+  background: var(--bg2);
+  padding-top: 8px;
+  padding-bottom: 2px;
+}
+
+.prop-array {
+  display: block;
+  width: 100%;
+  height: 88px;
+  background: var(--bg);
+  border: 1px solid var(--br);
+}
+
+.prop-array polygon {
+  fill: rgba(194, 65, 12, 0.1);
+  stroke: #c2410c;
+  stroke-width: 1.1;
+  vector-effect: non-scaling-stroke;
+}
+
+.prop-array polygon.blocked {
+  fill: rgba(180, 35, 24, 0.12);
+  stroke: #b42318;
+}
+
+.prop-array polygon.mod {
+  fill: #c2410c;
+  stroke: #9a3412;
+  stroke-width: 0.35;
+}
+
+.prop-present {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: rgba(28, 25, 21, 0.68);
+  padding: 28px 20px;
+}
+
+.prop-present-close {
+  background: var(--gold-dim);
+  color: var(--tx);
+  border-color: var(--br);
+}
+
+.prop-sheet {
+  width: min(920px, 100%);
+  max-height: calc(100vh - 40px);
+  overflow: auto;
+  background:
+    linear-gradient(180deg, #fffdf8 0, #f7f1e6 140px);
+  color: #1c1915;
+  padding: 48px 56px 36px;
+  box-shadow: 0 32px 90px rgba(28, 25, 21, 0.34);
+}
+
+.prop-sheet h1,
+.prop-sheet h2,
+.prop-sheet p,
+.prop-sheet dt,
+.prop-sheet dd {
+  color: inherit;
+}
+
+.prop-sheet-head {
+  align-items: flex-start;
+  margin-bottom: 8px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid #e4ddd2;
+}
+
+.prop-sheet-brand {
+  font-family: var(--fh);
+  font-style: normal;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  font-size: 12px;
+  color: #c2410c;
+}
+
+.prop-sheet-brand-sub {
+  margin-top: 4px;
+  font-size: 13px;
+  color: #6b6358;
+}
+
+.prop-sheet-for {
+  margin: 28px 0 0;
+  font-family: var(--fm);
+  font-size: 10px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #8a8176;
+}
+
+.prop-sheet-name {
+  margin: 4px 0 0;
+  font-family: var(--fh);
+  font-style: normal;
+  font-size: 42px;
+  letter-spacing: -0.03em;
+  line-height: 1.05;
+}
+
+.prop-sheet-property {
+  margin: 8px 0 0;
+  font-size: 15px;
+  color: #5c564d;
+}
+
+.prop-sheet-hero {
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 32px;
+  margin: 32px 0 8px;
+  padding: 22px 0;
+  border-color: var(--br);
+}
+
+.prop-sheet-hero b {
+  display: block;
+  font-family: var(--fh);
+  font-style: normal;
+  font-size: 30px;
+  font-weight: 500;
+  letter-spacing: -0.03em;
+}
+
+.prop-sheet-hero em {
+  display: block;
+  margin-top: 5px;
+  font-style: normal;
+  font-size: 12px;
+  color: #6b6358;
+}
+
+.prop-sheet-split {
+  display: grid;
+  grid-template-columns: 1.15fr 0.85fr;
+  gap: 40px;
+  margin: 8px 0 28px;
+  padding-top: 8px;
+}
+
+.prop-sheet-split h2,
+.prop-sheet-body h2 {
+  color: #c2410c;
+  letter-spacing: 0.14em;
+}
+
+.prop-sheet-split p {
+  margin: 0 0 6px;
+  font-size: 14px;
+  line-height: 1.45;
+  color: #2b261f;
+}
+
+.prop-sheet-split .prop-array {
+  height: 168px;
+  margin: 10px 0 14px;
+  background: #fffaf3;
+  border-color: #edd4b6;
+}
+
+.prop-sheet-ledger dl {
+  margin: 8px 0 12px;
+}
+
+.prop-sheet-ledger dl > div {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 8px 0;
+  border-bottom: 1px solid #e8e0d4;
+}
+
+.prop-sheet-ledger dt {
+  font-size: 13px;
+  color: #5c564d;
+}
+
+.prop-sheet-ledger dd {
+  margin: 0;
+  text-align: right;
+  font-family: var(--fm);
+  font-size: 14px;
+}
+
+.prop-sheet-ledger dd span {
+  display: block;
+  margin-top: 2px;
+  font-size: 11px;
+  color: #8a8176;
+}
+
+.prop-sheet-body {
+  grid-template-columns: 1fr 1.2fr;
+  gap: 28px 40px;
+}
+
+.prop-sheet-notes {
+  grid-column: 1 / -1;
+}
+
+.prop-sheet-foot {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  margin-top: 32px;
+  padding-top: 14px;
+  background: #f7f1e6;
+}
+
+.prop-sheet-foot .az-btn.pri {
+  background: #c2410c;
+  border-color: #c2410c;
+  color: #fff8f0;
+}
+
+@media (max-width: 1100px) {
+  .cad-body {
+    grid-template-columns: 40px minmax(0, 1fr) 200px;
+  }
+  .cad-desk.has-prop .cad-body {
+    grid-template-columns: 40px minmax(0, 1fr) 248px;
+  }
+  .cad-tools button span {
+    display: none;
+  }
+}
