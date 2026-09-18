@@ -120,8 +120,8 @@ describe("setVetCheck", () => {
     const next = setVetCheck(withCarrier, "cr1", "mc", "pass");
     expect(next.ok).toBe(true);
     if (!next.ok) return;
-    expect(next.carrier.vetting.find((item) => item.id === "mc")?.state).toBe("pass");
-    expect(next.carrier.vetting.find((item) => item.id === "insurance")?.state).toBe("unchecked");
+    expect(next.carrier.vetting?.find((item) => item.id === "mc")?.state).toBe("pass");
+    expect(next.carrier.vetting?.find((item) => item.id === "insurance")?.state).toBe("unchecked");
   });
 });
 

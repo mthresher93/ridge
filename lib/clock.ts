@@ -42,3 +42,14 @@ export function overdueLabel(iso: string, at?: Date | number | string) {
   if (!Number.isFinite(delta) || delta >= 0) return "";
   return relativeToNow(iso, at).replace(" ago", " overdue");
 }
+
+export function closeChip(iso: string, at?: Date | number | string) {
+  if (!iso) return { label: "", tone: "none" as const };
+  const date = now(iso);
+  if (Number.isNaN(date.getTime())) return { label: "", tone: "none" as const };
+  const label = `Closes ${new Intl.DateTimeFormat("en-US", { month: "short", day: "numeric", timeZone: ZONE }).format(date)}`;
+  const days = (date.getTime() - nowMs(at)) / 86400000;
+  if (days < 0) return { label, tone: "bad" as const };
+  if (days < 7) return { label, tone: "warn" as const };
+  return { label, tone: "ok" as const };
+}

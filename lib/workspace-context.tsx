@@ -45,7 +45,7 @@ export function WorkspaceProvider({ children }: { children: React.ReactNode }) {
   const savedTimer = useRef<number>(0);
   const inFlight = useRef(false);
   const pending = useRef<Workspace | null>(null);
-  const latest = useRef<Workspace>(emptyWorkspace);
+  const latest = useRef<Workspace>(emptyWorkspace());
 
   const apply = useCallback((next: Workspace) => {
     const resolved = normalizeWorkspace(next);

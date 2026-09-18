@@ -10,6 +10,7 @@ import { archiveLead, contactTimeline, findDuplicateLeads, relatedFor, restoreLe
 import { blankLoadFromLead, companyName, generateFollowUp, generateOpeningMessage, hasMeasuredSpecs, leadLocation, openQuoteShipment, shipmentMargin, summarizeProspect, CLIENT_KINDS } from "@/lib/freight";
 import { applySpecsToLead, parseDimensions, parsePounds, recommendEquipment } from "@/lib/equipment";
 import { attachCarrierToShipment, carrierLabel } from "@/lib/carriers";
+import { convertQuoteToLoad } from "@/lib/ops";
 import { contactsForLead, upsertBooker } from "@/lib/people";
 import { wrapCall, type CallOutcome } from "@/lib/prospect";
 import { browserTelephony } from "@/lib/telephony";
