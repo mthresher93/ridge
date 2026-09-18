@@ -27,7 +27,9 @@ export function PageHeader({
         <div className="crm-page-head-copy">
           <h1 className="font-display">{title}</h1>
           <p>{subtitle}</p>
-          <StatusPill status={honest.status} label={statusLabel || honest.label} title={honest.detail} />
+          {honest.status !== "demo" || statusLabel ? (
+            <StatusPill status={honest.status} label={statusLabel || honest.label} title={honest.detail} />
+          ) : null}
         </div>
         {controls ? <div className="crm-page-head-controls">{controls}</div> : null}
       </div>

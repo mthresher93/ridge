@@ -61,9 +61,9 @@
   --warning: #b8862a;
   --danger: #b24a44;
   --info: #1d73a8;
-  --radius: 4px;
-  --radius-sm: 3px;
-  --radius-lg: 6px;
+  --radius: 14px;
+  --radius-sm: 10px;
+  --radius-lg: 18px;
   --vx-bg-canvas: var(--canvas);
   --vx-bg-surface: var(--panel);
   --vx-bg-surface-elevated: var(--bg2);
@@ -173,7 +173,8 @@ body::before {
 .az-nav-settings {
   display: flex;
   align-items: center;
-  height: 40px;
+  height: 32px;
+  margin: 4px 2px;
   padding: 0 12px;
   color: rgba(243, 234, 216, 0.72);
   font-family: var(--fb);
@@ -184,19 +185,22 @@ body::before {
   border: 0;
   background: transparent;
   white-space: nowrap;
+  border-radius: 999px;
 }
 
 .az-chrome-nav a:hover,
 .az-nav-more-btn:hover,
 .az-nav-settings:hover {
   color: #fff8ea;
+  background: rgba(243, 234, 216, 0.08);
 }
 
 .az-chrome-nav a.active,
 .az-nav-more-btn.active,
 .az-nav-settings.active {
-  color: #f3ead8;
-  box-shadow: inset 0 -2px 0 var(--gold);
+  color: var(--gold-light);
+  background: rgba(192, 146, 42, 0.18);
+  box-shadow: none;
 }
 
 .az-nav-more {
@@ -5935,6 +5939,104 @@ button.desk-open-row {
   .hunt-paste {
     position: static;
   }
+}
+
+/* ——— Rounded modern surfaces (wins over leftover sharp desk rules) ——— */
+.az-btn,
+.az-input,
+select.az-input,
+.az-chip,
+.az-panel,
+.crm-table-wrap,
+.deal-card,
+.pipeline-col,
+.pipe-metrics > div,
+.home-stats > div,
+.home-stats > button,
+.due-chip,
+.deal-score-badge,
+.status-pill,
+.work-tabs .az-btn,
+.metro-chips .az-btn,
+.label-chips .az-btn,
+.az-table,
+.crm-desk .az-panel,
+.rec-toolbar,
+.crm-desk-tools,
+.desk-next,
+.desk-today,
+.empty-desk,
+.accounts-grid,
+.deal-drawer,
+.pipe-toast,
+.hunt-step,
+.hunt-desk,
+.capture-sheet,
+.discover-desk,
+.deal-map-canvas {
+  border-radius: var(--radius) !important;
+}
+
+.az-btn.sm,
+.az-chip,
+.due-chip,
+.deal-score-badge,
+.status-pill {
+  border-radius: var(--radius-sm) !important;
+}
+
+.cd-search,
+.az-btn.gold,
+.az-add-prospect,
+.az-chrome .cd-search {
+  border-radius: 999px !important;
+}
+
+.pipeline-col,
+.crm-table-wrap,
+.az-panel,
+.deal-card {
+  overflow: hidden;
+}
+
+.pipeline-col-head {
+  align-items: flex-start;
+}
+
+.pipeline-col-head .az-btn.sm {
+  flex: none;
+  width: 32px;
+  min-width: 32px;
+  height: 32px;
+  min-height: 32px;
+  padding: 0;
+  margin: 10px 10px 0 0;
+  border-radius: 10px !important;
+}
+
+.status-pill.status-demo,
+.status-pill.status-bad.status-demo {
+  color: var(--vx-text-3);
+  border-color: var(--br);
+}
+
+.deal-avatar {
+  border-radius: 999px;
+}
+
+.az-input,
+select.az-input {
+  height: 38px;
+  padding: 0 12px;
+  border: 1px solid var(--br);
+  background: var(--panel-2);
+}
+
+.az-table th:first-child {
+  border-top-left-radius: var(--radius);
+}
+.az-table th:last-child {
+  border-top-right-radius: var(--radius);
 }
 
 

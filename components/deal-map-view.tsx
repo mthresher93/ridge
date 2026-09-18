@@ -8,17 +8,17 @@ import { crmStageOf, stageById } from "@/lib/crm-pipeline";
 import { workPath } from "@/lib/nav";
 import { PageHeader } from "./crm/page-header";
 
-const PIN: Record<string, { x: number; y: number }> = {
-  dallas: { x: 58, y: 38 },
-  fortworth: { x: 52, y: 40 },
-  houston: { x: 72, y: 62 },
-  austin: { x: 54, y: 58 },
-  sanantonio: { x: 50, y: 68 },
-  waco: { x: 56, y: 48 },
-  east: { x: 74, y: 42 },
-  west: { x: 28, y: 42 },
-  valley: { x: 48, y: 82 },
-  other: { x: 40, y: 28 },
+const PIN: Record<string, { x: number; y: number; lx: number; ly: number }> = {
+  dallas: { x: 64, y: 34, lx: 76, ly: 32 },
+  fortworth: { x: 46, y: 36, lx: 32, ly: 34 },
+  houston: { x: 74, y: 58, lx: 86, ly: 58 },
+  austin: { x: 54, y: 54, lx: 54, ly: 64 },
+  sanantonio: { x: 44, y: 70, lx: 30, ly: 72 },
+  waco: { x: 58, y: 46, lx: 58, ly: 38 },
+  east: { x: 80, y: 40, lx: 80, ly: 30 },
+  west: { x: 22, y: 42, lx: 22, ly: 32 },
+  valley: { x: 50, y: 84, lx: 50, ly: 93 },
+  other: { x: 28, y: 20, lx: 28, ly: 12 },
 };
 
 export function DealMapView() {
@@ -46,13 +46,15 @@ export function DealMapView() {
             <rect x="4" y="8" width="92" height="86" rx="8" fill="var(--vx-bg-surface)" stroke="var(--vx-border-subtle)" />
             {groups.map((group) => {
               const pin = PIN[group.id] || PIN.other;
+              const labelX = pin.lx ?? pin.x;
+              const labelY = pin.ly ?? pin.y + 8;
               return (
                 <g key={group.id}>
                   <circle cx={pin.x} cy={pin.y} r="4.2" fill="var(--vx-sun)" />
                   <text x={pin.x} y={pin.y + 1.2} textAnchor="middle" fontSize="3.2" fill="var(--vx-bg-canvas)" className="tabular-nums">
                     {group.leads.length}
                   </text>
-                  <text x={pin.x} y={pin.y + 8} textAnchor="middle" fontSize="3.4" fill="var(--vx-text-2)">
+                  <text x={labelX} y={labelY} textAnchor="middle" fontSize="3.4" fill="var(--vx-text-2)">
                     {group.label}
                   </text>
                 </g>
