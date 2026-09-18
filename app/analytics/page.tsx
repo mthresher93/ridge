@@ -1,7 +1,5 @@
-"use client";
-
-import { AnalyticsView } from "@/components/analytics-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AnalyticsView />;
+  redirect("/reports");
 }

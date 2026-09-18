@@ -91,6 +91,6 @@ describe("captureBookmarklet", () => {
     expect(code).toContain("/api/prospects/capture");
     expect(code).toContain("pageText");
     expect(code).toContain("Haul saved");
-    expect(code).toContain("/outreach?id=");
+    expect(code).toContain("/calls?id=");
   });
 });

@@ -6,16 +6,20 @@ const nextConfig = {
   async redirects() {
     return [
       { source: "/design", destination: "/discover", permanent: false },
-      { source: "/map", destination: "/people", permanent: false },
-      { source: "/floor", destination: "/outreach", permanent: false },
-      { source: "/offers", destination: "/analytics", permanent: false },
-      { source: "/proof", destination: "/analytics", permanent: false },
+      { source: "/floor", destination: "/calls", permanent: false },
+      { source: "/offers", destination: "/reports", permanent: false },
+      { source: "/proof", destination: "/reports", permanent: false },
       { source: "/studio", destination: "/copilot", permanent: false },
       { source: "/ads", destination: "/discover", permanent: false },
-      { source: "/numbers", destination: "/analytics", permanent: false },
-      { source: "/money", destination: "/analytics", permanent: false },
-      { source: "/investment", destination: "/analytics", permanent: false },
-      { source: "/appointments", destination: "/shipments", permanent: false },
+      { source: "/numbers", destination: "/reports", permanent: false },
+      { source: "/money", destination: "/reports", permanent: false },
+      { source: "/investment", destination: "/reports", permanent: false },
+      { source: "/appointments", destination: "/calendar", permanent: false },
+      { source: "/people", destination: "/leads", permanent: false },
+      { source: "/board", destination: "/pipeline", permanent: false },
+      { source: "/callbacks", destination: "/tasks", permanent: false },
+      { source: "/accounts", destination: "/companies", permanent: false },
+      { source: "/analytics", destination: "/reports", permanent: false },
     ];
   },
   async headers() {

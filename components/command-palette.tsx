@@ -29,7 +29,7 @@ export function CommandPalette({ onClose }: { onClose: () => void }) {
       }),
     );
     const actions: Result[] = [
-      { id: "act-quote", title: "New Quote", detail: "Open Work", run: () => router.push("/outreach") },
+      { id: "act-quote", title: "New Quote", detail: "Open Calls", run: () => router.push("/calls") },
       { id: "act-next", title: "Call next prospect", detail: "Dashboard", run: () => router.push("/") },
       { id: "act-hunt", title: "Add prospect", detail: "Discover", run: () => router.push("/discover") },
       { id: "act-load", title: "New Load", detail: "Shipments", run: () => router.push("/shipments") },

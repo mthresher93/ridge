@@ -32,13 +32,13 @@ describe("topMove", () => {
     workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Hill Yard", status: "Discovered" })];
     const move = topMove(workspace);
     expect(move.kicker).toMatch(/Work/i);
-    expect(move.href).toBe("/outreach?id=lead-1");
+    expect(move.href).toBe("/calls?id=lead-1");
   });
 
   it("opens the work screen once the client is labeled and has no published phone", () => {
     const workspace = emptyWorkspace();
     workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Hill Yard", status: "Discovered", label: "Dealer" })];
     const move = topMove(workspace);
-    expect(move.href).toBe("/outreach?id=lead-1");
+    expect(move.href).toBe("/calls?id=lead-1");
   });
 });

@@ -337,7 +337,7 @@ export function LeadDrawer({ lead, onClose }: { lead: Lead; onClose: () => void 
         </header>
 
         <div className="rec-actions">
-          <button className="az-btn pri sm" type="button" onClick={() => { setSelectedLeadId(live.id); router.push(`/outreach?id=${live.id}`); }}>
+          <button className="az-btn pri sm" type="button" onClick={() => { setSelectedLeadId(live.id); router.push(`/calls?id=${live.id}`); }}>
             Work this
           </button>
           {live.listingUrl ? (

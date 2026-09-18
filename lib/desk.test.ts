@@ -38,7 +38,7 @@ describe("deskPlan", () => {
     const workspace = emptyWorkspace();
     workspace.leads = [blankProspect("Michael", { id: "lead-1", name: "Westside Machinery LLC", status: "Discovered" })];
     const plan = deskPlan(workspace, Date.parse("2026-09-07T12:00:00"));
-    expect(plan[0].href).toBe("/outreach?id=lead-1");
+    expect(plan[0].href).toBe("/calls?id=lead-1");
     expect(plan.some((item) => item.href.startsWith("/people"))).toBe(false);
   });
 
@@ -88,6 +88,6 @@ describe("deskPlan", () => {
     const plan = deskPlan(workspace, Date.parse("2026-09-08T12:00:00"));
     expect(plan[0].kicker).toMatch(/Finish the call/i);
     expect(plan[0].title).toBe("HOLT CAT Dallas (North)");
-    expect(plan[0].href).toBe("/outreach?id=lead-1");
+    expect(plan[0].href).toBe("/calls?id=lead-1");
   });
 });

@@ -1,5 +1,7 @@
-import { redirect } from "next/navigation";
+"use client";
+
+import { DealMapView } from "@/components/deal-map-view";
 
 export default function Page() {
-  redirect("/people");
+  return <DealMapView />;
 }

@@ -1,7 +1,5 @@
-"use client";
-
-import { AccountsView } from "@/components/accounts-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <AccountsView />;
+  redirect("/companies");
 }

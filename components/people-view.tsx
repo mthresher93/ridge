@@ -143,7 +143,7 @@ export function PeopleView() {
       <div className="az-fill crm-desk">
         <header className="crm-desk-head">
           <div>
-            <h1>Clients</h1>
+            <h1>Leads</h1>
             <p>
               {leads.length} {shelf} · {census.yards} yards · {census.sellers} private / marketplace · typed name, published phone, city.
             </p>

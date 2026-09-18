@@ -1,12 +1,5 @@
-"use client";
-
-import { Suspense } from "react";
-import { PeopleView } from "@/components/people-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return (
-    <Suspense fallback={<div className="text-[var(--muted)]">Loading prospects…</div>}>
-      <PeopleView />
-    </Suspense>
-  );
+  redirect("/leads");
 }

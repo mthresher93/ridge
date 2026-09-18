@@ -1030,7 +1030,7 @@ function clSubdomain(location: string) {
 
 export function captureBookmarklet(origin = "http://localhost:6793", token = "") {
   const header = token ? `,'x-capture-token':'${token.replace(/'/g, "")}'` : "";
-  return `javascript:(function(){var t=document.title||'';var u=location.href;var s=(window.getSelection&&String(window.getSelection())||document.body.innerText||'').slice(0,7000);fetch('${origin}/api/prospects/capture',{method:'POST',headers:{'Content-Type':'application/json'${header}},body:JSON.stringify({source:'Capture',url:u,title:t,pageText:s,description:s})}).then(function(r){return r.json()}).then(function(j){alert(j.ok?("${PRODUCT_NAME} saved · score "+(j.score||'?')+"/100. Work it: ${origin}/outreach?id="+(j.leadId||'')):(j.error||'Capture failed'))}).catch(function(){alert("${PRODUCT_NAME} is not running at ${origin}")});})();`;
+  return `javascript:(function(){var t=document.title||'';var u=location.href;var s=(window.getSelection&&String(window.getSelection())||document.body.innerText||'').slice(0,7000);fetch('${origin}/api/prospects/capture',{method:'POST',headers:{'Content-Type':'application/json'${header}},body:JSON.stringify({source:'Capture',url:u,title:t,pageText:s,description:s})}).then(function(r){return r.json()}).then(function(j){alert(j.ok?("${PRODUCT_NAME} saved · score "+(j.score||'?')+"/100. Work it: ${origin}/calls?id="+(j.leadId||'')):(j.error||'Capture failed'))}).catch(function(){alert("${PRODUCT_NAME} is not running at ${origin}")});})();`;
 }
 
 export function sourceFromLane(laneId: string) {

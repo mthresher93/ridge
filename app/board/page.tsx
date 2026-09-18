@@ -1,7 +1,5 @@
-"use client";
-
-import { BoardView } from "@/components/board-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <BoardView />;
+  redirect("/pipeline");
 }

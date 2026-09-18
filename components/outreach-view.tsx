@@ -223,7 +223,7 @@ export function OutreachView() {
         <div className="az-fill crm-desk">
           <header className="crm-desk-head">
             <div>
-              <h1>Work</h1>
+              <h1>Calls</h1>
               <p>Label, copy, send from your account. Haul does not send.</p>
             </div>
           </header>
@@ -264,7 +264,7 @@ export function OutreachView() {
       <div className="az-fill crm-desk outreach-desk">
         <header className="crm-desk-head">
           <div>
-            <h1>Work</h1>
+            <h1>Calls</h1>
             <p>
               {queue.length ? `${index + 1} / ${queue.length}` : "1"} · {metroOf(lead)?.label || leadLocation(lead) || "—"} · {sentToday} sent · C copy · N next
             </p>

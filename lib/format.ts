@@ -1,4 +1,5 @@
 import type { Lead } from "./types";
+import { now, nowMs } from "./clock";
 
 export function money(value: number) {
   return new Intl.NumberFormat("en-US", {
@@ -69,7 +70,7 @@ export function formatDateLong(date: Date, timeZone: string) {
   }).format(date);
 }
 
-export function relativeDue(iso: string, now = Date.now()) {
+export function relativeDue(iso: string, now = nowMs()) {
   if (!iso) return "No time set";
   const delta = Date.parse(iso) - now;
   const abs = Math.abs(delta);
@@ -88,7 +89,7 @@ export function daysBetween(iso: string, now = Date.now()) {
 }
 
 /** Days until the next occurrence of weekday (0 Sun … 6 Sat). Today counts as next week. */
-export function daysUntilNextWeekday(weekday: number, from = new Date()) {
+export function daysUntilNextWeekday(weekday: number, from = now()) {
   const delta = (weekday - from.getDay() + 7) % 7;
   return delta === 0 ? 7 : delta;
 }
@@ -109,6 +110,4 @@ export function uid(prefix: string) {
   return `${prefix}-${crypto.randomUUID?.() || `${Date.now()}-${Math.random().toString(16).slice(2)}`}`;
 }
 
-export function nowIso() {
-  return new Date().toISOString();
-}
+export { nowIso } from "./clock";

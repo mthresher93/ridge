@@ -4,24 +4,27 @@ export type NavGroup = { id: string; label: string; items: NavItem[] };
 
 export const DESK_NAV: NavItem[] = [
   { href: "/", label: "Dashboard" },
+  { href: "/contacts", label: "Contacts" },
+  { href: "/companies", label: "Companies" },
+  { href: "/leads", label: "Leads" },
+  { href: "/pipeline", label: "Pipeline" },
+  { href: "/map", label: "Map" },
   { href: "/discover", label: "Discover" },
-  { href: "/playbook", label: "Intel" },
-  { href: "/people", label: "Clients" },
-  { href: "/outreach", label: "Work" },
-  { href: "/callbacks", label: "Follow-ups" },
-  { href: "/board", label: "Pipeline" },
-  { href: "/shipments", label: "Shipments" },
-  { href: "/carriers", label: "Carriers" },
+  { href: "/tasks", label: "Tasks" },
+  { href: "/calendar", label: "Calendar" },
+  { href: "/calls", label: "Calls" },
+  { href: "/call-logs", label: "Call logs" },
+  { href: "/reports", label: "Reports" },
 ];
 
 export function workPath(leadId?: string | null) {
-  return leadId ? `/outreach?id=${encodeURIComponent(leadId)}` : "/outreach";
+  return leadId ? `/calls?id=${encodeURIComponent(leadId)}` : "/calls";
 }
 
 export const MORE_NAV: NavItem[] = [
-  { href: "/accounts", label: "Accounts" },
-  { href: "/analytics", label: "Analytics" },
-  { href: "/copilot", label: "AI Copilot" },
+  { href: "/playbook", label: "Intel" },
+  { href: "/shipments", label: "Shipments" },
+  { href: "/carriers", label: "Carriers" },
 ];
 
 export const NAV_GROUPS: NavGroup[] = [

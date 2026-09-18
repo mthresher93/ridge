@@ -131,7 +131,7 @@ export function PlaybookView() {
           <section className="empty-desk">
             <h2>No live numbers on this client yet</h2>
             <p>Finish the call first. Then type L × W × height-on-deck × pounds.</p>
-            <button className="az-btn pri sm" type="button" onClick={() => router.push("/outreach")}>
+            <button className="az-btn pri sm" type="button" onClick={() => router.push("/calls")}>
               Next call
             </button>
           </section>

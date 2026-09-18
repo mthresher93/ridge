@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Barlow, Big_Shoulders_Display, IBM_Plex_Mono } from "next/font/google";
+import { Bricolage_Grotesque, IBM_Plex_Sans, IBM_Plex_Mono } from "next/font/google";
 import { PRODUCT_NAME } from "@/lib/brand";
 import "./globals.css";
 import "./current.css";
@@ -10,15 +10,15 @@ import "./settings.css";
 import "./lumen.css";
 import { Providers } from "./providers";
 
-const sans = Barlow({
+const sans = IBM_Plex_Sans({
   subsets: ["latin"],
   weight: ["400", "500", "600"],
   variable: "--font-sans",
 });
 
-const display = Big_Shoulders_Display({
+const display = Bricolage_Grotesque({
   subsets: ["latin"],
-  weight: ["600", "700", "800"],
+  weight: ["500", "600", "700"],
   variable: "--font-display",
 });
 
@@ -30,7 +30,7 @@ const mono = IBM_Plex_Mono({
 
 export const metadata: Metadata = {
   title: PRODUCT_NAME,
-  description: "Freight prospecting operating system",
+  description: "Freight CRM",
   icons: {
     icon: [{ url: "/haul.svg", type: "image/svg+xml" }],
     apple: "/haul.svg",

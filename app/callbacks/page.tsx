@@ -1,7 +1,5 @@
-"use client";
-
-import { CallbacksView } from "@/components/callbacks-view";
+import { redirect } from "next/navigation";
 
 export default function Page() {
-  return <CallbacksView />;
+  redirect("/tasks");
 }

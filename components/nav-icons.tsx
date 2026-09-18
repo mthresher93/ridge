@@ -14,7 +14,16 @@ type IconName =
   | "accounts"
   | "analytics"
   | "copilot"
-  | "settings";
+  | "settings"
+  | "contacts"
+  | "companies"
+  | "leads"
+  | "map"
+  | "tasks"
+  | "calendar"
+  | "calls"
+  | "logs"
+  | "reports";
 
 function Glyph({ children }: { children: ReactNode }) {
   return (
@@ -118,6 +127,60 @@ const ICONS: Record<IconName, ReactNode> = {
       <path d="M9 2.4v1.8M9 13.8v1.8M2.4 9h1.8M13.8 9h1.8M4.2 4.2l1.3 1.3M12.5 12.5l1.3 1.3M4.2 13.8l1.3-1.3M12.5 5.5l1.3-1.3" />
     </>
   ),
+  contacts: (
+    <>
+      <circle cx="7" cy="6" r="2.3" />
+      <path d="M2.8 15.2c.5-2.6 2.4-4.2 4.2-4.2s3.7 1.6 4.2 4.2" />
+      <circle cx="13.2" cy="7.1" r="1.8" />
+    </>
+  ),
+  companies: (
+    <>
+      <path d="M3.4 15.4V6.2L9 3.2l5.6 3v9.2z" />
+      <path d="M7.2 15.4v-4.6h3.6v4.6" />
+    </>
+  ),
+  leads: (
+    <>
+      <circle cx="9" cy="6.2" r="2.4" />
+      <path d="M4 15c.6-3 2.4-4.6 5-4.6s4.4 1.6 5 4.6" />
+    </>
+  ),
+  map: (
+    <>
+      <path d="M3.2 4.4 7.4 3.2 10.8 5l4-1.2v11.6L10.8 14.4 7.4 12.6 3.2 14z" />
+      <path d="M7.4 3.2v9.4M10.8 5v9.4" />
+    </>
+  ),
+  tasks: (
+    <>
+      <rect x="3.2" y="3.4" width="11.6" height="11.4" rx="1.2" />
+      <path d="M6 9.2 8 11.2 12.2 7" />
+    </>
+  ),
+  calendar: (
+    <>
+      <rect x="3" y="3.8" width="12" height="11.5" rx="1.4" />
+      <path d="M3 7.2h12M6.2 2.6v2.6M11.8 2.6v2.6" />
+    </>
+  ),
+  calls: (
+    <>
+      <path d="M5.2 3.8h2.4l1 2.6-1.8 1.1c.5 1.3 1.7 2.5 3 3l1.1-1.8 2.6 1v2.5C8.8 13.6 4.4 9.2 5.2 3.8z" />
+    </>
+  ),
+  logs: (
+    <>
+      <path d="M4.5 3.5h9a1.4 1.4 0 0 1 1.4 1.4v8.2H6.2a1.7 1.7 0 0 0-1.7 1.7V4.9A1.4 1.4 0 0 1 4.5 3.5z" />
+      <path d="M7 7h5M7 10h4" />
+    </>
+  ),
+  reports: (
+    <>
+      <path d="M2.8 14.6h12.4" />
+      <path d="M5.4 12.2V8.2M9 12.2V5.4M12.6 12.2V7.4" />
+    </>
+  ),
 };
 
 export function NavIcon({ name }: { name?: IconName }) {
@@ -126,14 +189,24 @@ export function NavIcon({ name }: { name?: IconName }) {
 
 export const NAV_ICONS: Record<string, IconName> = {
   "/": "dashboard",
+  "/contacts": "contacts",
+  "/companies": "companies",
+  "/leads": "leads",
+  "/pipeline": "pipeline",
+  "/map": "map",
   "/discover": "discover",
+  "/tasks": "tasks",
+  "/calendar": "calendar",
+  "/calls": "calls",
+  "/call-logs": "logs",
+  "/reports": "reports",
   "/playbook": "intel",
+  "/shipments": "shipments",
+  "/carriers": "carriers",
   "/people": "clients",
   "/outreach": "work",
   "/callbacks": "followups",
   "/board": "pipeline",
-  "/shipments": "shipments",
-  "/carriers": "carriers",
   "/accounts": "accounts",
   "/analytics": "analytics",
   "/copilot": "copilot",
