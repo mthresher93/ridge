@@ -12,10 +12,9 @@ import { settingsWithDefaults } from "@/lib/types";
 import { huntQueue } from "@/lib/hunt";
 import { applySpecsToLead, recommendEquipment, specsFromLead } from "@/lib/equipment";
 import { companyName, finishConnectedCall, leadLocation, outreachQueue, parseMeasure, suggestClientKind } from "@/lib/freight";
-import { groupByMetro, huntPlacesFromBook, metroOf } from "@/lib/metro";
+import { huntPlacesFromBook, metroOf } from "@/lib/metro";
 import { bookerOf, contactsForLead, skipQuote, unfinishedTalked, upsertBooker } from "@/lib/people";
-import { firstCall, labelObviousYards, obviousYardCount, wrapCall, type CallOutcome } from "@/lib/prospect";
-import { HuntDance } from "./hunt-dance";
+import { firstCall, wrapCall, type CallOutcome } from "@/lib/prospect";
 import { callReason, todayStrip, weekCounts } from "@/lib/desk-rules";
 import { deskFlow } from "@/lib/flow";
 import { workPath } from "@/lib/nav";
@@ -33,19 +32,12 @@ export function TodayView() {
   const loads = useMemo(() => liveLoadSnapshot(workspace), [workspace]);
   const books = useMemo(() => bookedMargin(workspace), [workspace]);
   const callBook = useMemo(() => deskCallBook(workspace, 80), [workspace]);
-  const [metroId, setMetroId] = useState("all");
-  const metroGroups = useMemo(() => groupByMetro(callBook), [callBook]);
-  const filteredBook = useMemo(
-    () => (metroId === "all" ? callBook : callBook.filter((lead) => metroOf(lead)?.id === metroId)),
-    [callBook, metroId],
-  );
   const [bookmarklet, setBookmarklet] = useState("");
   const [copiedId, setCopiedId] = useState("");
   const [copyError, setCopyError] = useState("");
   const live = useMemo(() => workspace.leads.filter((lead) => !lead.archivedAt), [workspace.leads]);
   const unlabeledAll = useMemo(() => live.filter((lead) => !lead.label), [live]);
   const unlabeled = unlabeledAll.slice(0, 6);
-  const obvious = useMemo(() => obviousYardCount(live), [live]);
   const [booker, setBooker] = useState("");
   const [bookerPhone, setBookerPhone] = useState("");
   const [wrapNote, setWrapNote] = useState("");
@@ -58,8 +50,8 @@ export function TodayView() {
   const [lastWrappedId, setLastWrappedId] = useState("");
   const [lastOutcome, setLastOutcome] = useState<CallOutcome | "">("");
   const wrappedLead = lastWrappedId ? live.find((lead) => lead.id === lastWrappedId) || null : null;
-  const nextCall = wrappedLead || filteredBook[0] || null;
-  const nextFive = filteredBook.filter((lead) => lead.id !== lastWrappedId).slice(0, 5);
+  const nextCall = wrappedLead || callBook[0] || null;
+  const nextFive = callBook.filter((lead) => lead.id !== lastWrappedId).slice(0, 5);
   const prefs = settingsWithDefaults(workspace.settings);
   const hours = nextCall ? inCallingWindow(nextCall.state, prefs.dialWindowStart, prefs.dialWindowEnd) : null;
   const stillCalling = callBook.length > 0 || Boolean(wrappedLead);
@@ -257,12 +249,6 @@ export function TodayView() {
     log("shipment", result.shipment.id, result.created ? "created" : "updated", `Blank quote from Desk for ${lead.name}`);
     dismissWrap();
     router.push(`/shipments?id=${encodeURIComponent(result.shipment.id)}`);
-  }
-
-  function labelObvious() {
-    const stamp = nowIso();
-    setWorkspace((prev) => ({ ...prev, leads: labelObviousYards(prev.leads, stamp), updatedAt: stamp }));
-    log("lead", "book", "labeled", "Labeled obvious yards from Desk");
   }
 
   function applySuggestedLabel(lead: Lead) {
@@ -630,94 +616,6 @@ export function TodayView() {
             </div>
           </section>
         ) : null}
-
-        {callBook.length ? (
-          <section className="az-panel freight-panel desk-call-book">
-            <header>
-              <div>
-                <div className="home-kicker">Call book · {hunt.place}</div>
-                <h3>Untried first</h3>
-              </div>
-              <div className="freight-row-actions">
-                {obvious ? (
-                  <button className="az-btn pri sm" type="button" onClick={labelObvious}>
-                    Label {obvious} yards
-                  </button>
-                ) : null}
-                <button className="az-btn sm" type="button" onClick={() => router.push("/people")}>
-                  All {live.length}
-                </button>
-              </div>
-            </header>
-            <div className="metro-chips">
-              <button type="button" className={`az-btn sm ${metroId === "all" ? "pri" : ""}`} onClick={() => setMetroId("all")}>
-                All {callBook.length}
-              </button>
-              {metroGroups.map((group) => (
-                <button
-                  key={group.id}
-                  type="button"
-                  className={`az-btn sm ${metroId === group.id ? "pri" : ""}`}
-                  onClick={() => setMetroId(group.id)}
-                >
-                  {group.label} {group.leads.length}
-                </button>
-              ))}
-            </div>
-            {(metroId === "all" ? metroGroups : [{ id: metroId, label: metroGroups.find((item) => item.id === metroId)?.label || "Metro", hunt: "", leads: filteredBook }]).map((group) => (
-              <div key={group.id} className="desk-call-group">
-                {metroId === "all" ? <h4>{group.label}</h4> : null}
-                <div className="desk-call-grid">
-                  {group.leads.map((lead) => {
-                    const script = firstCall(lead, sentToday);
-                    const suggested = lead.label ? "" : suggestClientKind({ sellerName: lead.name, title: lead.listingTitle, source: lead.source, website: lead.website });
-                    return (
-                      <div key={lead.id} className="desk-call-row">
-                        <button type="button" className="desk-call-who" onClick={() => openLead(lead.id, workPath(lead.id))}>
-                          <b>{lead.name}</b>
-                          <span>
-                            {lead.label || suggested || "Unlabeled"} · {leadLocation(lead) || metroOf(lead)?.label || "—"}
-                            {(lead.attempts || 0) > 0 ? ` · tried ${lead.attempts}` : " · untried"}
-                          </span>
-                          <em>{script.ask}</em>
-                        </button>
-                        <div className="desk-call-actions">
-                          <button className="az-btn pri sm" type="button" onClick={() => browserTelephony().startCall(lead.phone)}>
-                            {phonePretty(lead.phone)}
-                          </button>
-                          <div className="desk-wrap-disp">
-                            <button type="button" onClick={() => noteCall(lead, "talked")}>
-                              Talked
-                            </button>
-                            <button type="button" onClick={() => noteCall(lead, "no_pickup")}>
-                              Miss
-                            </button>
-                            <button type="button" onClick={() => noteCall(lead, "voicemail")}>
-                              VM
-                            </button>
-                            <button type="button" onClick={() => noteCall(lead, "wrong_number")}>
-                              Wrong
-                            </button>
-                          </div>
-                          <button className="az-btn sm" type="button" onClick={() => void copyOpener(lead)}>
-                            {copiedId === lead.id ? "Copied" : "Copy"}
-                          </button>
-                          {suggested ? (
-                            <button className="az-btn sm" type="button" onClick={() => applySuggestedLabel(lead)}>
-                              Label {suggested}
-                            </button>
-                          ) : null}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </section>
-        ) : null}
-
-        {stillCalling ? <HuntDance hunt={hunt} /> : null}
 
         {!stillCalling ? (
           <>
