@@ -6,10 +6,8 @@ import { useEffect, useState } from "react";
 import { BrandLockup } from "./mark";
 import { CommandPalette } from "./command-palette";
 import { useWorkspace } from "@/lib/workspace-context";
-import { DESK_NAV, MORE_NAV } from "@/lib/nav";
-import { NavIcon, NAV_ICONS } from "./nav-icons";
+import { MORE_NAV, NAV_GROUPS, workPath } from "@/lib/nav";
 import { settingsWithDefaults } from "@/lib/types";
-import { workPath } from "@/lib/nav";
 import { callableUncontacted } from "@/lib/metro";
 
 function isActive(pathname: string, href: string) {
@@ -22,13 +20,11 @@ export function Shell({ children }: { children: React.ReactNode }) {
   const { workspace, loading, loadError, saveStatus, reload, retrySave } = useWorkspace();
   const [palette, setPalette] = useState(false);
   const moreActive = MORE_NAV.some((item) => isActive(pathname, item.href));
-  const [moreOpen, setMoreOpen] = useState(moreActive);
+  const [moreOpen, setMoreOpen] = useState(false);
   const toCall = callableUncontacted(workspace, 200).length;
   const operator = settingsWithDefaults(workspace.settings).operator || workspace.settings.defaultOwner || "Michael";
-
-  useEffect(() => {
-    if (moreActive) setMoreOpen(true);
-  }, [moreActive]);
+  const prefs = settingsWithDefaults(workspace.settings);
+  const density = workspace.settings.density || "comfortable";
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent) => {
@@ -41,78 +37,74 @@ export function Shell({ children }: { children: React.ReactNode }) {
     return () => window.removeEventListener("keydown", onKey);
   }, []);
 
-  const prefs = settingsWithDefaults(workspace.settings);
-  const density = workspace.settings.density || "comfortable";
+  useEffect(() => {
+    setMoreOpen(false);
+  }, [pathname]);
 
   return (
     <div className={`az-shell density-${density}`} data-accent={prefs.accent}>
-      <Link href="/" className="az-brand" aria-label="Haul">
-        <BrandLockup />
-      </Link>
-
-      <header className="az-top">
-        <button className="cd-search" type="button" onClick={() => setPalette(true)}>
-          <span>Search clients…</span>
-          <kbd>⌘K</kbd>
-        </button>
-        <div className="az-top-right">
-          {loadError || saveStatus === "error" || saveStatus === "conflict" || saveStatus === "saving" || loading ? (
-            <span className="cd-stat">
-              <span className={`livedot ${loadError ? "off" : ""}`} />
-              {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : "Saving"}
-            </span>
-          ) : null}
-          {saveStatus === "error" ? (
-            <button className="az-btn sm" type="button" onClick={() => retrySave()}>
-              Retry
-            </button>
-          ) : null}
-          <span className="az-num az-top-open">{toCall} ready</span>
-          <span className="az-top-user">{operator}</span>
-          <button className="az-btn gold sm" type="button" onClick={() => router.push(workPath())}>
-            Next call
+      <header className="az-chrome">
+        <div className="az-chrome-top">
+          <Link href="/" className="az-brand" aria-label="Haul">
+            <BrandLockup />
+          </Link>
+          <button className="cd-search" type="button" onClick={() => setPalette(true)}>
+            <span>Search the book…</span>
+            <kbd>⌘K</kbd>
           </button>
-        </div>
-      </header>
-
-      <aside className="az-rail">
-        <nav className="az-rail-nav" aria-label="Workspace">
-          <div className="az-rail-group">
-            {DESK_NAV.map((item) => (
-              <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
-                <NavIcon name={NAV_ICONS[item.href]} />
-                {item.label}
-              </Link>
-            ))}
+          <div className="az-top-right">
+            {loadError || saveStatus === "error" || saveStatus === "conflict" || saveStatus === "saving" || loading ? (
+              <span className="cd-stat">
+                <span className={`livedot ${loadError ? "off" : ""}`} />
+                {loadError ? "Load failed" : loading ? "Syncing" : saveStatus === "error" ? "Save failed" : saveStatus === "conflict" ? "Reloaded" : "Saving"}
+              </span>
+            ) : null}
+            {saveStatus === "error" ? (
+              <button className="az-btn sm" type="button" onClick={() => retrySave()}>
+                Retry
+              </button>
+            ) : null}
+            <span className="az-num az-top-open tabular-nums">{toCall} ready</span>
+            <span className="az-top-user">{operator}</span>
+            <button className="az-btn gold sm" type="button" onClick={() => router.push(workPath())}>
+              Next call
+            </button>
           </div>
-          <div className="az-rail-more">
+        </div>
+        <nav className="az-chrome-nav" aria-label="Workspace">
+          {NAV_GROUPS.map((group) => (
+            <div key={group.id} className="az-nav-cluster">
+              {group.items.map((item) => (
+                <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
+                  {item.label}
+                </Link>
+              ))}
+            </div>
+          ))}
+          <div className="az-nav-cluster az-nav-more">
             <button
               type="button"
-              className={`az-rail-more-btn${moreActive ? " active" : ""}`}
+              className={`az-nav-more-btn${moreActive ? " active" : ""}`}
               aria-expanded={moreOpen}
               onClick={() => setMoreOpen((open) => !open)}
             >
-              <NavIcon name="more" />
               More
             </button>
-            {moreOpen
-              ? MORE_NAV.map((item) => (
+            {moreOpen ? (
+              <div className="az-nav-pop">
+                {MORE_NAV.map((item) => (
                   <Link key={item.href} href={item.href} className={isActive(pathname, item.href) ? "active" : ""}>
-                    <NavIcon name={NAV_ICONS[item.href]} />
                     {item.label}
                   </Link>
-                ))
-              : null}
+                ))}
+              </div>
+            ) : null}
           </div>
-        </nav>
-
-        <div className="az-rail-foot">
-          <Link href="/settings" className={`az-rail-settings${isActive(pathname, "/settings") ? " active" : ""}`}>
-            <NavIcon name="settings" />
+          <Link href="/settings" className={`az-nav-settings${isActive(pathname, "/settings") ? " active" : ""}`}>
             Settings
           </Link>
-        </div>
-      </aside>
+        </nav>
+      </header>
 
       <div className="az-main">
         {loadError ? (
